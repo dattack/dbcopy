@@ -75,7 +75,6 @@
             <groupId>com.dattack</groupId>
             <artifactId>standalone-jndi</artifactId>
             <version>${standalone-jndi.version}</version>
-            <scope>runtime</scope>
         </dependency>
         <dependency>
             <groupId>commons-cli</groupId>
