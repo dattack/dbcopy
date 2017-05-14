@@ -1,0 +1,37 @@
+<project xmlns="http://maven.apache.org/DECORATION/1.6.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/DECORATION/1.6.0 http://maven.apache.org/xsd/decoration-1.6.0.xsd">
+
+	<bannerLeft>
+		<name>Dattack Team</name>
+		<src>http://dattack.com/img/logo.png</src>
+		<href>http://www.dattack.com</href>
+	</bannerLeft>
+
+	<skin>
+		<groupId>org.apache.maven.skins</groupId>
+		<artifactId>maven-fluido-skin</artifactId>
+		<version>1.4</version>
+	</skin>
+
+	<custom>
+		<fluidoSkin>
+			<googleSearch />
+			<sourceLineNumbersEnabled>true</sourceLineNumbersEnabled>
+		</fluidoSkin>
+	</custom>
+
+	<body>
+		<links>
+			<item name="www.dattack.com" href="http://www.dattack.com/" />
+		</links>
+
+<!-- 		<menu name="Regular Web Site"> -->
+<!-- 			<item name="APT Format" href="format.html" /> -->
+<!-- 			<item name="Xdoc Example" href="xdoc.html" /> -->
+<!-- 			<item name="FAQ" href="faq.html" /> -->
+<!-- 		</menu> -->
+
+		<menu ref="reports" />
+	</body>
+</project>

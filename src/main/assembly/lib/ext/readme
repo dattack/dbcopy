@@ -1,0 +1,3 @@
+This directory contains additional JAR files, such as JDBC drivers, which are
+not included in DBTools but necessary at runtime.
+ 
