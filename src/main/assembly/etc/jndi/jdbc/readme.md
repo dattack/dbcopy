@@ -1,4 +1,4 @@
-This directory contains the configuration files for the JNDI resources availables under the _"jdbc"_ context. You must create a "_*.properties_" file for each datasource you want to use. The filename determines the name of the JNDI resource created. So, if the file "_jdbc/example-sqlite.properties_" exists, then a JNDI resource named "_jdbc/example-sqlite_" will be created.
+This directory contains the configuration files for the JNDI resources availables under the _"jdbc"_ context. You must create a "_*.properties_" file for each datasource you want to use. The filename determines the name of the JNDI resource created. So, if the file "_jdbc/example.properties_" exists, then a JNDI resource named "_jdbc/example_" will be created.
 
 The properties that you can specify are displayed below:
 
@@ -8,7 +8,7 @@ The properties that you can specify are displayed below:
 
 - **driverClassName**: the fully qualified Java class name of the JDBC driver to be used. This property is _**MANDATORY**_.
 
-    **IMPORTANT**: the JAR file containing the driver-class must be copied into the path _$DBTOOLS/lib/ext_ to be available to the _classloader_.
+    **IMPORTANT**: the JAR file containing the driver-class must be copied into the path _$DBCOPY/lib/ext_ to be available to the _classloader_.
 
 - **url**: the connection URL to be passed to our JDBC driver to establish a connection. This property is _**MANDATORY**_.
 
@@ -75,13 +75,13 @@ The properties that you can specify are displayed below:
 
 ###### Example
 
-For example, if we need to access a MySQL database, we could create a JNDI resource named _"jdbc/example-mysql"_:
+For example, if we need to access a MySQL database, we could create a JNDI resource named _"jdbc/example"_:
 
-1.- Create a properties file named _example-mysql.properties_ into the directory _jdbc_.
+1.- Create a properties file named _example.properties_ into the directory _jdbc_.
 
-    $DBTOOLS_HOME/etc/jndi/jdbc/example-mysql.properties
+    $DBCOPY_HOME/etc/jndi/jdbc/example.properties
 
-2.- Edit the properties file _example-mysql.properties_ and configure the needed properties:
+2.- Edit the properties file _example.properties_ and configure the needed properties:
 
     type=javax.sql.DataSource
     
@@ -98,4 +98,4 @@ For example, if we need to access a MySQL database, we could create a JNDI resou
     minIdle=0
     maxWaitMillis=1000
     
-3.- Finally, copy the JAR that contains the JDBC driver classes into the directory _"$DBTOOLS_HOME/lib/ext"_.
+3.- Finally, copy the JAR that contains the JDBC driver classes into the directory _"$DBCOPY_HOME/lib/ext"_.
