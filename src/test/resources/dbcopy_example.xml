@@ -1,0 +1,30 @@
+
+<dbcopy>
+	<task id="dbcopy-example" threads="2">
+
+		<integer-range id="emp_id_range" low-value="0" high-value="10000"
+			block-size="100" />
+
+		<select datasource="jdbc/source">
+		<![CDATA[
+			SELECT emp_id, emp_name, salary
+			FROM hr.emp
+			WHERE emp_id >= ${emp_id_range.low} and emp_id < ${emp_id_range.high}
+		]]>
+		</select>
+
+		<insert datasource="jdbc/target1" batch-size="50">
+		<![CDATA[
+			INSERT INTO hr.emp(emp_id, emp_name, salary)
+			VALUES (?, ?, ?)
+		]]>
+		</insert>
+
+		<insert datasource="jdbc/target2" batch-size="50">
+		<![CDATA[
+			INSERT INTO hr.emp(ts, operation, mode, emp_id, emp_name, salary)
+			VALUES (CURRENT_TIMESTAMP, 'INSERT', 1, ?, ?, ?)
+		]]>
+		</insert>
+	</task>
+</dbcopy>
