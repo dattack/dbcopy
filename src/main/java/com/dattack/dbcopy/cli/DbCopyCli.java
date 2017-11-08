@@ -80,13 +80,13 @@ public final class DbCopyCli {
             final String[] filenames = cmd.getOptionValues(FILE_OPTION);
             final String[] taskNames = cmd.getOptionValues(TASK_NAME_OPTION);
 
-            HashSet<String> hs = null;
+            HashSet<String> taskNameSet = null;
             if (taskNames != null) {
-                hs = new HashSet<>(Arrays.asList(taskNames));
+                taskNameSet = new HashSet<>(Arrays.asList(taskNames));
             }
 
             final DbCopyEngine ping = new DbCopyEngine();
-            ping.execute(filenames, hs);
+            ping.execute(filenames, taskNameSet);
 
         } catch (@SuppressWarnings("unused") final ParseException e) {
             showUsage(options);
@@ -104,5 +104,9 @@ public final class DbCopyCli {
         final String header = "\n";
         final String footer = "\nPlease report issues at https://github.com/dattack/dbcopy/issues";
         formatter.printHelp("dbcopy ", header, options, footer, true);
+    }
+
+    private DbCopyCli() {
+        // Main class
     }
 }

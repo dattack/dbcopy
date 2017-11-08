@@ -21,7 +21,9 @@ import javax.xml.bind.annotation.XmlAttribute;
  * @author cvarela
  * @since 0.1
  */
-public class InsertOperationBean extends OperationBean {
+public class InsertOperationBean extends AbstractOperationBean {
+
+    private static final long serialVersionUID = -1303451998596082687L;
 
     @XmlAttribute(name = "batch-size", required = false)
     private int batchSize;

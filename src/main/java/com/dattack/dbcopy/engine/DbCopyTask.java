@@ -21,6 +21,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Callable;
 
 import javax.sql.DataSource;
 
@@ -37,16 +38,69 @@ import com.dattack.jtoolbox.jdbc.JNDIDataSource;
  * @author cvarela
  * @since 0.1
  */
-public class DbCopyTask implements Runnable {
+class DbCopyTask implements Callable<DbCopyTaskResult> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DbCopyTask.class);
 
     private final AbstractConfiguration configuration;
     private final DbcopyTaskBean dbcopyTaskBean;
+    private final RangeValue rangeValue;
 
-    public DbCopyTask(final DbcopyTaskBean dbcopyTaskBean, final AbstractConfiguration configuration) {
+    public DbCopyTask(final DbcopyTaskBean dbcopyTaskBean, final AbstractConfiguration configuration,
+            final RangeValue rangeValue) {
         this.dbcopyTaskBean = dbcopyTaskBean;
         this.configuration = configuration;
+        this.rangeValue = rangeValue;
+    }
+
+    @Override
+    public DbCopyTaskResult call() {
+
+        LOGGER.info("DBCopy task started for {} (Thread: {})", rangeValue, Thread.currentThread().getName());
+
+        final List<InsertOperationContext> insertContextList = createInsertContext();
+
+        final String compiledSql = compileSql();
+        LOGGER.debug("Executing SQL: {}", compiledSql);
+
+        final DbCopyTaskResult taskResult = new DbCopyTaskResult(rangeValue);
+
+        try (Connection selectConn = getDataSource().getConnection(); //
+                Statement selectStmt = selectConn.createStatement(); //
+                ResultSet resultSet = selectStmt.executeQuery(compiledSql); //
+        ) {
+
+            while (resultSet.next()) {
+                taskResult.addRetrievedRows(1);
+                for (final InsertOperationContext context : insertContextList) {
+                    try {
+                        taskResult.addInsertedRows(context.insert(resultSet));
+                    } catch (final SQLException e) {
+                        LOGGER.error("Insert failed for {}: {} (SQLSTATE: {}, Error code: {})", rangeValue,
+                                e.getMessage(), e.getSQLState(), e.getErrorCode());
+                    }
+                }
+            }
+
+            LOGGER.info("DBCopy task finished for {}", rangeValue);
+
+        } catch (final SQLException e) {
+            LOGGER.error("DBCopy task failed for {}", rangeValue);
+            taskResult.setException(e);
+        } finally {
+            for (final InsertOperationContext context : insertContextList) {
+                try {
+                    taskResult.addInsertedRows(context.flush());
+                } catch (final SQLException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        return taskResult;
+    }
+
+    private String compileSql() {
+        return ConfigurationUtil.interpolate(dbcopyTaskBean.getSelectBean().getSql(), configuration);
     }
 
     private List<InsertOperationContext> createInsertContext() {
@@ -58,39 +112,7 @@ public class DbCopyTask implements Runnable {
         return insertContextList;
     }
 
-    @Override
-    public void run() {
-
-        final DataSource selectDS = new JNDIDataSource(dbcopyTaskBean.getSelectBean().getDatasource());
-
-        final List<InsertOperationContext> insertContextList = createInsertContext();
-
-        final String sql = ConfigurationUtil.interpolate(dbcopyTaskBean.getSelectBean().getSql(), configuration);
-        LOGGER.info("Executing SQL: {}", sql);
-
-        try (Connection selectConn = selectDS.getConnection(); //
-                Statement selectStmt = selectConn.createStatement(); //
-                ResultSet rs = selectStmt.executeQuery(sql); //
-        ) {
-
-            while (rs.next()) {
-                for (final InsertOperationContext context : insertContextList) {
-                    context.insert(rs);
-                }
-            }
-
-            LOGGER.info("SQL finished: {}", sql);
-
-        } catch (final SQLException e) {
-            LOGGER.error("Error reading or writing data: {}", e.getMessage());
-        } finally {
-            for (final InsertOperationContext context : insertContextList) {
-                try {
-                    context.close();
-                } catch (final SQLException e) {
-                    LOGGER.warn("Unable to close context: {} -> {}", e.getMessage(), e.getCause());
-                }
-            }
-        }
+    private DataSource getDataSource() {
+        return new JNDIDataSource(dbcopyTaskBean.getSelectBean().getDatasource());
     }
 }

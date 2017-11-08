@@ -15,6 +15,10 @@
  */
 package com.dattack.dbcopy.engine;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -26,7 +30,6 @@ import org.slf4j.LoggerFactory;
 
 import com.dattack.dbcopy.beans.DbcopyTaskBean;
 import com.dattack.dbcopy.beans.IntegerRangeBean;
-import com.dattack.dbcopy.beans.RangeBean;
 import com.dattack.dbcopy.beans.RangeVisitor;
 
 /**
@@ -42,6 +45,16 @@ class DbCopyJob {
     private final DbcopyTaskBean dbcopyTaskBean;
     private final ThreadPoolExecutor threadPoolExecutor;
 
+    private static void showFutures(final List<Future<?>> futureList) {
+
+        for (final Future<?> future : futureList) {
+            try {
+                LOGGER.info("Future result: {}", future.get());
+            } catch (final InterruptedException | ExecutionException e) {
+                LOGGER.warn("Error getting computed result from Future object", e);
+            }
+        }
+    }
     public DbCopyJob(final DbcopyTaskBean dbcopyTaskBean) {
         this.dbcopyTaskBean = dbcopyTaskBean;
         this.threadPoolExecutor = new ThreadPoolExecutor(dbcopyTaskBean.getThreads(), dbcopyTaskBean.getThreads(), 1L,
@@ -50,9 +63,9 @@ class DbCopyJob {
 
     public void execute() {
 
-        final String threadName = Thread.currentThread().getName();
+        LOGGER.info("Running job '{}' at thread '{}'", dbcopyTaskBean.getId(), Thread.currentThread().getName());
 
-        LOGGER.info("Running job '{}' at thread '{}'", dbcopyTaskBean.getId(), threadName);
+        final List<Future<?>> futureList = new ArrayList<>();
 
         final RangeVisitor rangeVisitor = new RangeVisitor() {
 
@@ -60,30 +73,23 @@ class DbCopyJob {
             public void visite(final IntegerRangeBean bean) {
 
                 for (int i = bean.getLowValue(); i < bean.getHighValue(); i += bean.getBlockSize()) {
+                    final IntegerRangeValue range = new IntegerRangeValue(i, i + bean.getBlockSize());
                     final AbstractConfiguration configuration = new BaseConfiguration();
-                    configuration.setProperty(bean.getId() + ".low", i);
-                    configuration.setProperty(bean.getId() + ".high", i + bean.getBlockSize());
-                    final DbCopyTask dbcopyTask = new DbCopyTask(dbcopyTaskBean, configuration);
+                    configuration.setProperty(bean.getId() + ".low", range.getLowValue());
+                    configuration.setProperty(bean.getId() + ".high", range.getHighValue());
 
-                    threadPoolExecutor.submit(dbcopyTask);
+                    final DbCopyTask dbcopyTask = new DbCopyTask(dbcopyTaskBean, configuration, range);
+                    futureList.add(threadPoolExecutor.submit(dbcopyTask));
                 }
             }
         };
 
-        final RangeBean rangeBean = dbcopyTaskBean.getRangeBean();
-        rangeBean.accept(rangeVisitor);
+        dbcopyTaskBean.getRangeBean().accept(rangeVisitor);
 
         threadPoolExecutor.shutdown();
+        showFutures(futureList);
 
-        while (!threadPoolExecutor.isTerminated()) {
-            try {
-                threadPoolExecutor.awaitTermination(30, TimeUnit.SECONDS);
-            } catch (final InterruptedException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            }
-        }
-
-        LOGGER.info("Job finished (job-name: '{}', thread: '{}')", dbcopyTaskBean.getId(), threadName);
+        LOGGER.info("Job finished (job-name: '{}', thread: '{}')", dbcopyTaskBean.getId(),
+                Thread.currentThread().getName());
     }
 }

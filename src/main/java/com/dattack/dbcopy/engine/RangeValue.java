@@ -13,18 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.dattack.dbcopy.beans;
+package com.dattack.dbcopy.engine;
+
+import java.io.Serializable;
 
 /**
  * @author cvarela
  * @since 0.1
  */
-public class SelectOperationBean extends AbstractOperationBean {
+interface RangeValue extends Serializable {
 
-    private static final long serialVersionUID = -8426358006541063367L;
-
-    @Override
-    public void accept(final OperationBeanVisitor visitor) {
-        visitor.visite(this);
-    }
+    // marker interface
 }

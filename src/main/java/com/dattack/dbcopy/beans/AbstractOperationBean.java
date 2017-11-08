@@ -15,6 +15,8 @@
  */
 package com.dattack.dbcopy.beans;
 
+import java.io.Serializable;
+
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlValue;
 
@@ -22,7 +24,9 @@ import javax.xml.bind.annotation.XmlValue;
  * @author cvarela
  * @since 0.1
  */
-public abstract class OperationBean {
+public abstract class AbstractOperationBean implements Serializable {
+
+    private static final long serialVersionUID = -6344280480507697153L;
 
     @XmlAttribute(name = "datasource", required = true)
     private String datasource;

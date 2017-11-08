@@ -21,14 +21,14 @@ import javax.xml.bind.annotation.XmlAttribute;
  * @author cvarela
  * @since 0.1
  */
-public abstract class RangeBean {
+public abstract class AbstractRangeBean {
 
     @XmlAttribute(name = "id", required = true)
-    private String id;
+    private String rangeId;
 
     public abstract void accept(final RangeVisitor visitor);
 
     public String getId() {
-        return id;
+        return rangeId;
     }
 }

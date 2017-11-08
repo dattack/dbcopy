@@ -13,32 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.dattack.dbcopy.beans;
-
-import javax.xml.bind.annotation.XmlAttribute;
+package com.dattack.dbcopy.engine;
 
 /**
  * @author cvarela
  * @since 0.1
  */
-public class IntegerRangeBean extends AbstractRangeBean {
+class IntegerRangeValue implements RangeValue {
 
-    @XmlAttribute(name = "low-value", required = true)
-    private int lowValue;
+    private static final long serialVersionUID = -2375366347089643655L;
 
-    @XmlAttribute(name = "high-value", required = true)
-    private int highValue;
+    private final int lowValue;
+    private final int highValue;
 
-    @XmlAttribute(name = "block-size", required = true)
-    private int blockSize;
-
-    @Override
-    public void accept(final RangeVisitor visitor) {
-        visitor.visite(this);
-    }
-
-    public int getBlockSize() {
-        return blockSize;
+    public IntegerRangeValue(final int lowValue, final int highValue) {
+        this.lowValue = lowValue;
+        this.highValue = highValue;
     }
 
     public int getHighValue() {
@@ -47,5 +37,10 @@ public class IntegerRangeBean extends AbstractRangeBean {
 
     public int getLowValue() {
         return lowValue;
+    }
+
+    @Override
+    public String toString() {
+        return "IntegerRangeValue [lowValue=" + lowValue + ", highValue=" + highValue + "]";
     }
 }

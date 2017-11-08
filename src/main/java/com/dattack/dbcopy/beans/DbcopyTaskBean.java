@@ -31,7 +31,7 @@ public class DbcopyTaskBean implements Serializable {
     private static final long serialVersionUID = 3640559668991529501L;
 
     @XmlAttribute(name = "id", required = true)
-    private String id;
+    private String taskId;
 
     @XmlAttribute(name = "threads", required = false)
     private int threads;
@@ -46,23 +46,23 @@ public class DbcopyTaskBean implements Serializable {
     private DeleteOperationBean deleteBean;
 
     @XmlElements({ //
-            @XmlElement(name = "integer-range", type = IntegerRangeBean.class) //
+        @XmlElement(name = "integer-range", type = IntegerRangeBean.class) //
     })
-    private RangeBean rangeBean;
+    private AbstractRangeBean rangeBean;
 
     public DeleteOperationBean getDeleteBean() {
         return deleteBean;
     }
 
     public String getId() {
-        return id;
+        return taskId;
     }
 
     public List<InsertOperationBean> getInsertBean() {
         return insertBeanList;
     }
 
-    public RangeBean getRangeBean() {
+    public AbstractRangeBean getRangeBean() {
         return rangeBean;
     }
 

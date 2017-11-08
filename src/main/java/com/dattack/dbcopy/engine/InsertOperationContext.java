@@ -15,8 +15,8 @@
  */
 package com.dattack.dbcopy.engine;
 
+import java.sql.BatchUpdateException;
 import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -24,15 +24,23 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.dattack.dbcopy.beans.InsertOperationBean;
+import com.dattack.jtoolbox.jdbc.JDBCUtils;
 import com.dattack.jtoolbox.jdbc.JNDIDataSource;
+import com.dattack.jtoolbox.jdbc.NamedParameterPreparedStatement;
 
-public class InsertOperationContext implements AutoCloseable {
+/**
+ * Executes the INSERT operations.
+ *
+ * @author cvarela
+ * @since 0.1
+ */
+class InsertOperationContext {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(InsertOperationContext.class);
+    private final static Logger LOGGER = LoggerFactory.getLogger(InsertOperationContext.class);
 
     private final InsertOperationBean bean;
     private Connection connection;
-    private PreparedStatement preparedStatement;
+    private NamedParameterPreparedStatement preparedStatement;
     private int row;
 
     public InsertOperationContext(final InsertOperationBean bean) {
@@ -40,7 +48,50 @@ public class InsertOperationContext implements AutoCloseable {
         this.row = 0;
     }
 
-    public synchronized Connection getConnection() throws SQLException {
+    private int addBatch() throws SQLException {
+        getPreparedStatement().addBatch();
+        row++;
+        int insertedRows = 0;
+        if (row % bean.getBatchSize() == 0) {
+            LOGGER.info("Inserted rows: {}", row);
+            insertedRows = executeBatch();
+        }
+        return insertedRows;
+    }
+
+    private int executeBatch() throws SQLException {
+
+        int insertedRows = 0;
+        try {
+            final int[] batchResult = getPreparedStatement().executeBatch();
+
+            for (int i = 0; i < batchResult.length; i++) {
+                insertedRows += batchResult[i] > 0 ? batchResult[i] : 0;
+            }
+
+        } catch (final BatchUpdateException e) {
+            LOGGER.warn("Batch operation failed: {} (SQLSTATE: {}, Error code: {}, Executed statements: {})",
+                    e.getMessage(), e.getSQLState(), e.getErrorCode(), e.getUpdateCounts().length);
+        }
+
+        getConnection().commit();
+        return insertedRows;
+    }
+
+    public int flush() throws SQLException {
+
+        int insertedRows = 0;
+        if (row % bean.getBatchSize() != 0) {
+            insertedRows = executeBatch();
+        }
+
+        JDBCUtils.closeQuietly(preparedStatement);
+        JDBCUtils.closeQuietly(connection);
+
+        return insertedRows;
+    }
+
+    private synchronized Connection getConnection() throws SQLException {
         if (connection == null) {
             connection = new JNDIDataSource(bean.getDatasource()).getConnection();
             if (bean.getBatchSize() > 0) {
@@ -50,52 +101,36 @@ public class InsertOperationContext implements AutoCloseable {
         return connection;
     }
 
-    public synchronized PreparedStatement getPreparedStatement() throws SQLException {
+    private synchronized NamedParameterPreparedStatement getPreparedStatement() throws SQLException {
         if (preparedStatement == null) {
-            preparedStatement = getConnection().prepareStatement(bean.getSql());
+            preparedStatement = NamedParameterPreparedStatement.build(getConnection(), bean.getSql());
         }
         return preparedStatement;
     }
 
-    public void insert(final ResultSet rs) throws SQLException {
+    public int insert(final ResultSet resultSet) throws SQLException {
 
-        for (int columnIndex = 1; columnIndex <= rs.getMetaData().getColumnCount(); columnIndex++) {
-            getPreparedStatement().setObject(columnIndex, rs.getObject(columnIndex));
-        }
-
-        LOGGER.debug("{}", getPreparedStatement().toString());
+        populateStatement(resultSet);
 
         if (bean.getBatchSize() > 0) {
-            getPreparedStatement().addBatch();
-            row++;
-            if (row % bean.getBatchSize() == 0) {
-                executeBatch();
+            return addBatch();
+        }
+        return getPreparedStatement().executeUpdate();
+    }
+
+    private void populateStatement(final ResultSet resultSet) throws SQLException {
+        for (int columnIndex = 1; columnIndex <= resultSet.getMetaData().getColumnCount(); columnIndex++) {
+            if (getPreparedStatement().hasNamedParameter(resultSet.getMetaData().getColumnName(columnIndex))) {
+                final Object value = resultSet.getObject(columnIndex);
+                if (resultSet.wasNull()) {
+                    getPreparedStatement().setNull(resultSet.getMetaData().getColumnName(columnIndex),
+                            resultSet.getMetaData().getColumnType(columnIndex));
+                } else {
+                    getPreparedStatement().setObject(resultSet.getMetaData().getColumnName(columnIndex), value);
+                }
+            } else {
+                LOGGER.warn("Unknown parameter {}", resultSet.getMetaData().getColumnName(columnIndex));
             }
-        } else {
-            getPreparedStatement().executeUpdate();
-        }
-    }
-
-    private void executeBatch() throws SQLException {
-        getPreparedStatement().executeBatch();
-        getConnection().commit();
-
-        LOGGER.debug("{}: {} rows", bean.getDatasource(), row);
-    }
-
-    @Override
-    public void close() throws SQLException {
-
-        if (row > 0 && row % bean.getBatchSize() != 0) {
-            executeBatch();
-        }
-
-        if (preparedStatement != null) {
-            preparedStatement.close();
-        }
-
-        if (connection != null) {
-            connection.close();
         }
     }
 }
