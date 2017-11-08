@@ -11,7 +11,7 @@
 	<skin>
 		<groupId>org.apache.maven.skins</groupId>
 		<artifactId>maven-fluido-skin</artifactId>
-		<version>1.4</version>
+		<version>1.5</version>
 	</skin>
 
 	<custom>
@@ -25,13 +25,6 @@
 		<links>
 			<item name="www.dattack.com" href="http://www.dattack.com/" />
 		</links>
-
-<!-- 		<menu name="Regular Web Site"> -->
-<!-- 			<item name="APT Format" href="format.html" /> -->
-<!-- 			<item name="Xdoc Example" href="xdoc.html" /> -->
-<!-- 			<item name="FAQ" href="faq.html" /> -->
-<!-- 		</menu> -->
-
 		<menu ref="reports" />
 	</body>
 </project>
