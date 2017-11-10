@@ -16,14 +16,14 @@
 		<insert datasource="jdbc/target1" batch-size="50">
 		<![CDATA[
 			INSERT INTO hr.emp(emp_id, emp_name, salary)
-			VALUES (?, ?, ?)
+			VALUES (:emp_id, :emp_name, :salary)
 		]]>
 		</insert>
 
 		<insert datasource="jdbc/target2" batch-size="50">
 		<![CDATA[
 			INSERT INTO hr.emp(ts, operation, mode, emp_id, emp_name, salary)
-			VALUES (CURRENT_TIMESTAMP, 'INSERT', 1, ?, ?, ?)
+			VALUES (CURRENT_TIMESTAMP, 'INSERT', 1, :emp_id, :emp_name, :salary)
 		]]>
 		</insert>
 	</task>
