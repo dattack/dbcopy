@@ -13,15 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.dattack.dbcopy.beans;
+package com.dattack.dbcopy.engine;
 
 /**
  * @author cvarela
  * @since 0.1
  */
-public interface RangeVisitor {
+class NullRangeValue implements RangeValue {
 
-    void visite(IntegerRangeBean bean);
-    
-    void visite(NullRangeBean bean);
+    private static final long serialVersionUID = 2775991436922318284L;
+
+    public String toString() {
+        return "NullRangeValue []";
+    }
 }

@@ -30,6 +30,7 @@ import org.slf4j.LoggerFactory;
 
 import com.dattack.dbcopy.beans.DbcopyTaskBean;
 import com.dattack.dbcopy.beans.IntegerRangeBean;
+import com.dattack.dbcopy.beans.NullRangeBean;
 import com.dattack.dbcopy.beans.RangeVisitor;
 
 /**
@@ -55,6 +56,7 @@ class DbCopyJob {
             }
         }
     }
+
     public DbCopyJob(final DbcopyTaskBean dbcopyTaskBean) {
         this.dbcopyTaskBean = dbcopyTaskBean;
         this.threadPoolExecutor = new ThreadPoolExecutor(dbcopyTaskBean.getThreads(), dbcopyTaskBean.getThreads(), 1L,
@@ -82,9 +84,19 @@ class DbCopyJob {
                     futureList.add(threadPoolExecutor.submit(dbcopyTask));
                 }
             }
+
+            @Override
+            public void visite(NullRangeBean bean) {
+                final DbCopyTask dbcopyTask = new DbCopyTask(dbcopyTaskBean, new BaseConfiguration(), new NullRangeValue());
+                futureList.add(threadPoolExecutor.submit(dbcopyTask));
+            }
         };
 
-        dbcopyTaskBean.getRangeBean().accept(rangeVisitor);
+        if (dbcopyTaskBean.getRangeBean() == null) {
+            new NullRangeBean().accept(rangeVisitor);
+        } else {
+            dbcopyTaskBean.getRangeBean().accept(rangeVisitor);
+        }
 
         threadPoolExecutor.shutdown();
         showFutures(futureList);

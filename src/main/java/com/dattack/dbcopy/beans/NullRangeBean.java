@@ -19,9 +19,10 @@ package com.dattack.dbcopy.beans;
  * @author cvarela
  * @since 0.1
  */
-public interface RangeVisitor {
+public class NullRangeBean extends AbstractRangeBean {
 
-    void visite(IntegerRangeBean bean);
-    
-    void visite(NullRangeBean bean);
+    @Override
+    public void accept(final RangeVisitor visitor) {
+        visitor.visite(this);
+    }
 }
