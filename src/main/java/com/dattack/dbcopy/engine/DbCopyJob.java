@@ -20,8 +20,10 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.configuration.AbstractConfiguration;
 import org.apache.commons.configuration.BaseConfiguration;
@@ -45,6 +47,7 @@ class DbCopyJob {
 
     private final DbcopyTaskBean dbcopyTaskBean;
     private final ThreadPoolExecutor threadPoolExecutor;
+    private static AtomicInteger counter = new AtomicInteger();
 
     private static void showFutures(final List<Future<?>> futureList) {
 
@@ -60,7 +63,18 @@ class DbCopyJob {
     public DbCopyJob(final DbcopyTaskBean dbcopyTaskBean) {
         this.dbcopyTaskBean = dbcopyTaskBean;
         this.threadPoolExecutor = new ThreadPoolExecutor(dbcopyTaskBean.getThreads(), dbcopyTaskBean.getThreads(), 1L,
-                TimeUnit.MINUTES, new LinkedBlockingQueue<Runnable>());
+                TimeUnit.MINUTES, new LinkedBlockingQueue<Runnable>(), getThreadFactory());
+    }
+
+    private ThreadFactory getThreadFactory() {
+
+        return new ThreadFactory() {
+
+            @Override
+            public Thread newThread(Runnable target) {
+                return new Thread(target, String.format("%s-%d", dbcopyTaskBean.getId(), counter.getAndIncrement()));
+            }
+        };
     }
 
     public void execute() {
@@ -87,7 +101,8 @@ class DbCopyJob {
 
             @Override
             public void visite(NullRangeBean bean) {
-                final DbCopyTask dbcopyTask = new DbCopyTask(dbcopyTaskBean, new BaseConfiguration(), new NullRangeValue());
+                final DbCopyTask dbcopyTask = new DbCopyTask(dbcopyTaskBean, new BaseConfiguration(),
+                        new NullRangeValue());
                 futureList.add(threadPoolExecutor.submit(dbcopyTask));
             }
         };
