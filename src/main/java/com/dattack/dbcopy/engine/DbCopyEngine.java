@@ -46,15 +46,15 @@ public final class DbCopyEngine {
 
         } else {
 
-            final DbcopyBean dbpingBean = DbcopyParser.parse(file);
+            final DbcopyBean dbcopyBean = DbcopyParser.parse(file);
 
-            for (final DbcopyTaskBean pingTaskBean : dbpingBean.getTaskList()) {
+            for (final DbcopyTaskBean copyTaskBean : dbcopyBean.getTaskList()) {
 
-                if (taskNames != null && !taskNames.isEmpty() && !taskNames.contains(pingTaskBean.getId())) {
+                if (taskNames != null && !taskNames.isEmpty() && !taskNames.contains(copyTaskBean.getId())) {
                     continue;
                 }
 
-                final DbCopyJob job = new DbCopyJob(pingTaskBean);
+                final DbCopyJob job = new DbCopyJob(copyTaskBean);
                 job.execute();
             }
         }

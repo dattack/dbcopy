@@ -19,6 +19,7 @@ import java.sql.BatchUpdateException;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,13 +40,32 @@ class InsertOperationContext {
     private final static Logger LOGGER = LoggerFactory.getLogger(InsertOperationContext.class);
 
     private final InsertOperationBean bean;
+    private final ResultSet resultSet;
+    private final ArrayList<Integer> columns;
     private Connection connection;
     private NamedParameterPreparedStatement preparedStatement;
     private int row;
 
-    public InsertOperationContext(final InsertOperationBean bean) {
+    public InsertOperationContext(final InsertOperationBean bean, final ResultSet resultSet) throws SQLException {
         this.bean = bean;
+        this.resultSet = resultSet;
+        this.columns = getColumns();
         this.row = 0;
+    }
+
+    private ArrayList<Integer> getColumns() throws SQLException {
+
+        final ArrayList<Integer> list = new ArrayList<>(resultSet.getMetaData().getColumnCount());
+
+        for (int columnIndex = 1; columnIndex <= resultSet.getMetaData().getColumnCount(); columnIndex++) {
+            if (getPreparedStatement().hasNamedParameter(resultSet.getMetaData().getColumnName(columnIndex))) {
+                list.add(columnIndex);
+            } else {
+                LOGGER.warn("Column {} not used", resultSet.getMetaData().getColumnName(columnIndex));
+            }
+        }
+
+        return list;
     }
 
     private int addBatch() throws SQLException {
@@ -108,9 +128,9 @@ class InsertOperationContext {
         return preparedStatement;
     }
 
-    public int insert(final ResultSet resultSet) throws SQLException {
+    public int insert() throws SQLException {
 
-        populateStatement(resultSet);
+        populateStatement();
 
         if (bean.getBatchSize() > 0) {
             return addBatch();
@@ -118,18 +138,14 @@ class InsertOperationContext {
         return getPreparedStatement().executeUpdate();
     }
 
-    private void populateStatement(final ResultSet resultSet) throws SQLException {
-        for (int columnIndex = 1; columnIndex <= resultSet.getMetaData().getColumnCount(); columnIndex++) {
-            if (getPreparedStatement().hasNamedParameter(resultSet.getMetaData().getColumnName(columnIndex))) {
-                final Object value = resultSet.getObject(columnIndex);
-                if (resultSet.wasNull()) {
-                    getPreparedStatement().setNull(resultSet.getMetaData().getColumnName(columnIndex),
-                            resultSet.getMetaData().getColumnType(columnIndex));
-                } else {
-                    getPreparedStatement().setObject(resultSet.getMetaData().getColumnName(columnIndex), value);
-                }
+    private void populateStatement() throws SQLException {
+        for (int columnIndex : columns) {
+            final Object value = resultSet.getObject(columnIndex);
+            if (resultSet.wasNull()) {
+                getPreparedStatement().setNull(resultSet.getMetaData().getColumnName(columnIndex),
+                        resultSet.getMetaData().getColumnType(columnIndex));
             } else {
-                LOGGER.warn("Unknown parameter {}", resultSet.getMetaData().getColumnName(columnIndex));
+                getPreparedStatement().setObject(resultSet.getMetaData().getColumnName(columnIndex), value);
             }
         }
     }

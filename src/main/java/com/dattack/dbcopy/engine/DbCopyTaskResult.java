@@ -39,8 +39,8 @@ final class DbCopyTaskResult {
         this.insertedRows += value;
     }
 
-    public void addRetrievedRows(final int value) {
-        this.retrievedRows += value;
+    public void incrementRetrievedRows() {
+        this.retrievedRows += 1;
     }
 
     public SQLException getException() {
