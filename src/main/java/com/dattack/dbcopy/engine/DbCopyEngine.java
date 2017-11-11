@@ -21,8 +21,8 @@ import java.util.Set;
 import org.apache.commons.configuration.ConfigurationException;
 
 import com.dattack.dbcopy.beans.DbcopyBean;
+import com.dattack.dbcopy.beans.DbcopyJobBean;
 import com.dattack.dbcopy.beans.DbcopyParser;
-import com.dattack.dbcopy.beans.DbcopyTaskBean;
 import com.dattack.jtoolbox.exceptions.DattackParserException;
 import com.dattack.jtoolbox.io.FilesystemUtils;
 
@@ -32,7 +32,7 @@ import com.dattack.jtoolbox.io.FilesystemUtils;
  */
 public final class DbCopyEngine {
 
-    private void execute(final File file, final Set<String> taskNames)
+    private void execute(final File file, final Set<String> jobNames)
             throws ConfigurationException, DattackParserException {
 
         if (file.isDirectory()) {
@@ -40,7 +40,7 @@ public final class DbCopyEngine {
             final File[] files = file.listFiles(FilesystemUtils.createFilenameFilterByExtension("xml"));
             if (files != null) {
                 for (final File child : files) {
-                    execute(child, taskNames);
+                    execute(child, jobNames);
                 }
             }
 
@@ -48,23 +48,23 @@ public final class DbCopyEngine {
 
             final DbcopyBean dbcopyBean = DbcopyParser.parse(file);
 
-            for (final DbcopyTaskBean copyTaskBean : dbcopyBean.getTaskList()) {
+            for (final DbcopyJobBean jobBean : dbcopyBean.getJobList()) {
 
-                if (taskNames != null && !taskNames.isEmpty() && !taskNames.contains(copyTaskBean.getId())) {
+                if (jobNames != null && !jobNames.isEmpty() && !jobNames.contains(jobBean.getId())) {
                     continue;
                 }
 
-                final DbCopyJob job = new DbCopyJob(copyTaskBean);
+                final DbCopyJob job = new DbCopyJob(jobBean);
                 job.execute();
             }
         }
     }
 
-    public void execute(final String[] filenames, final Set<String> taskNames)
+    public void execute(final String[] filenames, final Set<String> jobNames)
             throws ConfigurationException, DattackParserException {
 
         for (final String filename : filenames) {
-            execute(new File(filename), taskNames);
+            execute(new File(filename), jobNames);
         }
     }
 }

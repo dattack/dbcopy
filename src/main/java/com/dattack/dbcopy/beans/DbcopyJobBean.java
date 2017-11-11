@@ -26,7 +26,7 @@ import javax.xml.bind.annotation.XmlElements;
  * @author cvarela
  * @since 0.1
  */
-public class DbcopyTaskBean implements Serializable {
+public class DbcopyJobBean implements Serializable {
 
     private static final long serialVersionUID = 3640559668991529501L;
 

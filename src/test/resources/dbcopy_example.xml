@@ -1,6 +1,6 @@
 
 <dbcopy>
-	<task id="dbcopy-example" threads="2">
+	<job id="dbcopy-example" threads="2">
 
 		<integer-range id="emp_id_range" low-value="0" high-value="10000"
 			block-size="100" />
@@ -26,5 +26,5 @@
 			VALUES (CURRENT_TIMESTAMP, 'INSERT', 1, :emp_id, :emp_name, :salary)
 		]]>
 		</insert>
-	</task>
+	</job>
 </dbcopy>

@@ -29,7 +29,7 @@ import org.apache.commons.configuration.AbstractConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.dattack.dbcopy.beans.DbcopyTaskBean;
+import com.dattack.dbcopy.beans.DbcopyJobBean;
 import com.dattack.dbcopy.beans.InsertOperationBean;
 import com.dattack.jtoolbox.commons.configuration.ConfigurationUtil;
 import com.dattack.jtoolbox.jdbc.JNDIDataSource;
@@ -43,12 +43,12 @@ class DbCopyTask implements Callable<DbCopyTaskResult> {
     private static final Logger LOGGER = LoggerFactory.getLogger(DbCopyTask.class);
 
     private final AbstractConfiguration configuration;
-    private final DbcopyTaskBean dbcopyTaskBean;
+    private final DbcopyJobBean dbcopyJobBean;
     private final RangeValue rangeValue;
 
-    public DbCopyTask(final DbcopyTaskBean dbcopyTaskBean, final AbstractConfiguration configuration,
+    public DbCopyTask(final DbcopyJobBean dbcopyJobBean, final AbstractConfiguration configuration,
             final RangeValue rangeValue) {
-        this.dbcopyTaskBean = dbcopyTaskBean;
+        this.dbcopyJobBean = dbcopyJobBean;
         this.configuration = configuration;
         this.rangeValue = rangeValue;
     }
@@ -112,19 +112,19 @@ class DbCopyTask implements Callable<DbCopyTaskResult> {
     }
 
     private String compileSql() {
-        return ConfigurationUtil.interpolate(dbcopyTaskBean.getSelectBean().getSql(), configuration);
+        return ConfigurationUtil.interpolate(dbcopyJobBean.getSelectBean().getSql(), configuration);
     }
 
     private List<InsertOperationContext> createInsertContext(final ResultSet resultSet) throws SQLException {
 
-        final List<InsertOperationContext> insertContextList = new ArrayList<>(dbcopyTaskBean.getInsertBean().size());
-        for (final InsertOperationBean item : dbcopyTaskBean.getInsertBean()) {
+        final List<InsertOperationContext> insertContextList = new ArrayList<>(dbcopyJobBean.getInsertBean().size());
+        for (final InsertOperationBean item : dbcopyJobBean.getInsertBean()) {
             insertContextList.add(new InsertOperationContext(item, resultSet));
         }
         return insertContextList;
     }
 
     private DataSource getDataSource() {
-        return new JNDIDataSource(dbcopyTaskBean.getSelectBean().getDatasource());
+        return new JNDIDataSource(dbcopyJobBean.getSelectBean().getDatasource());
     }
 }

@@ -31,17 +31,17 @@ public class DbcopyBean implements Serializable {
 
     private static final long serialVersionUID = 8398044544048577943L;
 
-    @XmlElement(name = "task", required = true, type = DbcopyTaskBean.class)
-    private final List<DbcopyTaskBean> taskList;
+    @XmlElement(name = "job", required = true, type = DbcopyJobBean.class)
+    private final List<DbcopyJobBean> jobList;
 
     public DbcopyBean() {
-        this.taskList = new ArrayList<>();
+        this.jobList = new ArrayList<>();
     }
 
     /**
-     * @return the taskList
+     * @return the job list
      */
-    public List<DbcopyTaskBean> getTaskList() {
-        return taskList;
+    public List<DbcopyJobBean> getJobList() {
+        return jobList;
     }
 }
