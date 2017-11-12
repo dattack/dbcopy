@@ -15,32 +15,24 @@
  */
 package com.dattack.dbcopy.engine;
 
+import java.util.concurrent.Callable;
+import java.util.concurrent.Future;
+
 /**
  * @author cvarela
  * @since 0.1
  */
-class IntegerRangeValue implements RangeValue {
+public interface ExecutionControllerMBean {
 
-    private static final long serialVersionUID = -2375366347089643655L;
+    public int getCorePoolSize();
 
-    private final int lowValue;
-    private final int highValue;
+    public int getMaximumPoolSize();
 
-    public IntegerRangeValue(final int lowValue, final int highValue) {
-        this.lowValue = lowValue;
-        this.highValue = highValue;
-    }
+    public void setCorePoolSize(final int size);
 
-    public int getHighValue() {
-        return highValue;
-    }
+    public void setMaximumPoolSize(final int size);
 
-    public int getLowValue() {
-        return lowValue;
-    }
+    public void shutdown();
 
-    @Override
-    public String toString() {
-        return "IntegerRangeValue [lowValue=" + lowValue + ", highValue=" + highValue + "]";
-    }
+    public <T> Future<T> submit(final Callable<T> task);
 }

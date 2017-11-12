@@ -44,71 +44,61 @@ class DbCopyTask implements Callable<DbCopyTaskResult> {
 
     private final AbstractConfiguration configuration;
     private final DbcopyJobBean dbcopyJobBean;
-    private final RangeValue rangeValue;
+    private final DbCopyTaskResult taskResult;
 
-    public DbCopyTask(final DbcopyJobBean dbcopyJobBean, final AbstractConfiguration configuration,
-            final RangeValue rangeValue) {
-        this.dbcopyJobBean = dbcopyJobBean;
-        this.configuration = configuration;
-        this.rangeValue = rangeValue;
-    }
-
-    @Override
-    public DbCopyTaskResult call() {
-
-        LOGGER.info("DBCopy task started for {} (Thread: {})", rangeValue, Thread.currentThread().getName());
-
-        final String compiledSql = compileSql();
-        LOGGER.debug("Executing SQL: {}", compiledSql);
-
-        final DbCopyTaskResult taskResult = new DbCopyTaskResult(rangeValue);
-
-        List<InsertOperationContext> insertContextList = null;
-        try (Connection selectConn = getDataSource().getConnection(); //
-                Statement selectStmt = selectConn.createStatement(); //
-                ResultSet resultSet = selectStmt.executeQuery(compiledSql); //
-                ) {
-
-            insertContextList = createInsertContext(resultSet);
-
-            while (resultSet.next()) {
-                insertRow(insertContextList, taskResult);
-            }
-
-            LOGGER.info("DBCopy task finished for {}", rangeValue);
-
-        } catch (final SQLException e) {
-            LOGGER.error("DBCopy task failed for {}", rangeValue);
-            taskResult.setException(e);
-        } finally {
-            flush(insertContextList, taskResult);
-        }
-        return taskResult;
-    }
-
-    private void insertRow(List<InsertOperationContext> insertContextList, final DbCopyTaskResult taskResult) {
-
-        taskResult.incrementRetrievedRows();
-        for (final InsertOperationContext context : insertContextList) {
-            try {
-                taskResult.addInsertedRows(context.insert());
-            } catch (final SQLException e) {
-                LOGGER.error("Insert failed for {}: {} (SQLSTATE: {}, Error code: {})", rangeValue, e.getMessage(),
-                        e.getSQLState(), e.getErrorCode());
-            }
-        }
-    }
-
-    private void flush(List<InsertOperationContext> insertContextList, final DbCopyTaskResult taskResult) {
+    private static void flush(final List<InsertOperationContext> insertContextList, final DbCopyTaskResult taskResult) {
         if (insertContextList != null) {
             for (final InsertOperationContext context : insertContextList) {
                 try {
                     taskResult.addInsertedRows(context.flush());
                 } catch (final SQLException e) {
-                    e.printStackTrace();
+                    LOGGER.warn("Unable to complete flush operation", e);
                 }
             }
         }
+    }
+
+    public DbCopyTask(final DbcopyJobBean dbcopyJobBean, final AbstractConfiguration configuration,
+            final DbCopyTaskResult taskResult) {
+        this.dbcopyJobBean = dbcopyJobBean;
+        this.configuration = configuration;
+        this.taskResult = taskResult;
+    }
+
+    @Override
+    public DbCopyTaskResult call() {
+
+        taskResult.start();
+
+        LOGGER.info("DBCopy task started {} (Thread: {})", taskResult.getTaskName(), Thread.currentThread().getName());
+
+        final String compiledSql = compileSql();
+        LOGGER.debug("Executing SQL: {}", compiledSql);
+
+        List<InsertOperationContext> insertContextList = null;
+        try (Connection selectConn = getDataSource().getConnection(); //
+                Statement selectStmt = selectConn.createStatement(); //
+                ResultSet resultSet = selectStmt.executeQuery(compiledSql); //
+        ) {
+
+            insertContextList = createInsertContext(resultSet);
+
+            while (resultSet.next()) {
+                taskResult.incrementRetrievedRows();
+                insertRow(insertContextList);
+            }
+
+            LOGGER.info("DBCopy task finished {}", taskResult.getTaskName());
+
+        } catch (final SQLException e) {
+            LOGGER.error("DBCopy task failed {}", taskResult.getTaskName());
+            taskResult.setException(e);
+        } finally {
+            flush(insertContextList, taskResult);
+        }
+
+        taskResult.end();
+        return taskResult;
     }
 
     private String compileSql() {
@@ -126,5 +116,17 @@ class DbCopyTask implements Callable<DbCopyTaskResult> {
 
     private DataSource getDataSource() {
         return new JNDIDataSource(dbcopyJobBean.getSelectBean().getDatasource());
+    }
+
+    private void insertRow(final List<InsertOperationContext> insertContextList) {
+
+        for (final InsertOperationContext context : insertContextList) {
+            try {
+                taskResult.addInsertedRows(context.insert());
+            } catch (final SQLException e) {
+                LOGGER.error("Insert failed for {}: {} (SQLSTATE: {}, Error code: {})", taskResult.getTaskName(),
+                        e.getMessage(), e.getSQLState(), e.getErrorCode());
+            }
+        }
     }
 }

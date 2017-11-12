@@ -15,15 +15,12 @@
  */
 package com.dattack.dbcopy.engine;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.configuration.AbstractConfiguration;
 import org.apache.commons.configuration.BaseConfiguration;
@@ -46,8 +43,33 @@ class DbCopyJob {
     private static final Logger LOGGER = LoggerFactory.getLogger(DbCopyJob.class);
 
     private final DbcopyJobBean dbcopyJobBean;
-    private final ThreadPoolExecutor threadPoolExecutor;
-    private static AtomicInteger counter = new AtomicInteger();
+    private final ExecutionController executionController;
+
+    private static void show(final DbCopyJobResult jobResult) {
+
+        final StringBuilder sb = new StringBuilder();
+        sb.append("\nJob ID: ").append(jobResult.getJobBean().getId());
+        sb.append("\nSelect statement: ").append(jobResult.getJobBean().getSelectBean().getSql());
+        sb.append("\nNumber of tasks: ").append(jobResult.getTotalTaskCounter());
+        sb.append("\nNumber of finished tasks: ").append(jobResult.getFinishedTaskCounter());
+
+        final SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
+
+        for (final DbCopyTaskResult taskResult : jobResult.getTaskResultList()) {
+            sb.append("\n\tTask name: ").append(taskResult.getTaskName());
+            sb.append("\n\t\tStart time: ").append(sdf.format(new Date(taskResult.getStartTime())));
+            sb.append("\n\t\tEnd time: ").append(sdf.format(new Date(taskResult.getEndTime())));
+            sb.append("\n\t\tExecution time: ").append(taskResult.getExecutionTime()).append(" ms.");
+            sb.append("\n\t\tRetrieved rows: ").append(taskResult.getRetrievedRows());
+            sb.append("\n\t\tInserted rows: ").append(taskResult.getInsertedRows());
+            sb.append("\n\t\tRate(rows/s): ").append(taskResult.getRateRowsPerSecond());
+            if (taskResult.getException() != null) {
+                sb.append("\n\t\tException: ").append(taskResult.getException().getMessage());
+            }
+        }
+
+        LOGGER.info(sb.toString());
+    }
 
     private static void showFutures(final List<Future<?>> futureList) {
 
@@ -62,19 +84,10 @@ class DbCopyJob {
 
     public DbCopyJob(final DbcopyJobBean dbcopyJobBean) {
         this.dbcopyJobBean = dbcopyJobBean;
-        this.threadPoolExecutor = new ThreadPoolExecutor(dbcopyJobBean.getThreads(), dbcopyJobBean.getThreads(), 1L,
-                TimeUnit.MINUTES, new LinkedBlockingQueue<Runnable>(), getThreadFactory());
-    }
-
-    private ThreadFactory getThreadFactory() {
-
-        return new ThreadFactory() {
-
-            @Override
-            public Thread newThread(Runnable target) {
-                return new Thread(target, String.format("%s-%d", dbcopyJobBean.getId(), counter.getAndIncrement()));
-            }
-        };
+        executionController = new ExecutionController(dbcopyJobBean.getId(), dbcopyJobBean.getThreads(),
+                dbcopyJobBean.getThreads());
+        MBeanHelper.registerMBean("com.dattack.dbcopy:type=ThreadPool,name=" + dbcopyJobBean.getId(),
+                executionController);
     }
 
     public void execute() {
@@ -83,27 +96,38 @@ class DbCopyJob {
 
         final List<Future<?>> futureList = new ArrayList<>();
 
+        final DbCopyJobResult jobResult = new DbCopyJobResult(dbcopyJobBean);
+        MBeanHelper.registerMBean("com.dattack.dbcopy:type=JobResult,name=" + dbcopyJobBean.getId(), jobResult);
+
         final RangeVisitor rangeVisitor = new RangeVisitor() {
 
             @Override
             public void visite(final IntegerRangeBean bean) {
 
                 for (int i = bean.getLowValue(); i < bean.getHighValue(); i += bean.getBlockSize()) {
-                    final IntegerRangeValue range = new IntegerRangeValue(i, i + bean.getBlockSize());
-                    final AbstractConfiguration configuration = new BaseConfiguration();
-                    configuration.setProperty(bean.getId() + ".low", range.getLowValue());
-                    configuration.setProperty(bean.getId() + ".high", range.getHighValue());
 
-                    final DbCopyTask dbcopyTask = new DbCopyTask(dbcopyJobBean, configuration, range);
-                    futureList.add(threadPoolExecutor.submit(dbcopyTask));
+                    final int lowValue = i;
+                    final int highValue = i + bean.getBlockSize();
+
+                    final AbstractConfiguration configuration = new BaseConfiguration();
+                    configuration.setProperty(bean.getId() + ".low", lowValue);
+                    configuration.setProperty(bean.getId() + ".high", highValue);
+
+                    final String taskName = String.format("Task_%d_%d", lowValue, highValue);
+
+                    final DbCopyTask dbcopyTask = new DbCopyTask(dbcopyJobBean, configuration,
+                            jobResult.createTaskResult(taskName));
+                    futureList.add(executionController.submit(dbcopyTask));
                 }
             }
 
             @Override
-            public void visite(NullRangeBean bean) {
+            public void visite(final NullRangeBean bean) {
+
+                final String taskName = "SingleTask";
                 final DbCopyTask dbcopyTask = new DbCopyTask(dbcopyJobBean, new BaseConfiguration(),
-                        new NullRangeValue());
-                futureList.add(threadPoolExecutor.submit(dbcopyTask));
+                        jobResult.createTaskResult(taskName));
+                futureList.add(executionController.submit(dbcopyTask));
             }
         };
 
@@ -113,8 +137,10 @@ class DbCopyJob {
             dbcopyJobBean.getRangeBean().accept(rangeVisitor);
         }
 
-        threadPoolExecutor.shutdown();
+        executionController.shutdown();
         showFutures(futureList);
+
+        show(jobResult);
 
         LOGGER.info("Job finished (job-name: '{}', thread: '{}')", dbcopyJobBean.getId(),
                 Thread.currentThread().getName());

@@ -15,13 +15,23 @@
  */
 package com.dattack.dbcopy.engine;
 
-import java.io.Serializable;
+import java.sql.SQLException;
 
 /**
  * @author cvarela
  * @since 0.1
  */
-interface RangeValue extends Serializable {
+public interface DbCopyTaskResultMBean {
 
-    // marker interface
+    long getEndTime();
+
+    SQLException getException();
+
+    int getInsertedRows();
+
+    int getRetrievedRows();
+
+    long getStartTime();
+
+    String getTaskName();
 }

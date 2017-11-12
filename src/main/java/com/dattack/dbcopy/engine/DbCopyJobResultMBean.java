@@ -19,11 +19,13 @@ package com.dattack.dbcopy.engine;
  * @author cvarela
  * @since 0.1
  */
-class NullRangeValue implements RangeValue {
+public interface DbCopyJobResultMBean {
 
-    private static final long serialVersionUID = 2775991436922318284L;
+    public int getActiveTaskCounter();
 
-    public String toString() {
-        return "NullRangeValue []";
-    }
+    public int getFinishedTaskCounter();
+
+    public int getInactiveTaskCounter();
+
+    public int getTotalTaskCounter();
 }

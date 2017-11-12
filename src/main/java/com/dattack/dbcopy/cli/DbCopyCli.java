@@ -38,8 +38,8 @@ public final class DbCopyCli {
 
     private static final String FILE_OPTION = "f";
     private static final String LONG_FILE_OPTION = "file";
-    private static final String TASK_NAME_OPTION = "t";
-    private static final String LONG_TASK_NAME_OPTION = "task";
+    private static final String JOB_NAME_OPTION = "j";
+    private static final String LONG_JOB_NAME_OPTION = "job";
 
     private static Options createOptions() {
 
@@ -53,12 +53,12 @@ public final class DbCopyCli {
                 .desc("the path of the file containing the DBCopy configuration") //
                 .build());
 
-        options.addOption(Option.builder(TASK_NAME_OPTION) //
+        options.addOption(Option.builder(JOB_NAME_OPTION) //
                 .required(false) //
-                .longOpt(LONG_TASK_NAME_OPTION) //
+                .longOpt(LONG_JOB_NAME_OPTION) //
                 .hasArg(true) //
-                .argName("TASK_NAME") //
-                .desc("the name of the task to execute") //
+                .argName("JOB_NAME") //
+                .desc("the name of the job to execute") //
                 .build());
 
         return options;
@@ -78,15 +78,15 @@ public final class DbCopyCli {
             final CommandLineParser parser = new DefaultParser();
             final CommandLine cmd = parser.parse(options, args);
             final String[] filenames = cmd.getOptionValues(FILE_OPTION);
-            final String[] taskNames = cmd.getOptionValues(TASK_NAME_OPTION);
+            final String[] jobNames = cmd.getOptionValues(JOB_NAME_OPTION);
 
-            HashSet<String> taskNameSet = null;
-            if (taskNames != null) {
-                taskNameSet = new HashSet<>(Arrays.asList(taskNames));
+            HashSet<String> jobNameSet = null;
+            if (jobNames != null) {
+                jobNameSet = new HashSet<>(Arrays.asList(jobNames));
             }
 
             final DbCopyEngine ping = new DbCopyEngine();
-            ping.execute(filenames, taskNameSet);
+            ping.execute(filenames, jobNameSet);
 
         } catch (@SuppressWarnings("unused") final ParseException e) {
             showUsage(options);

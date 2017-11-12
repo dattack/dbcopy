@@ -21,17 +21,21 @@ import java.sql.SQLException;
  * @author cvarela
  * @since 0.1
  */
-final class DbCopyTaskResult {
+public final class DbCopyTaskResult implements DbCopyTaskResultMBean {
 
+    private final String taskName;
+    private long startTime;
+    private long endTime;
     private int retrievedRows;
     private int insertedRows;
-    private final RangeValue rangeValue;
     private SQLException exception;
 
-    public DbCopyTaskResult(final RangeValue rangeValue) {
-        this.rangeValue = rangeValue;
+    public DbCopyTaskResult(final String taskName) {
+        this.taskName = taskName;
         this.retrievedRows = 0;
         this.insertedRows = 0;
+        this.startTime = 0;
+        this.endTime = 0;
         this.exception = null;
     }
 
@@ -39,34 +43,77 @@ final class DbCopyTaskResult {
         this.insertedRows += value;
     }
 
-    public void incrementRetrievedRows() {
-        this.retrievedRows += 1;
+    public void end() {
+        this.endTime = System.currentTimeMillis();
     }
 
+    @Override
+    public long getEndTime() {
+        return endTime;
+    }
+
+    @Override
     public SQLException getException() {
         return exception;
     }
 
+    public long getExecutionTime() {
+        if (startTime <= 0) {
+            return 0;
+        }
+
+        if (endTime <= 0) {
+            return System.currentTimeMillis() - startTime;
+        }
+        return endTime - startTime;
+    }
+
+    @Override
     public int getInsertedRows() {
         return insertedRows;
     }
 
-    public RangeValue getRangeValue() {
-        return rangeValue;
+    public float getRateRowsPerSecond() {
+
+        final long executionTime = getExecutionTime();
+        if (executionTime <= 0) {
+            return 0;
+        }
+
+        return getInsertedRows() * 1000F / executionTime;
     }
 
+    @Override
     public int getRetrievedRows() {
         return retrievedRows;
+    }
+
+    @Override
+    public long getStartTime() {
+        return startTime;
+    }
+
+    @Override
+    public String getTaskName() {
+        return taskName;
+    }
+
+    public void incrementRetrievedRows() {
+        this.retrievedRows += 1;
     }
 
     public void setException(final SQLException exception) {
         this.exception = exception;
     }
 
+    public void start() {
+        this.startTime = System.currentTimeMillis();
+    }
+
     @Override
     public String toString() {
 
-        final StringBuilder str = new StringBuilder().append("DbCopyTaskResult [rangeValue=").append(rangeValue)
+        final StringBuilder str = new StringBuilder().append("DbCopyTaskResult [taskName=").append(taskName)
                 .append(", retrievedRows=").append(retrievedRows) //
                 .append(", insertedRows=").append(insertedRows);
 
