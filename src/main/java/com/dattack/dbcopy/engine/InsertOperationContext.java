@@ -19,6 +19,7 @@ import java.sql.BatchUpdateException;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 
 import org.apache.commons.configuration.AbstractConfiguration;
@@ -91,7 +92,11 @@ class InsertOperationContext {
             final int[] batchResult = getPreparedStatement().executeBatch();
 
             for (int i = 0; i < batchResult.length; i++) {
-                insertedRows += batchResult[i] > 0 ? batchResult[i] : 0;
+                if (batchResult[i] > 0) {
+                    insertedRows += batchResult[i];
+                } else if (batchResult[i] == Statement.SUCCESS_NO_INFO) {
+                    insertedRows++;
+                }
             }
 
         } catch (final BatchUpdateException e) {
