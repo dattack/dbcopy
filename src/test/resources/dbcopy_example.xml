@@ -8,8 +8,9 @@
 		<select datasource="jdbc/source">
 		<![CDATA[
 			SELECT emp_id, emp_name, salary
-			FROM hr.emp
+			FROM ${runtime.source.schema}.emp
 			WHERE emp_id >= ${emp_id_range.low} and emp_id < ${emp_id_range.high}
+			 ${runtime.source.condition} 
 		]]>
 		</select>
 
@@ -22,7 +23,7 @@
 
 		<insert datasource="jdbc/target2" batch-size="50">
 		<![CDATA[
-			INSERT INTO hr.emp(ts, operation, mode, emp_id, emp_name, salary)
+			INSERT INTO ${runtime.target2.schema}.emp(ts, operation, mode, emp_id, emp_name, salary)
 			VALUES (CURRENT_TIMESTAMP, 'INSERT', 1, :emp_id, :emp_name, :salary)
 		]]>
 		</insert>

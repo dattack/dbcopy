@@ -21,10 +21,12 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 
+import org.apache.commons.configuration.AbstractConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.dattack.dbcopy.beans.InsertOperationBean;
+import com.dattack.jtoolbox.commons.configuration.ConfigurationUtil;
 import com.dattack.jtoolbox.jdbc.JDBCUtils;
 import com.dattack.jtoolbox.jdbc.JNDIDataSource;
 import com.dattack.jtoolbox.jdbc.NamedParameterPreparedStatement;
@@ -42,15 +44,18 @@ class InsertOperationContext {
     private final InsertOperationBean bean;
     private final ResultSet resultSet;
     private final ArrayList<Integer> columns;
+    private final AbstractConfiguration configuration;
     private Connection connection;
     private NamedParameterPreparedStatement preparedStatement;
     private int row;
 
-    public InsertOperationContext(final InsertOperationBean bean, final ResultSet resultSet) throws SQLException {
+    public InsertOperationContext(final InsertOperationBean bean, final ResultSet resultSet,
+            final AbstractConfiguration configuration) throws SQLException {
         this.bean = bean;
         this.resultSet = resultSet;
-        this.columns = getColumns();
+        this.configuration = configuration;
         this.row = 0;
+        this.columns = getColumns();
     }
 
     private ArrayList<Integer> getColumns() throws SQLException {
@@ -123,7 +128,8 @@ class InsertOperationContext {
 
     private synchronized NamedParameterPreparedStatement getPreparedStatement() throws SQLException {
         if (preparedStatement == null) {
-            preparedStatement = NamedParameterPreparedStatement.build(getConnection(), bean.getSql());
+            preparedStatement = NamedParameterPreparedStatement.build(getConnection(),
+                    ConfigurationUtil.interpolate(bean.getSql(), configuration));
         }
         return preparedStatement;
     }

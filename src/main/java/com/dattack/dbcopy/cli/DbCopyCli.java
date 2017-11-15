@@ -25,7 +25,9 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
+import org.apache.commons.configuration.CompositeConfiguration;
 import org.apache.commons.configuration.ConfigurationException;
+import org.apache.commons.configuration.PropertiesConfiguration;
 
 import com.dattack.dbcopy.engine.DbCopyEngine;
 import com.dattack.jtoolbox.exceptions.DattackParserException;
@@ -40,6 +42,8 @@ public final class DbCopyCli {
     private static final String LONG_FILE_OPTION = "file";
     private static final String JOB_NAME_OPTION = "j";
     private static final String LONG_JOB_NAME_OPTION = "job";
+    private static final String PROPERTIES_OPTION = "p";
+    private static final String LONG_PROPERTIES_OPTION = "properties";
 
     private static Options createOptions() {
 
@@ -50,7 +54,7 @@ public final class DbCopyCli {
                 .longOpt(LONG_FILE_OPTION) //
                 .hasArg(true) //
                 .argName("DBCOPY_FILE") //
-                .desc("the path of the file containing the DBCopy configuration") //
+                .desc("the path to the file containing the DBCopy configuration") //
                 .build());
 
         options.addOption(Option.builder(JOB_NAME_OPTION) //
@@ -59,6 +63,14 @@ public final class DbCopyCli {
                 .hasArg(true) //
                 .argName("JOB_NAME") //
                 .desc("the name of the job to execute") //
+                .build());
+
+        options.addOption(Option.builder(PROPERTIES_OPTION) //
+                .required(false) //
+                .longOpt(LONG_PROPERTIES_OPTION) //
+                .hasArg(true) //
+                .argName("PROPERTIES_FILE") //
+                .desc("the path to the file containing execution configuration properties") //
                 .build());
 
         return options;
@@ -79,14 +91,22 @@ public final class DbCopyCli {
             final CommandLine cmd = parser.parse(options, args);
             final String[] filenames = cmd.getOptionValues(FILE_OPTION);
             final String[] jobNames = cmd.getOptionValues(JOB_NAME_OPTION);
+            final String[] propertiesFiles = cmd.getOptionValues(PROPERTIES_OPTION);
 
             HashSet<String> jobNameSet = null;
             if (jobNames != null) {
                 jobNameSet = new HashSet<>(Arrays.asList(jobNames));
             }
 
+            CompositeConfiguration configuration = new CompositeConfiguration();
+            if (propertiesFiles != null) {
+                for (final String fileName : propertiesFiles) {
+                    configuration.addConfiguration(new PropertiesConfiguration(fileName));
+                }
+            }
+
             final DbCopyEngine ping = new DbCopyEngine();
-            ping.execute(filenames, jobNameSet);
+            ping.execute(filenames, jobNameSet, configuration);
 
         } catch (@SuppressWarnings("unused") final ParseException e) {
             showUsage(options);

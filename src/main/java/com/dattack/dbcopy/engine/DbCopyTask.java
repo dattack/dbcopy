@@ -79,7 +79,7 @@ class DbCopyTask implements Callable<DbCopyTaskResult> {
         try (Connection selectConn = getDataSource().getConnection(); //
                 Statement selectStmt = selectConn.createStatement(); //
                 ResultSet resultSet = selectStmt.executeQuery(compiledSql); //
-        ) {
+                ) {
 
             insertContextList = createInsertContext(resultSet);
 
@@ -109,7 +109,7 @@ class DbCopyTask implements Callable<DbCopyTaskResult> {
 
         final List<InsertOperationContext> insertContextList = new ArrayList<>(dbcopyJobBean.getInsertBean().size());
         for (final InsertOperationBean item : dbcopyJobBean.getInsertBean()) {
-            insertContextList.add(new InsertOperationContext(item, resultSet));
+            insertContextList.add(new InsertOperationContext(item, resultSet, configuration));
         }
         return insertContextList;
     }

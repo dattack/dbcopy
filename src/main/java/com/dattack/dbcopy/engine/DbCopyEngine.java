@@ -18,6 +18,7 @@ package com.dattack.dbcopy.engine;
 import java.io.File;
 import java.util.Set;
 
+import org.apache.commons.configuration.AbstractConfiguration;
 import org.apache.commons.configuration.ConfigurationException;
 
 import com.dattack.dbcopy.beans.DbcopyBean;
@@ -32,7 +33,7 @@ import com.dattack.jtoolbox.io.FilesystemUtils;
  */
 public final class DbCopyEngine {
 
-    private void execute(final File file, final Set<String> jobNames)
+    private void execute(final File file, final Set<String> jobNames, final AbstractConfiguration configuration)
             throws ConfigurationException, DattackParserException {
 
         if (file.isDirectory()) {
@@ -40,7 +41,7 @@ public final class DbCopyEngine {
             final File[] files = file.listFiles(FilesystemUtils.createFilenameFilterByExtension("xml"));
             if (files != null) {
                 for (final File child : files) {
-                    execute(child, jobNames);
+                    execute(child, jobNames, configuration);
                 }
             }
 
@@ -54,17 +55,17 @@ public final class DbCopyEngine {
                     continue;
                 }
 
-                final DbCopyJob job = new DbCopyJob(jobBean);
+                final DbCopyJob job = new DbCopyJob(jobBean, configuration);
                 job.execute();
             }
         }
     }
 
-    public void execute(final String[] filenames, final Set<String> jobNames)
+    public void execute(final String[] filenames, final Set<String> jobNames, final AbstractConfiguration configuration)
             throws ConfigurationException, DattackParserException {
 
         for (final String filename : filenames) {
-            execute(new File(filename), jobNames);
+            execute(new File(filename), jobNames, configuration);
         }
     }
 }
