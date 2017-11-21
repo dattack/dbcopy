@@ -21,11 +21,13 @@ package com.dattack.dbcopy.engine;
  */
 public interface DbCopyJobResultMBean {
 
-    public int getActiveTaskCounter();
+    int getActiveTaskCounter();
 
-    public int getFinishedTaskCounter();
+    int getFinishedTaskCounter();
 
-    public int getInactiveTaskCounter();
+    int getInactiveTaskCounter();
 
-    public int getTotalTaskCounter();
+    float getRateRowsPerSecond();
+
+    int getTotalTaskCounter();
 }
