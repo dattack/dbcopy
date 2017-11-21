@@ -123,7 +123,8 @@ class InsertOperationContext {
 
     private synchronized Connection getConnection() throws SQLException {
         if (connection == null) {
-            connection = new JNDIDataSource(bean.getDatasource()).getConnection();
+            connection = new JNDIDataSource(ConfigurationUtil.interpolate(bean.getDatasource(), configuration))
+                    .getConnection();
             if (bean.getBatchSize() > 0) {
                 connection.setAutoCommit(false);
             }
