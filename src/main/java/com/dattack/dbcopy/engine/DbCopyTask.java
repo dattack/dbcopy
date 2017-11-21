@@ -115,7 +115,8 @@ class DbCopyTask implements Callable<DbCopyTaskResult> {
     }
 
     private DataSource getDataSource() {
-        return new JNDIDataSource(dbcopyJobBean.getSelectBean().getDatasource());
+        return new JNDIDataSource(
+                ConfigurationUtil.interpolate(dbcopyJobBean.getSelectBean().getDatasource(), configuration));
     }
 
     private void insertRow(final List<InsertOperationContext> insertContextList) {
