@@ -89,6 +89,7 @@ public class DbCopyJobResult implements DbCopyJobResultMBean {
         return taskResultList.size();
     }
 
+    @Override
     public int getTotalRetrievedRows() {
         int total = 0;
         for (final DbCopyTaskResult item : taskResultList) {
@@ -99,6 +100,7 @@ public class DbCopyJobResult implements DbCopyJobResultMBean {
         return total;
     }
 
+    @Override
     public int getTotalInsertedRows() {
         int total = 0;
         for (final DbCopyTaskResult item : taskResultList) {

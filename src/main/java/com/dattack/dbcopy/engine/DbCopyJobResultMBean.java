@@ -30,4 +30,8 @@ public interface DbCopyJobResultMBean {
     float getRateRowsPerSecond();
 
     int getTotalTaskCounter();
+
+    int getTotalRetrievedRows();
+
+    int getTotalInsertedRows();
 }
