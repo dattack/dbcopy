@@ -15,9 +15,22 @@
     </dependencySets>
     <fileSets>
         <fileSet>
-            <directory>target/appassembler/bin</directory>
+            <directory>${project.build.directory}/appassembler/bin</directory>
             <outputDirectory>bin</outputDirectory>
-            <fileMode>544</fileMode>
+            <excludes>
+                <exclude>*.bat</exclude>
+            </excludes>
+            <directoryMode>0755</directoryMode>
+            <fileMode>0755</fileMode>
+        </fileSet>
+        <fileSet>
+            <directory>${project.build.directory}/appassembler/bin</directory>
+            <outputDirectory>bin</outputDirectory>
+            <includes>
+                <include>*.bat</include>
+            </includes>
+            <directoryMode>0755</directoryMode>
+            <fileMode>0644</fileMode>
         </fileSet>
         <!-- adds jar package to the root directory of zip package -->
         <fileSet>
