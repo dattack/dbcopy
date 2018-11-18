@@ -43,8 +43,6 @@ class DbCopyTask implements Callable<DbCopyTaskResult> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DbCopyTask.class);
 
-    private static final int PARALLEL = 4;
-
     private final AbstractConfiguration configuration;
     private final DbcopyJobBean dbcopyJobBean;
     private final DbCopyTaskResult taskResult;
@@ -55,14 +53,17 @@ class DbCopyTask implements Callable<DbCopyTaskResult> {
         this.dbcopyJobBean = dbcopyJobBean;
         this.configuration = configuration;
         this.taskResult = taskResult;
-        executionController = new ExecutionController("Writer-" + dbcopyJobBean.getId(), PARALLEL, PARALLEL);
+        executionController = new ExecutionController("Writer-" + dbcopyJobBean.getId(),
+                dbcopyJobBean.getInsertBean().getParallel(), dbcopyJobBean.getInsertBean().getParallel());
         MBeanHelper.registerMBean("com.dattack.dbcopy:type=ThreadPool,name=Writer" + dbcopyJobBean.getId(),
                 executionController);
     }
 
     private Statement createStatement(Connection connection) throws SQLException {
         Statement stmt = connection.createStatement();
-        stmt.setFetchSize(10000);
+        if (dbcopyJobBean.getSelectBean().getFetchSize() > 0) {
+            stmt.setFetchSize(dbcopyJobBean.getSelectBean().getFetchSize());
+        }
         return stmt;
     }
 
@@ -81,13 +82,13 @@ class DbCopyTask implements Callable<DbCopyTaskResult> {
                 ResultSet resultSet = selectStmt.executeQuery(compiledSql); //
         ) {
 
-            DataProvider dataProvider = new DataProvider(resultSet);
+            DataProvider dataProvider = new DataProvider(resultSet, taskResult);
 
             final List<Future<?>> futureList = new ArrayList<>();
 
-            for (int i = 0; i < dbcopyJobBean.getInsertBean().get(0).getParallel(); i++) {
-                futureList.add(executionController.submit(
-                        new InsertOperationContext(dbcopyJobBean.getInsertBean().get(0), dataProvider, configuration)));
+            for (int i = 0; i < dbcopyJobBean.getInsertBean().getParallel(); i++) {
+                futureList.add(executionController.submit(new InsertOperationContext(dbcopyJobBean.getInsertBean(),
+                        dataProvider, configuration, taskResult)));
             }
 
             executionController.shutdown();

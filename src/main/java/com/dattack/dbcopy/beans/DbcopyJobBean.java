@@ -30,17 +30,19 @@ public class DbcopyJobBean implements Serializable {
 
     private static final long serialVersionUID = 3640559668991529501L;
 
+    private static final int DEFAULT_THREADS = 1;
+
     @XmlAttribute(name = "id", required = true)
     private String taskId;
 
     @XmlAttribute(name = "threads", required = false)
-    private int threads;
+    private int threads = DEFAULT_THREADS;
 
     @XmlElement(name = "select", type = SelectOperationBean.class, required = true)
     private SelectOperationBean selectBean;
 
     @XmlElement(name = "insert", type = InsertOperationBean.class, required = true)
-    private List<InsertOperationBean> insertBeanList;
+    private InsertOperationBean insertBeanList;
 
     @XmlElement(name = "delete", type = DeleteOperationBean.class)
     private DeleteOperationBean deleteBean;
@@ -58,7 +60,7 @@ public class DbcopyJobBean implements Serializable {
         return taskId;
     }
 
-    public List<InsertOperationBean> getInsertBean() {
+    public InsertOperationBean getInsertBean() {
         return insertBeanList;
     }
 
@@ -71,6 +73,6 @@ public class DbcopyJobBean implements Serializable {
     }
 
     public int getThreads() {
-        return threads;
+        return threads > DEFAULT_THREADS ? threads : DEFAULT_THREADS;
     }
 }

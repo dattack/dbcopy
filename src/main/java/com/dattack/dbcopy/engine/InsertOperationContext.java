@@ -46,22 +46,24 @@ class InsertOperationContext implements Callable<Integer> {
     private final AbstractConfiguration configuration;
     private Connection connection;
     private NamedParameterPreparedStatement preparedStatement;
-    private int row;
+    private DbCopyTaskResult taskResult;
+    private int rowNumber;
 
     public InsertOperationContext(final InsertOperationBean bean, final DataProvider dataProvider,
-            final AbstractConfiguration configuration) throws SQLException {
+            final AbstractConfiguration configuration, DbCopyTaskResult taskResult) throws SQLException {
         this.bean = bean;
         this.dataProvider = dataProvider;
         this.configuration = configuration;
-        this.row = 0;
+        this.taskResult = taskResult;
+        this.rowNumber = 0;
     }
 
     private int addBatch() throws SQLException {
         getPreparedStatement().addBatch();
-        row++;
+        rowNumber++;
         int insertedRows = 0;
-        if (row % bean.getBatchSize() == 0) {
-            LOGGER.debug("Inserted rows: {}", row);
+        if (rowNumber % bean.getBatchSize() == 0) {
+            LOGGER.debug("Inserted rows: {}", rowNumber);
             insertedRows = executeBatch();
         }
         return insertedRows;
@@ -93,7 +95,7 @@ class InsertOperationContext implements Callable<Integer> {
     public int flush() throws SQLException {
 
         int insertedRows = 0;
-        if (row % bean.getBatchSize() != 0) {
+        if (rowNumber % bean.getBatchSize() != 0) {
             insertedRows = executeBatch();
         }
 
@@ -125,16 +127,22 @@ class InsertOperationContext implements Callable<Integer> {
     @Override
     public Integer call() throws SQLException {
 
-        int rows = 0;
+        int totalInsertedRows = 0;
         while (dataProvider.populateStatement(getPreparedStatement())) {
+            int insertedRows;
             if (bean.getBatchSize() > 0) {
-                rows += addBatch();
+                insertedRows = addBatch();
             } else {
-                rows += getPreparedStatement().executeUpdate();
+                insertedRows = getPreparedStatement().executeUpdate();
             }
+            taskResult.addInsertedRows(insertedRows);
+            totalInsertedRows += insertedRows;
         }
 
-        rows += flush();
-        return rows;
+        int insertedRows = flush();
+        taskResult.addInsertedRows(insertedRows);
+
+        totalInsertedRows += insertedRows;
+        return totalInsertedRows;
     }
 }

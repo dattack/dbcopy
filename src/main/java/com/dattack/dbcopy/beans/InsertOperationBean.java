@@ -27,6 +27,7 @@ public class InsertOperationBean extends AbstractOperationBean {
 
     private static final int DEFAULT_BATCH_SIZE = 0;
     private static final int DEFAULT_PARALLEL = 1;
+
     @XmlAttribute(name = "batch-size", required = false)
     private int batchSize = DEFAULT_BATCH_SIZE;
 

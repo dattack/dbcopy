@@ -19,14 +19,22 @@ public class DataProvider {
     private final static Logger LOGGER = LoggerFactory.getLogger(DataProvider.class);
 
     private ResultSet resultSet;
+    private DbCopyTaskResult taskResult;
     private volatile ArrayList<Integer> columns;
+    private boolean useClob;
+    private int columnSize;
+    private ResultSetMetaData metadataCache;
 
-    public DataProvider(ResultSet resultSet) {
+    public DataProvider(ResultSet resultSet, DbCopyTaskResult taskResult) throws SQLException {
         this.resultSet = resultSet;
+        this.metadataCache = resultSet.getMetaData();
+        this.taskResult = taskResult;
+        this.useClob = false;
+        this.columnSize = 0;
     }
 
     public ResultSetMetaData getMetaData() throws SQLException {
-        return resultSet.getMetaData();
+        return metadataCache;
     }
 
     private synchronized ArrayList<Integer> getColumns(NamedParameterPreparedStatement preparedStatement)
@@ -39,6 +47,10 @@ public class DataProvider {
             for (int columnIndex = 1; columnIndex <= getMetaData().getColumnCount(); columnIndex++) {
                 if (preparedStatement.hasNamedParameter(getMetaData().getColumnName(columnIndex))) {
                     list.add(columnIndex);
+                    columnSize++;
+                    if (getMetaData().getColumnType(columnIndex) == Types.CLOB) {
+                        this.useClob = true;
+                    }
                 } else {
                     LOGGER.warn("Column {} not used", getMetaData().getColumnName(columnIndex));
                 }
@@ -49,29 +61,30 @@ public class DataProvider {
         return columns;
     }
 
-    boolean populateStatement(NamedParameterPreparedStatement preparedStatement) throws SQLException {
+    private List<Object> retrieveData(NamedParameterPreparedStatement preparedStatement) throws SQLException {
 
-        List<Object> dataList = new ArrayList<>(getColumns(preparedStatement).size());
+        List<Object> dataList = new ArrayList<>(columnSize);
 
-        synchronized (this) {
-
-            if (resultSet.isClosed() || !resultSet.next()) {
-                return false;
-            }
-
-            for (final int columnIndex : getColumns(preparedStatement)) {
-                final Object value = resultSet.getObject(columnIndex);
-                if (resultSet.wasNull()) {
-                    dataList.add(null);
+        for (final int columnIndex : getColumns(preparedStatement)) {
+            final Object value = resultSet.getObject(columnIndex);
+            if (resultSet.wasNull()) {
+                dataList.add(null);
+            } else {
+                if (useClob && getMetaData().getColumnType(columnIndex) == Types.CLOB) {
+                    dataList.add(resultSet.getClob(columnIndex));
                 } else {
-                    if (getMetaData().getColumnType(columnIndex) == Types.CLOB) {
-                        dataList.add(resultSet.getClob(columnIndex));
-                    } else {
-                        dataList.add(value);
-                    }
+                    dataList.add(value);
                 }
             }
         }
+
+        taskResult.incrementRetrievedRows();
+
+        return dataList;
+    }
+
+    private void populateStatement(NamedParameterPreparedStatement preparedStatement, List<Object> dataList)
+            throws SQLException {
 
         Iterator<Object> dataIterator = dataList.iterator();
         for (final int columnIndex : getColumns(preparedStatement)) {
@@ -80,7 +93,7 @@ public class DataProvider {
                 preparedStatement.setNull(getMetaData().getColumnName(columnIndex),
                         getMetaData().getColumnType(columnIndex));
             } else {
-                if (getMetaData().getColumnType(columnIndex) == Types.CLOB) {
+                if (useClob && getMetaData().getColumnType(columnIndex) == Types.CLOB) {
                     final Clob sourceClob = (Clob) value;
                     preparedStatement.setObject(getMetaData().getColumnName(columnIndex),
                             sourceClob.getSubString(0L, (int) sourceClob.length()));
@@ -89,7 +102,22 @@ public class DataProvider {
                 }
             }
         }
+    }
 
+    boolean populateStatement(NamedParameterPreparedStatement preparedStatement) throws SQLException {
+
+        List<Object> dataList;
+
+        synchronized (this) {
+
+            if (resultSet.isClosed() || !resultSet.next()) {
+                return false;
+            }
+
+            dataList = retrieveData(preparedStatement);
+        }
+
+        populateStatement(preparedStatement, dataList);
         return true;
     }
 }
