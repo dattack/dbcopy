@@ -28,6 +28,7 @@ import org.apache.commons.configuration.CompositeConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.dattack.dbcopy.beans.AbstractRangeBean;
 import com.dattack.dbcopy.beans.DbcopyJobBean;
 import com.dattack.dbcopy.beans.IntegerRangeBean;
 import com.dattack.dbcopy.beans.NullRangeBean;
@@ -144,10 +145,12 @@ class DbCopyJob {
             }
         };
 
-        if (dbcopyJobBean.getRangeBean() == null) {
+        if (dbcopyJobBean.getRangeBean() == null || dbcopyJobBean.getRangeBean().isEmpty()) {
             new NullRangeBean().accept(rangeVisitor);
         } else {
-            dbcopyJobBean.getRangeBean().accept(rangeVisitor);
+            for (final AbstractRangeBean item : dbcopyJobBean.getRangeBean()) {
+                item.accept(rangeVisitor);
+            }
         }
 
         executionController.shutdown();
