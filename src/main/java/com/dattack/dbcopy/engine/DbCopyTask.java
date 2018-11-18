@@ -22,6 +22,8 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 
 import javax.sql.DataSource;
 
@@ -30,7 +32,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.dattack.dbcopy.beans.DbcopyJobBean;
-import com.dattack.dbcopy.beans.InsertOperationBean;
 import com.dattack.jtoolbox.commons.configuration.ConfigurationUtil;
 import com.dattack.jtoolbox.jdbc.JNDIDataSource;
 
@@ -42,27 +43,27 @@ class DbCopyTask implements Callable<DbCopyTaskResult> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DbCopyTask.class);
 
+    private static final int PARALLEL = 4;
+
     private final AbstractConfiguration configuration;
     private final DbcopyJobBean dbcopyJobBean;
     private final DbCopyTaskResult taskResult;
-
-    private static void flush(final List<InsertOperationContext> insertContextList, final DbCopyTaskResult taskResult) {
-        if (insertContextList != null) {
-            for (final InsertOperationContext context : insertContextList) {
-                try {
-                    taskResult.addInsertedRows(context.flush());
-                } catch (final SQLException e) {
-                    LOGGER.warn("Unable to complete flush operation", e);
-                }
-            }
-        }
-    }
+    private final ExecutionController executionController;
 
     public DbCopyTask(final DbcopyJobBean dbcopyJobBean, final AbstractConfiguration configuration,
             final DbCopyTaskResult taskResult) {
         this.dbcopyJobBean = dbcopyJobBean;
         this.configuration = configuration;
         this.taskResult = taskResult;
+        executionController = new ExecutionController("Writer-" + dbcopyJobBean.getId(), PARALLEL, PARALLEL);
+        MBeanHelper.registerMBean("com.dattack.dbcopy:type=ThreadPool,name=Writer" + dbcopyJobBean.getId(),
+                executionController);
+    }
+
+    private Statement createStatement(Connection connection) throws SQLException {
+        Statement stmt = connection.createStatement();
+        stmt.setFetchSize(10000);
+        return stmt;
     }
 
     @Override
@@ -75,59 +76,50 @@ class DbCopyTask implements Callable<DbCopyTaskResult> {
         final String compiledSql = compileSql();
         LOGGER.debug("Executing SQL: {}", compiledSql);
 
-        List<InsertOperationContext> insertContextList = null;
         try (Connection selectConn = getDataSource().getConnection(); //
-                Statement selectStmt = selectConn.createStatement(); //
+                Statement selectStmt = createStatement(selectConn); //
                 ResultSet resultSet = selectStmt.executeQuery(compiledSql); //
-                ) {
+        ) {
 
-            insertContextList = createInsertContext(resultSet);
+            DataProvider dataProvider = new DataProvider(resultSet);
 
-            while (resultSet.next()) {
-                taskResult.incrementRetrievedRows();
-                insertRow(insertContextList);
+            final List<Future<?>> futureList = new ArrayList<>();
+
+            for (int i = 0; i < dbcopyJobBean.getInsertBean().get(0).getParallel(); i++) {
+                futureList.add(executionController.submit(
+                        new InsertOperationContext(dbcopyJobBean.getInsertBean().get(0), dataProvider, configuration)));
             }
 
+            executionController.shutdown();
+            showFutures(futureList);
             LOGGER.info("DBCopy task finished {}", taskResult.getTaskName());
 
         } catch (final SQLException e) {
             LOGGER.error("DBCopy task failed {}", taskResult.getTaskName());
             taskResult.setException(e);
-        } finally {
-            flush(insertContextList, taskResult);
         }
 
         taskResult.end();
         return taskResult;
     }
 
-    private String compileSql() {
-        return ConfigurationUtil.interpolate(dbcopyJobBean.getSelectBean().getSql(), configuration);
+    private static void showFutures(final List<Future<?>> futureList) {
+
+        for (final Future<?> future : futureList) {
+            try {
+                LOGGER.info("Future result: {}", future.get());
+            } catch (final InterruptedException | ExecutionException e) {
+                LOGGER.warn("Error getting computed result from Future object", e);
+            }
+        }
     }
 
-    private List<InsertOperationContext> createInsertContext(final ResultSet resultSet) throws SQLException {
-
-        final List<InsertOperationContext> insertContextList = new ArrayList<>(dbcopyJobBean.getInsertBean().size());
-        for (final InsertOperationBean item : dbcopyJobBean.getInsertBean()) {
-            insertContextList.add(new InsertOperationContext(item, resultSet, configuration));
-        }
-        return insertContextList;
+    private String compileSql() {
+        return ConfigurationUtil.interpolate(dbcopyJobBean.getSelectBean().getSql(), configuration);
     }
 
     private DataSource getDataSource() {
         return new JNDIDataSource(
                 ConfigurationUtil.interpolate(dbcopyJobBean.getSelectBean().getDatasource(), configuration));
-    }
-
-    private void insertRow(final List<InsertOperationContext> insertContextList) {
-
-        for (final InsertOperationContext context : insertContextList) {
-            try {
-                taskResult.addInsertedRows(context.insert());
-            } catch (final SQLException e) {
-                LOGGER.error("Insert failed for {}: {} (SQLSTATE: {}, Error code: {})", taskResult.getTaskName(),
-                        e.getMessage(), e.getSQLState(), e.getErrorCode());
-            }
-        }
     }
 }

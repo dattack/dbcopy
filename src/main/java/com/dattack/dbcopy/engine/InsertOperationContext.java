@@ -17,10 +17,9 @@ package com.dattack.dbcopy.engine;
 
 import java.sql.BatchUpdateException;
 import java.sql.Connection;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.ArrayList;
+import java.util.concurrent.Callable;
 
 import org.apache.commons.configuration.AbstractConfiguration;
 import org.slf4j.Logger;
@@ -38,40 +37,23 @@ import com.dattack.jtoolbox.jdbc.NamedParameterPreparedStatement;
  * @author cvarela
  * @since 0.1
  */
-class InsertOperationContext {
+class InsertOperationContext implements Callable<Integer> {
 
     private final static Logger LOGGER = LoggerFactory.getLogger(InsertOperationContext.class);
 
     private final InsertOperationBean bean;
-    private final ResultSet resultSet;
-    private final ArrayList<Integer> columns;
+    private final DataProvider dataProvider;
     private final AbstractConfiguration configuration;
     private Connection connection;
     private NamedParameterPreparedStatement preparedStatement;
     private int row;
 
-    public InsertOperationContext(final InsertOperationBean bean, final ResultSet resultSet,
+    public InsertOperationContext(final InsertOperationBean bean, final DataProvider dataProvider,
             final AbstractConfiguration configuration) throws SQLException {
         this.bean = bean;
-        this.resultSet = resultSet;
+        this.dataProvider = dataProvider;
         this.configuration = configuration;
         this.row = 0;
-        this.columns = getColumns();
-    }
-
-    private ArrayList<Integer> getColumns() throws SQLException {
-
-        final ArrayList<Integer> list = new ArrayList<>(resultSet.getMetaData().getColumnCount());
-
-        for (int columnIndex = 1; columnIndex <= resultSet.getMetaData().getColumnCount(); columnIndex++) {
-            if (getPreparedStatement().hasNamedParameter(resultSet.getMetaData().getColumnName(columnIndex))) {
-                list.add(columnIndex);
-            } else {
-                LOGGER.warn("Column {} not used", resultSet.getMetaData().getColumnName(columnIndex));
-            }
-        }
-
-        return list;
     }
 
     private int addBatch() throws SQLException {
@@ -79,7 +61,7 @@ class InsertOperationContext {
         row++;
         int insertedRows = 0;
         if (row % bean.getBatchSize() == 0) {
-            LOGGER.info("Inserted rows: {}", row);
+            LOGGER.debug("Inserted rows: {}", row);
             insertedRows = executeBatch();
         }
         return insertedRows;
@@ -132,7 +114,7 @@ class InsertOperationContext {
         return connection;
     }
 
-    private synchronized NamedParameterPreparedStatement getPreparedStatement() throws SQLException {
+    private NamedParameterPreparedStatement getPreparedStatement() throws SQLException {
         if (preparedStatement == null) {
             preparedStatement = NamedParameterPreparedStatement.build(getConnection(),
                     ConfigurationUtil.interpolate(bean.getSql(), configuration));
@@ -140,25 +122,19 @@ class InsertOperationContext {
         return preparedStatement;
     }
 
-    public int insert() throws SQLException {
+    @Override
+    public Integer call() throws SQLException {
 
-        populateStatement();
-
-        if (bean.getBatchSize() > 0) {
-            return addBatch();
-        }
-        return getPreparedStatement().executeUpdate();
-    }
-
-    private void populateStatement() throws SQLException {
-        for (int columnIndex : columns) {
-            final Object value = resultSet.getObject(columnIndex);
-            if (resultSet.wasNull()) {
-                getPreparedStatement().setNull(resultSet.getMetaData().getColumnName(columnIndex),
-                        resultSet.getMetaData().getColumnType(columnIndex));
+        int rows = 0;
+        while (dataProvider.populateStatement(getPreparedStatement())) {
+            if (bean.getBatchSize() > 0) {
+                rows += addBatch();
             } else {
-                getPreparedStatement().setObject(resultSet.getMetaData().getColumnName(columnIndex), value);
+                rows += getPreparedStatement().executeUpdate();
             }
         }
+
+        rows += flush();
+        return rows;
     }
 }

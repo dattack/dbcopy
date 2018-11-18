@@ -25,8 +25,13 @@ public class InsertOperationBean extends AbstractOperationBean {
 
     private static final long serialVersionUID = -1303451998596082687L;
 
+    private static final int DEFAULT_BATCH_SIZE = 0;
+    private static final int DEFAULT_PARALLEL = 1;
     @XmlAttribute(name = "batch-size", required = false)
-    private int batchSize;
+    private int batchSize = DEFAULT_BATCH_SIZE;
+
+    @XmlAttribute(name = "parallel", required = false)
+    private int parallel = DEFAULT_PARALLEL;
 
     @Override
     public void accept(final OperationBeanVisitor visitor) {
@@ -34,6 +39,10 @@ public class InsertOperationBean extends AbstractOperationBean {
     }
 
     public int getBatchSize() {
-        return batchSize > 0 ? batchSize : 0;
+        return batchSize > DEFAULT_BATCH_SIZE ? batchSize : DEFAULT_BATCH_SIZE;
+    }
+
+    public int getParallel() {
+        return parallel > DEFAULT_PARALLEL ? parallel : DEFAULT_PARALLEL;
     }
 }
