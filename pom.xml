@@ -128,6 +128,14 @@
                 <configuration>
                     <repositoryLayout>flat</repositoryLayout>
                     <repositoryName>lib</repositoryName>
+                    <extraJvmArguments>
+                        -Dcom.sun.management.jmxremote
+                        -Dcom.sun.management.jmxremote.port=9010
+                        -Dcom.sun.management.jmxremote.host=127.0.0.1
+                        -Dcom.sun.management.jmxremote.local.only=true
+                        -Dcom.sun.management.jmxremote.authenticate=false
+                        -Dcom.sun.management.jmxremote.ssl=false
+                    </extraJvmArguments>
                     <programs>
                         <program>
                             <mainClass>com.dattack.dbcopy.cli.DbCopyCli</mainClass>
