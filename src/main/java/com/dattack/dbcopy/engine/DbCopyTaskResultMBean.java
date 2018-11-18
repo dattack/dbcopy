@@ -27,11 +27,11 @@ public interface DbCopyTaskResultMBean {
 
     SQLException getException();
 
-    int getInsertedRows();
+    long getInsertedRows();
 
     float getRateRowsPerSecond();
 
-    int getRetrievedRows();
+    long getRetrievedRows();
 
     long getStartTime();
 

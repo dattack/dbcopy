@@ -26,8 +26,8 @@ public final class DbCopyTaskResult implements DbCopyTaskResultMBean {
     private final String taskName;
     private long startTime;
     private long endTime;
-    private int retrievedRows;
-    private int insertedRows;
+    private long retrievedRows;
+    private long insertedRows;
     private SQLException exception;
 
     public DbCopyTaskResult(final String taskName) {
@@ -69,7 +69,7 @@ public final class DbCopyTaskResult implements DbCopyTaskResultMBean {
     }
 
     @Override
-    public int getInsertedRows() {
+    public long getInsertedRows() {
         return insertedRows;
     }
 
@@ -85,7 +85,7 @@ public final class DbCopyTaskResult implements DbCopyTaskResultMBean {
     }
 
     @Override
-    public int getRetrievedRows() {
+    public long getRetrievedRows() {
         return retrievedRows;
     }
 

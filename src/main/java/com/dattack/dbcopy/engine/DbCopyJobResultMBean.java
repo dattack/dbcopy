@@ -31,7 +31,7 @@ public interface DbCopyJobResultMBean {
 
     int getTotalTaskCounter();
 
-    int getTotalRetrievedRows();
+    long getTotalRetrievedRows();
 
-    int getTotalInsertedRows();
+    long getTotalInsertedRows();
 }

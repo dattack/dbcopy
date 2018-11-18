@@ -90,23 +90,19 @@ public class DbCopyJobResult implements DbCopyJobResultMBean {
     }
 
     @Override
-    public int getTotalRetrievedRows() {
-        int total = 0;
+    public long getTotalRetrievedRows() {
+        long total = 0;
         for (final DbCopyTaskResult item : taskResultList) {
-            if (item.getStartTime() > 0 && item.getEndTime() <= 0) {
-                total += item.getRetrievedRows();
-            }
+            total += item.getRetrievedRows();
         }
         return total;
     }
 
     @Override
-    public int getTotalInsertedRows() {
-        int total = 0;
+    public long getTotalInsertedRows() {
+        long total = 0;
         for (final DbCopyTaskResult item : taskResultList) {
-            if (item.getStartTime() > 0 && item.getEndTime() <= 0) {
-                total += item.getInsertedRows();
-            }
+            total += item.getInsertedRows();
         }
         return total;
     }
