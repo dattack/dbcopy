@@ -48,9 +48,10 @@ public class DbcopyJobBean implements Serializable {
     private DeleteOperationBean deleteBean;
 
     @XmlElements({ //
-            @XmlElement(name = "integer-range", type = IntegerRangeBean.class) //
+            @XmlElement(name = "integer-range", type = IntegerRangeBean.class), //
+            @XmlElement(name = "literal-list", type = LiteralListBean.class) //
     })
-    private List<AbstractRangeBean> rangeBeanList;
+    private List<AbstractVariableBean> variableList;
 
     public DeleteOperationBean getDeleteBean() {
         return deleteBean;
@@ -64,8 +65,8 @@ public class DbcopyJobBean implements Serializable {
         return insertBeanList;
     }
 
-    public List<AbstractRangeBean> getRangeBean() {
-        return rangeBeanList;
+    public List<AbstractVariableBean> getVariableList() {
+        return variableList;
     }
 
     public SelectOperationBean getSelectBean() {

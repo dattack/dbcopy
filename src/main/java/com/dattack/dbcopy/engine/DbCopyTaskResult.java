@@ -74,7 +74,7 @@ public final class DbCopyTaskResult implements DbCopyTaskResultMBean {
     }
 
     @Override
-    public float getRateRowsPerSecond() {
+    public float getRateRowsInsertedPerSecond() {
 
         final long executionTime = getExecutionTime();
         if (executionTime <= 0) {
@@ -82,6 +82,17 @@ public final class DbCopyTaskResult implements DbCopyTaskResultMBean {
         }
 
         return getInsertedRows() * 1000F / executionTime;
+    }
+
+    @Override
+    public float getRateRowsRetrievedPerSecond() {
+
+        final long executionTime = getExecutionTime();
+        if (executionTime <= 0) {
+            return 0;
+        }
+
+        return getRetrievedRows() * 1000F / executionTime;
     }
 
     @Override

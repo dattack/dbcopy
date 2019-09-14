@@ -27,7 +27,9 @@ public interface DbCopyJobResultMBean {
 
     int getInactiveTaskCounter();
 
-    float getRateRowsPerSecond();
+    float getRateRowsInsertedPerSecond();
+
+    float getRateRowsRetrievedPerSecond();
 
     int getTotalTaskCounter();
 

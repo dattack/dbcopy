@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.sql.DataSource;
 
@@ -47,6 +48,7 @@ class DbCopyTask implements Callable<DbCopyTaskResult> {
     private final DbcopyJobBean dbcopyJobBean;
     private final DbCopyTaskResult taskResult;
     private final ExecutionController executionController;
+    private static final AtomicInteger sequence = new AtomicInteger();
 
     public DbCopyTask(final DbcopyJobBean dbcopyJobBean, final AbstractConfiguration configuration,
             final DbCopyTaskResult taskResult) {
@@ -55,8 +57,8 @@ class DbCopyTask implements Callable<DbCopyTaskResult> {
         this.taskResult = taskResult;
         executionController = new ExecutionController("Writer-" + dbcopyJobBean.getId(),
                 dbcopyJobBean.getInsertBean().getParallel(), dbcopyJobBean.getInsertBean().getParallel());
-        MBeanHelper.registerMBean("com.dattack.dbcopy:type=ThreadPool,name=Writer" + dbcopyJobBean.getId(),
-                executionController);
+        MBeanHelper.registerMBean("com.dattack.dbcopy:type=ThreadPool,name=Writer-" + dbcopyJobBean.getId() + "-"
+                + sequence.getAndIncrement(), executionController);
     }
 
     private Statement createStatement(Connection connection) throws SQLException {
@@ -75,7 +77,7 @@ class DbCopyTask implements Callable<DbCopyTaskResult> {
         LOGGER.info("DBCopy task started {} (Thread: {})", taskResult.getTaskName(), Thread.currentThread().getName());
 
         final String compiledSql = compileSql();
-        LOGGER.debug("Executing SQL: {}", compiledSql);
+        LOGGER.info("Executing SQL: {}", compiledSql);
 
         try (Connection selectConn = getDataSource().getConnection(); //
                 Statement selectStmt = createStatement(selectConn); //

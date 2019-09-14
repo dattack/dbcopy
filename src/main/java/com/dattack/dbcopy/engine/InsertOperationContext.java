@@ -63,8 +63,8 @@ class InsertOperationContext implements Callable<Integer> {
         rowNumber++;
         int insertedRows = 0;
         if (rowNumber % bean.getBatchSize() == 0) {
-            LOGGER.debug("Inserted rows: {}", rowNumber);
             insertedRows = executeBatch();
+            LOGGER.debug("Inserted rows: {} (Current block: {})", insertedRows, rowNumber);
         }
         return insertedRows;
     }

@@ -29,7 +29,9 @@ public interface DbCopyTaskResultMBean {
 
     long getInsertedRows();
 
-    float getRateRowsPerSecond();
+    float getRateRowsInsertedPerSecond();
+
+    float getRateRowsRetrievedPerSecond();
 
     long getRetrievedRows();
 

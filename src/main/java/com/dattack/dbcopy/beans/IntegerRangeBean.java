@@ -21,31 +21,31 @@ import javax.xml.bind.annotation.XmlAttribute;
  * @author cvarela
  * @since 0.1
  */
-public class IntegerRangeBean extends AbstractRangeBean {
+public class IntegerRangeBean extends AbstractVariableBean {
 
     @XmlAttribute(name = "low-value", required = true)
-    private int lowValue;
+    private long lowValue;
 
     @XmlAttribute(name = "high-value", required = true)
-    private int highValue;
+    private long highValue;
 
     @XmlAttribute(name = "block-size", required = true)
-    private int blockSize;
+    private long blockSize;
 
     @Override
-    public void accept(final RangeVisitor visitor) {
+    public void accept(final VariableVisitor visitor) {
         visitor.visite(this);
     }
 
-    public int getBlockSize() {
+    public long getBlockSize() {
         return blockSize;
     }
 
-    public int getHighValue() {
+    public long getHighValue() {
         return highValue;
     }
 
-    public int getLowValue() {
+    public long getLowValue() {
         return lowValue;
     }
 }

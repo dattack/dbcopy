@@ -108,11 +108,22 @@ public class DbCopyJobResult implements DbCopyJobResultMBean {
     }
 
     @Override
-    public float getRateRowsPerSecond() {
+    public float getRateRowsInsertedPerSecond() {
         float rate = 0F;
         for (final DbCopyTaskResult item : taskResultList) {
             if (item.getStartTime() > 0 && item.getEndTime() <= 0) {
-                rate += item.getRateRowsPerSecond();
+                rate += item.getRateRowsInsertedPerSecond();
+            }
+        }
+        return rate;
+    }
+
+    @Override
+    public float getRateRowsRetrievedPerSecond() {
+        float rate = 0F;
+        for (final DbCopyTaskResult item : taskResultList) {
+            if (item.getStartTime() > 0 && item.getEndTime() <= 0) {
+                rate += item.getRateRowsRetrievedPerSecond();
             }
         }
         return rate;

@@ -19,9 +19,11 @@ package com.dattack.dbcopy.beans;
  * @author cvarela
  * @since 0.1
  */
-public interface RangeVisitor {
+public interface VariableVisitor {
+
+    void visite(LiteralListBean bean);
 
     void visite(IntegerRangeBean bean);
-    
-    void visite(NullRangeBean bean);
+
+    void visite(NullVariableBean bean);
 }

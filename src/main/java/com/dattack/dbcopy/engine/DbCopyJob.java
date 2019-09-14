@@ -18,6 +18,7 @@ package com.dattack.dbcopy.engine;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -28,11 +29,12 @@ import org.apache.commons.configuration.CompositeConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.dattack.dbcopy.beans.AbstractRangeBean;
+import com.dattack.dbcopy.beans.AbstractVariableBean;
 import com.dattack.dbcopy.beans.DbcopyJobBean;
+import com.dattack.dbcopy.beans.LiteralListBean;
 import com.dattack.dbcopy.beans.IntegerRangeBean;
-import com.dattack.dbcopy.beans.NullRangeBean;
-import com.dattack.dbcopy.beans.RangeVisitor;
+import com.dattack.dbcopy.beans.NullVariableBean;
+import com.dattack.dbcopy.beans.VariableVisitor;
 import com.dattack.jtoolbox.commons.configuration.ConfigurationUtil;
 
 /**
@@ -66,7 +68,8 @@ class DbCopyJob {
             sb.append("\n\t\tExecution time: ").append(taskResult.getExecutionTime()).append(" ms.");
             sb.append("\n\t\tRetrieved rows: ").append(taskResult.getRetrievedRows());
             sb.append("\n\t\tInserted rows: ").append(taskResult.getInsertedRows());
-            sb.append("\n\t\tRate(rows/s): ").append(taskResult.getRateRowsPerSecond());
+            sb.append("\n\t\tRate read(rows/s): ").append(taskResult.getRateRowsRetrievedPerSecond());
+            sb.append("\n\t\tRate write(rows/s): ").append(taskResult.getRateRowsInsertedPerSecond());
             if (taskResult.getException() != null) {
                 sb.append("\n\t\tException: ").append(taskResult.getException().getMessage());
             }
@@ -104,15 +107,46 @@ class DbCopyJob {
         final DbCopyJobResult jobResult = new DbCopyJobResult(dbcopyJobBean);
         MBeanHelper.registerMBean("com.dattack.dbcopy:type=JobResult,name=" + dbcopyJobBean.getId(), jobResult);
 
-        final RangeVisitor rangeVisitor = new RangeVisitor() {
+        final VariableVisitor rangeVisitor = new VariableVisitor() {
+
+            @Override
+            public void visite(LiteralListBean bean) {
+
+                Iterator<Integer> it = bean.getValues().iterator();
+
+                int taskId = 0;
+                while (it.hasNext()) {
+
+                    List<Integer> values = new ArrayList<>();
+                    while (it.hasNext() && values.size() < bean.getBlockSize()) {
+                        values.add(it.next());
+                    }
+
+                    final BaseConfiguration baseConfiguration = new BaseConfiguration();
+                    baseConfiguration.setDelimiterParsingDisabled(true);
+                    baseConfiguration.setProperty(bean.getId() + ".values", values);
+
+                    final CompositeConfiguration configuration = new CompositeConfiguration();
+                    configuration.addConfiguration(externalConfiguration);
+                    configuration.addConfiguration(ConfigurationUtil.createEnvSystemConfiguration());
+                    configuration.addConfiguration(baseConfiguration);
+
+                    final String taskName = String.format("Task_%d", taskId++);
+
+                    final DbCopyTask dbcopyTask = new DbCopyTask(dbcopyJobBean, configuration,
+                            jobResult.createTaskResult(taskName));
+                    futureList.add(executionController.submit(dbcopyTask));
+                }
+
+            }
 
             @Override
             public void visite(final IntegerRangeBean bean) {
 
-                for (int i = bean.getLowValue(); i < bean.getHighValue(); i += bean.getBlockSize()) {
+                for (long i = bean.getLowValue(); i < bean.getHighValue(); i += bean.getBlockSize()) {
 
-                    final int lowValue = i;
-                    final int highValue = i + bean.getBlockSize();
+                    final long lowValue = i;
+                    final long highValue = i + bean.getBlockSize();
 
                     final BaseConfiguration baseConfiguration = new BaseConfiguration();
                     baseConfiguration.setProperty(bean.getId() + ".low", lowValue);
@@ -132,7 +166,7 @@ class DbCopyJob {
             }
 
             @Override
-            public void visite(final NullRangeBean bean) {
+            public void visite(final NullVariableBean bean) {
 
                 final String taskName = "SingleTask";
                 final CompositeConfiguration configuration = new CompositeConfiguration();
@@ -145,10 +179,10 @@ class DbCopyJob {
             }
         };
 
-        if (dbcopyJobBean.getRangeBean() == null || dbcopyJobBean.getRangeBean().isEmpty()) {
-            new NullRangeBean().accept(rangeVisitor);
+        if (dbcopyJobBean.getVariableList() == null || dbcopyJobBean.getVariableList().isEmpty()) {
+            new NullVariableBean().accept(rangeVisitor);
         } else {
-            for (final AbstractRangeBean item : dbcopyJobBean.getRangeBean()) {
+            for (final AbstractVariableBean item : dbcopyJobBean.getVariableList()) {
                 item.accept(rangeVisitor);
             }
         }

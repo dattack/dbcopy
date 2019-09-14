@@ -19,10 +19,10 @@ package com.dattack.dbcopy.beans;
  * @author cvarela
  * @since 0.1
  */
-public class NullRangeBean extends AbstractRangeBean {
+public class NullVariableBean extends AbstractVariableBean {
 
     @Override
-    public void accept(final RangeVisitor visitor) {
+    public void accept(final VariableVisitor visitor) {
         visitor.visite(this);
     }
 }
