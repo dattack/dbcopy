@@ -46,6 +46,7 @@ Thumbs.db
 .ruleset
 .settings
 .eclipse-pmd
+.idea
 maven-eclipse.xml
 target
 
