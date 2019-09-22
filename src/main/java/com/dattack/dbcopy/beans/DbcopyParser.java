@@ -27,6 +27,9 @@ import javax.xml.parsers.SAXParserFactory;
 import javax.xml.transform.Source;
 import javax.xml.transform.sax.SAXSource;
 
+import com.dattack.dbcopy.engine.DataProvider;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.xml.sax.XMLReader;
@@ -39,15 +42,21 @@ import com.dattack.jtoolbox.exceptions.DattackParserException;
  */
 public final class DbcopyParser {
 
+    private final static Logger LOGGER = LoggerFactory.getLogger(DbcopyParser.class);
+
     public static DbcopyBean parse(final File file) throws DattackParserException {
 
         if (file == null) {
-            throw new IllegalArgumentException("The 'dbping' configuration file can't be null. " //
+            throw new IllegalArgumentException("The 'dbcopy' configuration file can't be null. " //
                     + "Check your configuration");
         }
 
         final SAXParserFactory spf = SAXParserFactory.newInstance();
-        spf.setXIncludeAware(true);
+        try {
+            spf.setXIncludeAware(true);
+        } catch (UnsupportedOperationException e) {
+            LOGGER.warn(e.getMessage());
+        }
         spf.setNamespaceAware(true);
         spf.setValidating(true);
 
