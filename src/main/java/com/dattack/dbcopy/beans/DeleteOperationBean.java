@@ -19,12 +19,7 @@ package com.dattack.dbcopy.beans;
  * @author cvarela
  * @since 0.1
  */
-public class DeleteOperationBean extends AbstractOperationBean {
+public class DeleteOperationBean extends AbstractDbOperationBean {
 
     private static final long serialVersionUID = 21303378360014146L;
-
-    @Override
-    public void accept(final OperationBeanVisitor visitor) {
-        visitor.visite(this);
-    }
 }

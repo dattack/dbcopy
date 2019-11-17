@@ -4,11 +4,14 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Writer;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+import com.dattack.formats.csv.CSVStringBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,7 +23,7 @@ public class DataProvider {
 
     private ResultSet resultSet;
     private DbCopyTaskResult taskResult;
-    private volatile ArrayList<Integer> columns;
+    private volatile ArrayList<Integer> columnIndexes;
     private ResultSetMetaData metadataCache;
 
     DataProvider(ResultSet resultSet, DbCopyTaskResult taskResult) throws SQLException {
@@ -36,10 +39,10 @@ public class DataProvider {
     private ArrayList<Integer> getColumns(NamedParameterPreparedStatement preparedStatement)
             throws SQLException {
 
-        if (columns == null) {
+        if (columnIndexes == null) {
 
             synchronized (this) {
-                if (columns == null) {
+                if (columnIndexes == null) {
                     final ArrayList<Integer> list = new ArrayList<>(getMetaData().getColumnCount());
 
                     for (int columnIndex = 1; columnIndex <= getMetaData().getColumnCount(); columnIndex++) {
@@ -49,12 +52,12 @@ public class DataProvider {
                             LOGGER.warn("Column {} not used", getMetaData().getColumnName(columnIndex));
                         }
                     }
-                    columns = list;
+                    columnIndexes = list;
                 }
             }
         }
 
-        return columns;
+        return columnIndexes;
     }
 
     private List<Object> retrieveData(NamedParameterPreparedStatement preparedStatement) throws SQLException {
@@ -64,31 +67,126 @@ public class DataProvider {
         List<Object> dataList = new ArrayList<>();
 
         for (final int columnIndex : _columns) {
-            final Object value = resultSet.getObject(columnIndex);
-            if (resultSet.wasNull()) {
-                dataList.add(null);
-            } else {
-
-                switch (getMetaData().getColumnType(columnIndex)) {
-                    case Types.CLOB:
-                        Clob sourceClob = resultSet.getClob(columnIndex);
-                        dataList.add(sourceClob.getSubString(1L, (int) sourceClob.length()));
-                        break;
-                    case Types.BLOB:
-                        dataList.add(resultSet.getBlob(columnIndex));
-                        break;
-                    case Types.SQLXML:
-                        dataList.add(resultSet.getSQLXML(columnIndex));
-                        break;
-                    default:
-                        dataList.add(value);
-                }
-            }
+            dataList.add(retrieveData(columnIndex));
         }
 
         taskResult.incrementRetrievedRows();
 
         return dataList;
+    }
+
+    private List<Object> retrieveData() throws SQLException {
+
+        List<Object> dataList = new ArrayList<>();
+
+        for (int columnIndex = 1; columnIndex < getMetaData().getColumnCount(); columnIndex++) {
+            dataList.add(retrieveData(columnIndex));
+        }
+
+        taskResult.incrementRetrievedRows();
+
+        return dataList;
+    }
+
+    private Object retrieveData(int columnIndex) throws SQLException {
+
+        Object value = resultSet.getObject(columnIndex);
+        if (resultSet.wasNull()) {
+            value = null;
+        } else {
+
+            switch (getMetaData().getColumnType(columnIndex)) {
+                case Types.CLOB:
+                    Clob sourceClob = resultSet.getClob(columnIndex);
+                    value = sourceClob.getSubString(1L, (int) sourceClob.length());
+                    break;
+
+                    case Types.BLOB:
+                        value = resultSet.getBlob(columnIndex);
+                        break;
+                    case Types.SQLXML:
+                        value = resultSet.getSQLXML(columnIndex);
+                        break;
+                    default:
+                }
+            }
+
+        return value;
+    }
+
+    private void populate(CSVStringBuilder csvBuilder, List<Object> dataList) throws SQLException {
+
+        Iterator<Object> dataIterator = dataList.iterator();
+        for (int columnIndex = 1; columnIndex < getMetaData().getColumnCount(); columnIndex++) {
+            final Object value = dataIterator.next();
+            String columnName = getMetaData().getColumnName(columnIndex);
+            int columnType = getMetaData().getColumnType(columnIndex);
+            if (value == null) {
+                csvBuilder.append((String) null);
+            } else {
+                switch (columnType) {
+                    case Types.CLOB:
+                        Clob clob = (Clob) value;
+                        csvBuilder.append(clob.getSubString(0L, (int) clob.length()));
+                        break;
+                    case Types.SQLXML:
+                        SQLXML xml = (SQLXML) value;
+                        csvBuilder.append(xml.getString());
+                        break;
+                    case Types.BOOLEAN:
+                        Boolean b = (Boolean) value;
+                        // csvBuilder.append(b);
+                        break;
+                    case Types.DATE:
+                        csvBuilder.append((Date) value);
+                        break;
+                    case Types.TIME:
+                    case Types.TIME_WITH_TIMEZONE:
+                        csvBuilder.append((Time) value);
+                        break;
+                    case Types.TIMESTAMP:
+                    case Types.TIMESTAMP_WITH_TIMEZONE:
+                        csvBuilder.append((Timestamp) value);
+                        break;
+                    case Types.DECIMAL:
+                        BigDecimal bigDecimal = (BigDecimal) value;
+                        csvBuilder.append(bigDecimal.doubleValue());
+                        break;
+                    case Types.DOUBLE:
+                        csvBuilder.append(((Number) value).doubleValue());
+                        break;
+                    case Types.REAL:
+                    case Types.FLOAT:
+                        csvBuilder.append(((Number) value).floatValue());
+                        break;
+                    case Types.TINYINT:
+                    case Types.SMALLINT:
+                    case Types.INTEGER:
+                        csvBuilder.append(((Number) value).intValue());
+                        break;
+                    case Types.VARCHAR:
+                        csvBuilder.append((String) value);
+                        break;
+                    case Types.NUMERIC:
+                        Number n = (Number) value;
+                        int scale = getMetaData().getScale(columnIndex);
+                        if (scale == 0) {
+                            csvBuilder.append(n.longValue());
+                        } else {
+                            csvBuilder.append(n.doubleValue());
+                        }
+                        break;
+                    case Types.BIGINT:
+                        Number bigInteger = (Number) value;
+                        csvBuilder.append(bigInteger.longValue());
+                        break;
+                    case Types.BLOB:
+                    default:
+                        csvBuilder.append((String) null);
+                }
+            }
+        }
+        csvBuilder.eol();
     }
 
     private void populateStatement(NamedParameterPreparedStatement preparedStatement, List<Object> dataList)
@@ -162,7 +260,33 @@ public class DataProvider {
         value.free();
     }
 
+    private boolean isClosed(ResultSet rs) {
+
+        try {
+            return rs.isClosed();
+        } catch (Error | SQLException e) {
+            // ignore: old drivers throws an Error on calling isClosed() method
+        }
+        return false;
+    }
     boolean populateStatement(NamedParameterPreparedStatement preparedStatement) throws SQLException {
+
+        List<Object> dataList;
+
+        synchronized (this) {
+
+            if (isClosed(resultSet) || !resultSet.next()) {
+                return false;
+            }
+
+            dataList = retrieveData(preparedStatement);
+        }
+
+        populateStatement(preparedStatement, dataList);
+        return true;
+    }
+
+    boolean populate(CSVStringBuilder csvBuilder) throws SQLException {
 
         List<Object> dataList;
 
@@ -172,10 +296,10 @@ public class DataProvider {
                 return false;
             }
 
-            dataList = retrieveData(preparedStatement);
+            dataList = retrieveData();
         }
 
-        populateStatement(preparedStatement, dataList);
+        populate(csvBuilder, dataList);
         return true;
     }
 }

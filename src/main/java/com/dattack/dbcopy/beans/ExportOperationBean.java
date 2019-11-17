@@ -15,15 +15,28 @@
  */
 package com.dattack.dbcopy.beans;
 
+import javax.xml.bind.annotation.XmlAttribute;
+import java.io.Serializable;
+
 /**
  * @author cvarela
  * @since 0.1
  */
-public interface OperationBeanVisitor {
+public class ExportOperationBean implements Serializable {
 
-    void visite(DeleteOperationBean bean);
+    private static final long serialVersionUID = 75388957947238367L;
 
-    void visite(InsertOperationBean bean);
+    @XmlAttribute(name = "path", required = true)
+    private String path;
 
-    void visite(SelectOperationBean bean);
+    @XmlAttribute(name = "type", required = false)
+    private String type = "csv";
+
+    public String getPath() {
+        return path;
+    }
+
+    public String getType() {
+        return type;
+    }
 }

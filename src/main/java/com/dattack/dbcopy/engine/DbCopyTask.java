@@ -55,8 +55,9 @@ class DbCopyTask implements Callable<DbCopyTaskResult> {
         this.dbcopyJobBean = dbcopyJobBean;
         this.configuration = configuration;
         this.taskResult = taskResult;
+        int poolSize = dbcopyJobBean.getInsertBean() == null ? 1 : dbcopyJobBean.getInsertBean().getParallel();
         executionController = new ExecutionController("Writer-" + dbcopyJobBean.getId(),
-                dbcopyJobBean.getInsertBean().getParallel(), dbcopyJobBean.getInsertBean().getParallel());
+                poolSize, poolSize);
         MBeanHelper.registerMBean("com.dattack.dbcopy:type=ThreadPool,name=Writer-" + dbcopyJobBean.getId() + "-"
                 + sequence.getAndIncrement(), executionController);
     }
@@ -88,9 +89,16 @@ class DbCopyTask implements Callable<DbCopyTaskResult> {
 
             final List<Future<?>> futureList = new ArrayList<>();
 
-            for (int i = 0; i < dbcopyJobBean.getInsertBean().getParallel(); i++) {
-                futureList.add(executionController.submit(new InsertOperationContext(dbcopyJobBean.getInsertBean(),
-                        dataProvider, configuration, taskResult)));
+            if (dbcopyJobBean.getInsertBean() != null) {
+                for (int i = 0; i < dbcopyJobBean.getInsertBean().getParallel(); i++) {
+                    futureList.add(executionController.submit(new InsertOperationContext(dbcopyJobBean.getInsertBean(),
+                            dataProvider, configuration, taskResult)));
+                }
+            }
+
+            if (dbcopyJobBean.getExportBean() != null) {
+                futureList.add(executionController.submit(new ExportOperation(dbcopyJobBean.getExportBean(),
+                        dataProvider,  configuration, taskResult)));
             }
 
             executionController.shutdown();
