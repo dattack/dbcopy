@@ -28,4 +28,22 @@
 		]]>
 		</insert>
 	</job>
+
+	<job id="export2csv-example" threads="2">
+
+		<integer-range id="emp_id_range" low-value="0" high-value="10000"
+					   block-size="100" />
+
+		<select datasource="jdbc/source">
+			<![CDATA[
+			SELECT emp_id, emp_name, salary
+			FROM ${runtime.source.schema}.emp
+			WHERE emp_id >= ${emp_id_range.low} and emp_id < ${emp_id_range.high}
+			 ${runtime.source.condition}
+		]]>
+		</select>
+
+		<export type="csv" path="${export.path}/${job.id}_${emp_id_range.low}_${emp_id_range.high}.csv" />
+
+	</job>
 </dbcopy>

@@ -21,7 +21,7 @@ import javax.xml.bind.annotation.XmlAttribute;
  * @author cvarela
  * @since 0.1
  */
-public class InsertOperationBean extends AbstractOperationBean {
+public class InsertOperationBean extends AbstractDbOperationBean {
 
     private static final long serialVersionUID = -1303451998596082687L;
 
@@ -33,11 +33,6 @@ public class InsertOperationBean extends AbstractOperationBean {
 
     @XmlAttribute(name = "parallel", required = false)
     private int parallel = DEFAULT_PARALLEL;
-
-    @Override
-    public void accept(final OperationBeanVisitor visitor) {
-        visitor.visite(this);
-    }
 
     public int getBatchSize() {
         return batchSize > DEFAULT_BATCH_SIZE ? batchSize : DEFAULT_BATCH_SIZE;

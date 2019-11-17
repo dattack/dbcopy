@@ -89,7 +89,7 @@ class DbCopyJob {
         }
     }
 
-    public DbCopyJob(final DbcopyJobBean dbcopyJobBean, final AbstractConfiguration configuration) {
+    DbCopyJob(final DbcopyJobBean dbcopyJobBean, final AbstractConfiguration configuration) {
         this.dbcopyJobBean = dbcopyJobBean;
         this.externalConfiguration = configuration;
         executionController = new ExecutionController(dbcopyJobBean.getId(), dbcopyJobBean.getThreads(),
@@ -98,7 +98,7 @@ class DbCopyJob {
                 executionController);
     }
 
-    public void execute() {
+    void execute() {
 
         LOGGER.info("Running job '{}' at thread '{}'", dbcopyJobBean.getId(), Thread.currentThread().getName());
 
@@ -108,6 +108,13 @@ class DbCopyJob {
         MBeanHelper.registerMBean("com.dattack.dbcopy:type=JobResult,name=" + dbcopyJobBean.getId(), jobResult);
 
         final VariableVisitor rangeVisitor = new VariableVisitor() {
+
+            private BaseConfiguration createBaseConfiguration() {
+                BaseConfiguration baseConfiguration = new BaseConfiguration();
+                baseConfiguration.setDelimiterParsingDisabled(true);
+                baseConfiguration.setProperty("job.id", dbcopyJobBean.getId());
+                return baseConfiguration;
+            }
 
             @Override
             public void visite(LiteralListBean bean) {
@@ -122,8 +129,7 @@ class DbCopyJob {
                         values.add(it.next());
                     }
 
-                    final BaseConfiguration baseConfiguration = new BaseConfiguration();
-                    baseConfiguration.setDelimiterParsingDisabled(true);
+                    final BaseConfiguration baseConfiguration = createBaseConfiguration();
                     baseConfiguration.setProperty(bean.getId() + ".values", values);
 
                     final CompositeConfiguration configuration = new CompositeConfiguration();
@@ -148,7 +154,7 @@ class DbCopyJob {
                     final long lowValue = i;
                     final long highValue = i + bean.getBlockSize();
 
-                    final BaseConfiguration baseConfiguration = new BaseConfiguration();
+                    final BaseConfiguration baseConfiguration = createBaseConfiguration();
                     baseConfiguration.setProperty(bean.getId() + ".low", lowValue);
                     baseConfiguration.setProperty(bean.getId() + ".high", highValue);
 
@@ -172,6 +178,7 @@ class DbCopyJob {
                 final CompositeConfiguration configuration = new CompositeConfiguration();
                 configuration.addConfiguration(externalConfiguration);
                 configuration.addConfiguration(ConfigurationUtil.createEnvSystemConfiguration());
+                configuration.addConfiguration(createBaseConfiguration());
 
                 final DbCopyTask dbcopyTask = new DbCopyTask(dbcopyJobBean, configuration,
                         jobResult.createTaskResult(taskName));

@@ -68,8 +68,14 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <slf4j.version>1.7.25</slf4j.version>
         <standalone-jndi.version>0.2-SNAPSHOT</standalone-jndi.version>
+        <data-formats.version>0.2-SNAPSHOT</data-formats.version>
     </properties>
     <dependencies>
+        <dependency>
+            <groupId>com.dattack</groupId>
+            <artifactId>data-formats</artifactId>
+            <version>${data-formats.version}</version>
+        </dependency>
         <dependency>
             <groupId>javax.xml.bind</groupId>
             <artifactId>jaxb-api</artifactId>
@@ -105,7 +111,7 @@
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
             <version>${h2.version}</version>
-            <scope>test</scope>
+            <!--<scope>test</scope>-->
         </dependency>
         <!-- For test only -->
         <dependency>

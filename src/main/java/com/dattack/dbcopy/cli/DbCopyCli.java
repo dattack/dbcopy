@@ -105,8 +105,8 @@ public final class DbCopyCli {
                 }
             }
 
-            final DbCopyEngine ping = new DbCopyEngine();
-            ping.execute(filenames, jobNameSet, configuration);
+            final DbCopyEngine engine = new DbCopyEngine();
+            engine.execute(filenames, jobNameSet, configuration);
 
         } catch (@SuppressWarnings("unused") final ParseException e) {
             showUsage(options);
