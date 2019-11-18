@@ -79,7 +79,7 @@ public class DataProvider {
 
         List<Object> dataList = new ArrayList<>();
 
-        for (int columnIndex = 1; columnIndex < getMetaData().getColumnCount(); columnIndex++) {
+        for (int columnIndex = 1; columnIndex <= getMetaData().getColumnCount(); columnIndex++) {
             dataList.add(retrieveData(columnIndex));
         }
 
@@ -117,7 +117,7 @@ public class DataProvider {
     private void populate(CSVStringBuilder csvBuilder, List<Object> dataList) throws SQLException {
 
         Iterator<Object> dataIterator = dataList.iterator();
-        for (int columnIndex = 1; columnIndex < getMetaData().getColumnCount(); columnIndex++) {
+        for (int columnIndex = 1; columnIndex <= getMetaData().getColumnCount(); columnIndex++) {
             final Object value = dataIterator.next();
             String columnName = getMetaData().getColumnName(columnIndex);
             int columnType = getMetaData().getColumnType(columnIndex);
@@ -269,6 +269,7 @@ public class DataProvider {
         }
         return false;
     }
+
     boolean populateStatement(NamedParameterPreparedStatement preparedStatement) throws SQLException {
 
         List<Object> dataList;
