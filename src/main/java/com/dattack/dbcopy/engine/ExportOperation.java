@@ -23,8 +23,7 @@ import org.apache.commons.configuration.AbstractConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedWriter;
-import java.io.IOException;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -34,6 +33,7 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.Callable;
+import java.util.zip.GZIPOutputStream;
 
 /**
  * Executes the INSERT operations.
@@ -58,14 +58,25 @@ class ExportOperation implements Callable<Integer> {
         this.path = Paths.get(ConfigurationUtil.interpolate(bean.getPath(), configuration));
     }
 
+    private Writer createOutputWriter() throws IOException {
+
+        OutputStream outputStream =  Files.newOutputStream(path,
+                StandardOpenOption.CREATE, //
+                StandardOpenOption.WRITE, //
+                StandardOpenOption.TRUNCATE_EXISTING);
+
+        if (bean.isGzip()) {
+            outputStream = new GZIPOutputStream(outputStream);
+        }
+
+        return new BufferedWriter(new OutputStreamWriter(outputStream, StandardCharsets.UTF_8));
+    }
+
     @Override
     public Integer call() throws SQLException, IOException {
 
         int totalExportedRows = 0;
-        try (BufferedWriter writer = Files.newBufferedWriter(path, StandardCharsets.UTF_8, //
-                StandardOpenOption.CREATE, //
-                StandardOpenOption.WRITE, //
-                StandardOpenOption.APPEND)) {
+        try (Writer writer = createOutputWriter()) {
 
             CSVConfiguration configuration = new CSVConfiguration.CsvConfigurationBuilder().build();
             CSVStringBuilder builder = new CSVStringBuilder(configuration);

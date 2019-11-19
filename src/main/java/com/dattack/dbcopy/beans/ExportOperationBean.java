@@ -32,11 +32,18 @@ public class ExportOperationBean implements Serializable {
     @XmlAttribute(name = "type", required = false)
     private String type = "csv";
 
+    @XmlAttribute(name = "gzip", required = false)
+    private Boolean gzip = Boolean.FALSE;
+
     public String getPath() {
         return path;
     }
 
     public String getType() {
         return type;
+    }
+
+    public boolean isGzip() {
+        return gzip;
     }
 }
