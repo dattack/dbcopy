@@ -126,8 +126,12 @@ public class DataProvider {
             } else {
                 switch (columnType) {
                     case Types.CLOB:
-                        Clob clob = (Clob) value;
-                        csvBuilder.append(clob.getSubString(0L, (int) clob.length()));
+                        if (value instanceof String) {
+                            csvBuilder.append(value.toString());
+                        } else {
+                            Clob clob = (Clob) value;
+                            csvBuilder.append(clob.getSubString(0L, (int) clob.length()));
+                        }
                         break;
                     case Types.SQLXML:
                         SQLXML xml = (SQLXML) value;
@@ -135,7 +139,7 @@ public class DataProvider {
                         break;
                     case Types.BOOLEAN:
                         Boolean b = (Boolean) value;
-                        // csvBuilder.append(b);
+                        csvBuilder.append(b);
                         break;
                     case Types.DATE:
                         csvBuilder.append((Date) value);
