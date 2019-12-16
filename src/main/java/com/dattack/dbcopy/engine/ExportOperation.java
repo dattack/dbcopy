@@ -36,7 +36,7 @@ import java.util.concurrent.Callable;
 import java.util.zip.GZIPOutputStream;
 
 /**
- * Executes the INSERT operations.
+ * Executes the EXPORT operations.
  *
  * @author cvarela
  * @since 0.1
@@ -81,11 +81,16 @@ class ExportOperation implements Callable<Integer> {
             CSVConfiguration configuration = new CSVConfiguration.CsvConfigurationBuilder().build();
             CSVStringBuilder builder = new CSVStringBuilder(configuration);
 
-            while (dataProvider.populate(builder)) {
+            boolean header = true;
+            while (dataProvider.populate(builder, header)) {
                 writer.write(builder.toString());
                 builder.clear();
                 taskResult.addInsertedRows(1);
                 totalExportedRows++;
+                header = false;
+                if (totalExportedRows % 10000 == 0) {
+                    LOGGER.debug("Exported rows: {} (Current block: {})", 10000, totalExportedRows);
+                }
             }
             writer.flush();
         }

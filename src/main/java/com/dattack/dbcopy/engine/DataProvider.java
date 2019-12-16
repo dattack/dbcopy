@@ -114,9 +114,18 @@ public class DataProvider {
         return value;
     }
 
-    private void populate(CSVStringBuilder csvBuilder, List<Object> dataList) throws SQLException {
+    private void populate(CSVStringBuilder csvBuilder, List<Object> dataList, boolean header) throws SQLException {
 
         Iterator<Object> dataIterator = dataList.iterator();
+
+        if (header) {
+            for (int columnIndex = 1; columnIndex <= getMetaData().getColumnCount(); columnIndex++) {
+                String columnName = getMetaData().getColumnName(columnIndex);
+                csvBuilder.append(columnName);
+            }
+            csvBuilder.eol();
+        }
+
         for (int columnIndex = 1; columnIndex <= getMetaData().getColumnCount(); columnIndex++) {
             final Object value = dataIterator.next();
             String columnName = getMetaData().getColumnName(columnIndex);
@@ -291,7 +300,7 @@ public class DataProvider {
         return true;
     }
 
-    boolean populate(CSVStringBuilder csvBuilder) throws SQLException {
+    boolean populate(CSVStringBuilder csvBuilder, boolean header) throws SQLException {
 
         List<Object> dataList;
 
@@ -304,7 +313,7 @@ public class DataProvider {
             dataList = retrieveData();
         }
 
-        populate(csvBuilder, dataList);
+        populate(csvBuilder, dataList, header);
         return true;
     }
 }
