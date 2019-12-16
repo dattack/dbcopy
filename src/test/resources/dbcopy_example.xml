@@ -46,4 +46,15 @@
 		<export type="csv" path="${export.path}/${job.id}_${emp_id_range.low}_${emp_id_range.high}.csv" />
 
 	</job>
+
+	<job id="export_emp" threads="1">
+		<select datasource="jdbc/source">
+			<![CDATA[
+			SELECT emp_id, emp_name, salary
+			FROM ${runtime.source.schema}.emp
+			]]>
+		</select>
+		<export gzip="true" type="csv" path="${job.id}.csv.gz" />
+	</job>
+
 </dbcopy>
