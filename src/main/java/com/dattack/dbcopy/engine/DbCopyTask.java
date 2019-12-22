@@ -15,6 +15,12 @@
  */
 package com.dattack.dbcopy.engine;
 
+import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -25,9 +31,13 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.zip.GZIPOutputStream;
 
 import javax.sql.DataSource;
 
+import com.dattack.formats.csv.CSVConfiguration;
+import com.dattack.formats.csv.CSVStringBuilder;
+import com.dattack.jtoolbox.io.IOUtils;
 import org.apache.commons.configuration.AbstractConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,7 +57,6 @@ class DbCopyTask implements Callable<DbCopyTaskResult> {
     private final AbstractConfiguration configuration;
     private final DbcopyJobBean dbcopyJobBean;
     private final DbCopyTaskResult taskResult;
-    private final ExecutionController executionController;
     private static final AtomicInteger sequence = new AtomicInteger();
 
     public DbCopyTask(final DbcopyJobBean dbcopyJobBean, final AbstractConfiguration configuration,
@@ -55,11 +64,6 @@ class DbCopyTask implements Callable<DbCopyTaskResult> {
         this.dbcopyJobBean = dbcopyJobBean;
         this.configuration = configuration;
         this.taskResult = taskResult;
-        int poolSize = dbcopyJobBean.getInsertBean() == null ? 1 : dbcopyJobBean.getInsertBean().getParallel();
-        executionController = new ExecutionController("Writer-" + dbcopyJobBean.getId(),
-                poolSize, poolSize);
-        MBeanHelper.registerMBean("com.dattack.dbcopy:type=ThreadPool,name=Writer-" + dbcopyJobBean.getId() + "-"
-                + sequence.getAndIncrement(), executionController);
     }
 
     private Statement createStatement(Connection connection) throws SQLException {
@@ -68,6 +72,79 @@ class DbCopyTask implements Callable<DbCopyTaskResult> {
             stmt.setFetchSize(dbcopyJobBean.getSelectBean().getFetchSize());
         }
         return stmt;
+    }
+
+    private List<Future<?>> createInsertFutures(DataTransfer dataTransfer) {
+
+        final List<Future<?>> futureList = new ArrayList<>();
+
+        if (dbcopyJobBean.getInsertBean() != null) {
+
+            int poolSize = dbcopyJobBean.getInsertBean().getParallel();
+            ExecutionController executionController = new ExecutionController("Insert-" + dbcopyJobBean.getId(),
+                    poolSize, poolSize);
+            MBeanHelper.registerMBean("com.dattack.dbcopy:type=ThreadPool,name=Insert-" + dbcopyJobBean.getId() + "-"
+                    + sequence.getAndIncrement(), executionController);
+
+            for (int i = 0; i < dbcopyJobBean.getInsertBean().getParallel(); i++) {
+                futureList.add(executionController.submit(new InsertOperation(dbcopyJobBean.getInsertBean(),
+                        dataTransfer, configuration, taskResult)));
+            }
+
+            executionController.shutdown();
+        }
+
+        return futureList;
+    }
+
+    private Writer createExportOutputWriter() throws IOException {
+
+        Path path = Paths.get(ConfigurationUtil.interpolate(dbcopyJobBean.getExportBean().getPath() + sequence.get(), configuration));
+        OutputStream outputStream =  Files.newOutputStream(path,
+                StandardOpenOption.CREATE, //
+                StandardOpenOption.WRITE, //
+                StandardOpenOption.TRUNCATE_EXISTING);
+
+        if (dbcopyJobBean.getExportBean().isGzip()) {
+            outputStream = new GZIPOutputStream(outputStream);
+        }
+
+        return new BufferedWriter(new OutputStreamWriter(outputStream, StandardCharsets.UTF_8));
+    }
+
+    private List<Future<?>> createExportFutures(DataTransfer dataTransfer) throws IOException {
+
+        final List<Future<?>> futureList = new ArrayList<>();
+
+        if (dbcopyJobBean.getExportBean() != null) {
+
+            int poolSize = dbcopyJobBean.getExportBean().getParallel();
+            ExecutionController executionController = new ExecutionController("Export-" + dbcopyJobBean.getId(),
+                    poolSize, poolSize);
+            MBeanHelper.registerMBean("com.dattack.dbcopy:type=ThreadPool,name=Export-" + dbcopyJobBean.getId() + "-"
+                    + sequence.getAndIncrement(), executionController);
+
+            Writer writer = createExportOutputWriter();
+            taskResult.addOnEndCommand(() -> {IOUtils.closeQuietly(writer); return null; });
+
+            // TODO: a code review is mandatory so this is only for CSV export
+            CSVConfiguration configuration = new CSVConfiguration.CsvConfigurationBuilder().build();
+            CSVStringBuilder csvBuilder = new CSVStringBuilder(configuration);
+            for (ColumnMetadata columnMetadata: dataTransfer.getRowMetadata().getColumnsMetadata()) {
+                csvBuilder.append(columnMetadata.getName());
+            }
+            csvBuilder.eol();
+            writer.write(csvBuilder.toString());
+
+            for (int i = 0; i < dbcopyJobBean.getExportBean().getParallel(); i++) {
+                futureList.add(executionController.submit(new ExportOperation(dbcopyJobBean.getExportBean(),
+                        dataTransfer, taskResult, createExportOutputWriter())));
+            }
+
+            executionController.shutdown();
+        }
+
+        return futureList;
     }
 
     @Override
@@ -82,30 +159,19 @@ class DbCopyTask implements Callable<DbCopyTaskResult> {
 
         try (Connection selectConn = getDataSource().getConnection(); //
                 Statement selectStmt = createStatement(selectConn); //
-                ResultSet resultSet = selectStmt.executeQuery(compiledSql); //
+                ResultSet resultSet = selectStmt.executeQuery(compiledSql) //
         ) {
 
-            DataProvider dataProvider = new DataProvider(resultSet, taskResult);
+            DataTransfer dataTransfer = new DataTransfer(resultSet, taskResult);
 
             final List<Future<?>> futureList = new ArrayList<>();
+            futureList.addAll(createInsertFutures(dataTransfer));
+            futureList.addAll(createExportFutures(dataTransfer));
 
-            if (dbcopyJobBean.getInsertBean() != null) {
-                for (int i = 0; i < dbcopyJobBean.getInsertBean().getParallel(); i++) {
-                    futureList.add(executionController.submit(new InsertOperationContext(dbcopyJobBean.getInsertBean(),
-                            dataProvider, configuration, taskResult)));
-                }
-            }
-
-            if (dbcopyJobBean.getExportBean() != null) {
-                futureList.add(executionController.submit(new ExportOperation(dbcopyJobBean.getExportBean(),
-                        dataProvider,  configuration, taskResult)));
-            }
-
-            executionController.shutdown();
             showFutures(futureList);
             LOGGER.info("DBCopy task finished {}", taskResult.getTaskName());
 
-        } catch (final SQLException e) {
+        } catch (final Exception e) {
             LOGGER.error("DBCopy task failed {}", taskResult.getTaskName());
             taskResult.setException(e);
         }

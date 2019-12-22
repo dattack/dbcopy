@@ -15,10 +15,10 @@
  */
 package com.dattack.dbcopy.engine;
 
+import com.dattack.dbcopy.beans.DbcopyJobBean;
+
 import java.util.ArrayList;
 import java.util.List;
-
-import com.dattack.dbcopy.beans.DbcopyJobBean;
 
 /**
  * @author cvarela
@@ -93,37 +93,37 @@ public class DbCopyJobResult implements DbCopyJobResultMBean {
     public long getTotalRetrievedRows() {
         long total = 0;
         for (final DbCopyTaskResult item : taskResultList) {
-            total += item.getRetrievedRows();
+            total += item.getTotalRetrievedRows();
         }
         return total;
     }
 
     @Override
-    public long getTotalInsertedRows() {
+    public long getTotalProcessedRows() {
         long total = 0;
         for (final DbCopyTaskResult item : taskResultList) {
-            total += item.getInsertedRows();
+            total += item.getTotalProcessedRows();
         }
         return total;
     }
 
     @Override
-    public float getRateRowsInsertedPerSecond() {
+    public float getProcessedRowsPerSecond() {
         float rate = 0F;
         for (final DbCopyTaskResult item : taskResultList) {
             if (item.getStartTime() > 0 && item.getEndTime() <= 0) {
-                rate += item.getRateRowsInsertedPerSecond();
+                rate += item.getProcessedRowsPerSecond();
             }
         }
         return rate;
     }
 
     @Override
-    public float getRateRowsRetrievedPerSecond() {
+    public float getRetrievedRowsPerSecond() {
         float rate = 0F;
         for (final DbCopyTaskResult item : taskResultList) {
             if (item.getStartTime() > 0 && item.getEndTime() <= 0) {
-                rate += item.getRateRowsRetrievedPerSecond();
+                rate += item.getRetrievedRowsPerSecond();
             }
         }
         return rate;

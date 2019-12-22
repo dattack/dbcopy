@@ -26,6 +26,9 @@ public class ExportOperationBean implements Serializable {
 
     private static final long serialVersionUID = 75388957947238367L;
 
+    private static final int DEFAULT_BATCH_SIZE = 10_000;
+    private static final int DEFAULT_PARALLEL = 1;
+
     @XmlAttribute(name = "path", required = true)
     private String path;
 
@@ -34,6 +37,12 @@ public class ExportOperationBean implements Serializable {
 
     @XmlAttribute(name = "gzip", required = false)
     private Boolean gzip = Boolean.FALSE;
+
+    @XmlAttribute(name = "parallel", required = false)
+    private int parallel = DEFAULT_PARALLEL;
+
+    @XmlAttribute(name = "batch-size", required = false)
+    private int batchSize = DEFAULT_BATCH_SIZE;
 
     public String getPath() {
         return path;
@@ -45,5 +54,13 @@ public class ExportOperationBean implements Serializable {
 
     public boolean isGzip() {
         return gzip;
+    }
+
+    public int getBatchSize() {
+        return batchSize > 0 ? batchSize : DEFAULT_BATCH_SIZE;
+    }
+
+    public int getParallel() {
+        return parallel > DEFAULT_PARALLEL ? parallel : DEFAULT_PARALLEL;
     }
 }

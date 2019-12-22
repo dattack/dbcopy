@@ -15,12 +15,7 @@
  */
 package com.dattack.dbcopy.engine;
 
-import java.util.concurrent.Callable;
-import java.util.concurrent.Future;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -29,7 +24,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class ExecutionController implements ExecutionControllerMBean {
 
-    private final AtomicInteger counter = new AtomicInteger();
+    private final AtomicInteger threadCounter = new AtomicInteger();
     private final String name;
     private final ThreadPoolExecutor threadPoolExecutor;
 
@@ -45,22 +40,6 @@ public class ExecutionController implements ExecutionControllerMBean {
     }
 
     @Override
-    public int getMaximumPoolSize() {
-        return threadPoolExecutor.getMaximumPoolSize();
-    }
-
-    private ThreadFactory getThreadFactory() {
-
-        return new ThreadFactory() {
-
-            @Override
-            public Thread newThread(final Runnable target) {
-                return new Thread(target, String.format("%s-%d", name, counter.getAndIncrement()));
-            }
-        };
-    }
-
-    @Override
     public void setCorePoolSize(final int size) {
         if (size > 0) {
             threadPoolExecutor.setCorePoolSize(size);
@@ -68,10 +47,19 @@ public class ExecutionController implements ExecutionControllerMBean {
     }
 
     @Override
+    public int getMaximumPoolSize() {
+        return threadPoolExecutor.getMaximumPoolSize();
+    }
+
+    @Override
     public void setMaximumPoolSize(final int size) {
         if (size >= threadPoolExecutor.getCorePoolSize()) {
             threadPoolExecutor.setMaximumPoolSize(size);
         }
+    }
+
+    private ThreadFactory getThreadFactory() {
+        return target -> new Thread(target, String.format("%s-%d", name, threadCounter.getAndIncrement()));
     }
 
     @Override

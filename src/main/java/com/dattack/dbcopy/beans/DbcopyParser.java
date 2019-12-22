@@ -15,9 +15,12 @@
  */
 package com.dattack.dbcopy.beans;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
+import com.dattack.jtoolbox.exceptions.DattackParserException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
+import org.xml.sax.XMLReader;
 
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
@@ -26,15 +29,9 @@ import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParserFactory;
 import javax.xml.transform.Source;
 import javax.xml.transform.sax.SAXSource;
-
-import com.dattack.dbcopy.engine.DataProvider;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.xml.sax.InputSource;
-import org.xml.sax.SAXException;
-import org.xml.sax.XMLReader;
-
-import com.dattack.jtoolbox.exceptions.DattackParserException;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 
 /**
  * @author cvarela
@@ -43,6 +40,10 @@ import com.dattack.jtoolbox.exceptions.DattackParserException;
 public final class DbcopyParser {
 
     private final static Logger LOGGER = LoggerFactory.getLogger(DbcopyParser.class);
+
+    private DbcopyParser() {
+        // static class
+    }
 
     public static DbcopyBean parse(final File file) throws DattackParserException {
 
@@ -71,9 +72,5 @@ public final class DbcopyParser {
         } catch (JAXBException | IOException | SAXException | ParserConfigurationException e) {
             throw new DattackParserException(e);
         }
-    }
-
-    private DbcopyParser() {
-        // static class
     }
 }

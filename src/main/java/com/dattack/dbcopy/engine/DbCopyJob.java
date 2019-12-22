@@ -15,6 +15,14 @@
  */
 package com.dattack.dbcopy.engine;
 
+import com.dattack.dbcopy.beans.*;
+import com.dattack.jtoolbox.commons.configuration.ConfigurationUtil;
+import org.apache.commons.configuration.AbstractConfiguration;
+import org.apache.commons.configuration.BaseConfiguration;
+import org.apache.commons.configuration.CompositeConfiguration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -22,20 +30,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-
-import org.apache.commons.configuration.AbstractConfiguration;
-import org.apache.commons.configuration.BaseConfiguration;
-import org.apache.commons.configuration.CompositeConfiguration;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.dattack.dbcopy.beans.AbstractVariableBean;
-import com.dattack.dbcopy.beans.DbcopyJobBean;
-import com.dattack.dbcopy.beans.LiteralListBean;
-import com.dattack.dbcopy.beans.IntegerRangeBean;
-import com.dattack.dbcopy.beans.NullVariableBean;
-import com.dattack.dbcopy.beans.VariableVisitor;
-import com.dattack.jtoolbox.commons.configuration.ConfigurationUtil;
 
 /**
  * Executes a copy-job instance.
@@ -50,6 +44,15 @@ class DbCopyJob {
     private final DbcopyJobBean dbcopyJobBean;
     private final ExecutionController executionController;
     private final AbstractConfiguration externalConfiguration;
+
+    DbCopyJob(final DbcopyJobBean dbcopyJobBean, final AbstractConfiguration configuration) {
+        this.dbcopyJobBean = dbcopyJobBean;
+        this.externalConfiguration = configuration;
+        executionController = new ExecutionController(dbcopyJobBean.getId(), dbcopyJobBean.getThreads(),
+                dbcopyJobBean.getThreads());
+        MBeanHelper.registerMBean("com.dattack.dbcopy:type=ThreadPool,name=" + dbcopyJobBean.getId(),
+                executionController);
+    }
 
     private static void show(final DbCopyJobResult jobResult) {
 
@@ -66,10 +69,10 @@ class DbCopyJob {
             sb.append("\n\t\tStart time: ").append(sdf.format(new Date(taskResult.getStartTime())));
             sb.append("\n\t\tEnd time: ").append(sdf.format(new Date(taskResult.getEndTime())));
             sb.append("\n\t\tExecution time: ").append(taskResult.getExecutionTime()).append(" ms.");
-            sb.append("\n\t\tRetrieved rows: ").append(taskResult.getRetrievedRows());
-            sb.append("\n\t\tInserted rows: ").append(taskResult.getInsertedRows());
-            sb.append("\n\t\tRate read(rows/s): ").append(taskResult.getRateRowsRetrievedPerSecond());
-            sb.append("\n\t\tRate write(rows/s): ").append(taskResult.getRateRowsInsertedPerSecond());
+            sb.append("\n\t\tRetrieved rows: ").append(taskResult.getTotalRetrievedRows());
+            sb.append("\n\t\tProcessed rows: ").append(taskResult.getTotalProcessedRows());
+            sb.append("\n\t\tRetrieved rows/s: ").append(taskResult.getRetrievedRowsPerSecond());
+            sb.append("\n\t\tProcessed rows/s: ").append(taskResult.getProcessedRowsPerSecond());
             if (taskResult.getException() != null) {
                 sb.append("\n\t\tException: ").append(taskResult.getException().getMessage());
             }
@@ -87,15 +90,6 @@ class DbCopyJob {
                 LOGGER.warn("Error getting computed result from Future object", e);
             }
         }
-    }
-
-    DbCopyJob(final DbcopyJobBean dbcopyJobBean, final AbstractConfiguration configuration) {
-        this.dbcopyJobBean = dbcopyJobBean;
-        this.externalConfiguration = configuration;
-        executionController = new ExecutionController(dbcopyJobBean.getId(), dbcopyJobBean.getThreads(),
-                dbcopyJobBean.getThreads());
-        MBeanHelper.registerMBean("com.dattack.dbcopy:type=ThreadPool,name=" + dbcopyJobBean.getId(),
-                executionController);
     }
 
     void execute() {
