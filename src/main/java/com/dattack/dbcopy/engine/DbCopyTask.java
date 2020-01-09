@@ -35,7 +35,6 @@ import java.util.zip.GZIPOutputStream;
 
 import javax.sql.DataSource;
 
-import com.dattack.formats.csv.CSVConfiguration;
 import com.dattack.formats.csv.CSVStringBuilder;
 import com.dattack.jtoolbox.io.IOUtils;
 import org.apache.commons.configuration.AbstractConfiguration;
@@ -97,20 +96,6 @@ class DbCopyTask implements Callable<DbCopyTaskResult> {
         return futureList;
     }
 
-    private Writer createExportOutputWriter() throws IOException {
-
-        Path path = Paths.get(ConfigurationUtil.interpolate(dbcopyJobBean.getExportBean().getPath() + sequence.get(), configuration));
-        OutputStream outputStream =  Files.newOutputStream(path,
-                StandardOpenOption.CREATE, //
-                StandardOpenOption.WRITE, //
-                StandardOpenOption.TRUNCATE_EXISTING);
-
-        if (dbcopyJobBean.getExportBean().isGzip()) {
-            outputStream = new GZIPOutputStream(outputStream);
-        }
-
-        return new BufferedWriter(new OutputStreamWriter(outputStream, StandardCharsets.UTF_8));
-    }
 
     private List<Future<?>> createExportFutures(DataTransfer dataTransfer) throws IOException {
 
@@ -124,21 +109,15 @@ class DbCopyTask implements Callable<DbCopyTaskResult> {
             MBeanHelper.registerMBean("com.dattack.dbcopy:type=ThreadPool,name=Export-" + dbcopyJobBean.getId() + "-"
                     + sequence.getAndIncrement(), executionController);
 
-            Writer writer = createExportOutputWriter();
-            taskResult.addOnEndCommand(() -> {IOUtils.closeQuietly(writer); return null; });
-
-            // TODO: a code review is mandatory so this is only for CSV export
-            CSVConfiguration configuration = new CSVConfiguration.CsvConfigurationBuilder().build();
-            CSVStringBuilder csvBuilder = new CSVStringBuilder(configuration);
-            for (ColumnMetadata columnMetadata: dataTransfer.getRowMetadata().getColumnsMetadata()) {
-                csvBuilder.append(columnMetadata.getName());
-            }
-            csvBuilder.eol();
-            writer.write(csvBuilder.toString());
+            ExportWriteWrapper writer = ExportOperation.createExportOutputWriter(dbcopyJobBean.getExportBean(), configuration);
+            taskResult.addOnEndCommand(() -> {
+                    IOUtils.closeQuietly(writer);
+                    return null; }
+                );
 
             for (int i = 0; i < dbcopyJobBean.getExportBean().getParallel(); i++) {
                 futureList.add(executionController.submit(new ExportOperation(dbcopyJobBean.getExportBean(),
-                        dataTransfer, taskResult, createExportOutputWriter())));
+                        dataTransfer, taskResult, writer)));
             }
 
             executionController.shutdown();

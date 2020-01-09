@@ -44,6 +44,9 @@ public class ExportOperationBean implements Serializable {
     @XmlAttribute(name = "batch-size", required = false)
     private int batchSize = DEFAULT_BATCH_SIZE;
 
+    @XmlAttribute(name = "format-file", required = false)
+    private String formatFile;
+
     public String getPath() {
         return path;
     }
@@ -62,5 +65,9 @@ public class ExportOperationBean implements Serializable {
 
     public int getParallel() {
         return parallel > DEFAULT_PARALLEL ? parallel : DEFAULT_PARALLEL;
+    }
+
+    public String getFormatFile() {
+        return formatFile;
     }
 }

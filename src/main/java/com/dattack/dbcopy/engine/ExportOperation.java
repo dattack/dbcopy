@@ -18,16 +18,25 @@ package com.dattack.dbcopy.engine;
 import com.dattack.dbcopy.beans.ExportOperationBean;
 import com.dattack.formats.csv.CSVConfiguration;
 import com.dattack.formats.csv.CSVStringBuilder;
+import com.dattack.jtoolbox.commons.configuration.ConfigurationUtil;
+import org.apache.commons.configuration.AbstractConfiguration;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.io.Writer;
+import java.io.*;
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.sql.*;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Properties;
 import java.util.concurrent.Callable;
+import java.util.zip.GZIPOutputStream;
 
 /**
  * Executes the EXPORT operations.
@@ -42,39 +51,86 @@ class ExportOperation implements Callable<Integer> {
     private final ExportOperationBean bean;
     private final DataTransfer dataTransfer;
     private DbCopyTaskResult taskResult;
-    private Writer writer;
+    private ExportWriteWrapper writer;
 
     ExportOperation(final ExportOperationBean bean, final DataTransfer dataTransfer,
-                    final DbCopyTaskResult taskResult, final Writer writer) {
+                    final DbCopyTaskResult taskResult, final ExportWriteWrapper writer) {
         this.bean = bean;
         this.dataTransfer = dataTransfer;
         this.taskResult = taskResult;
         this.writer = writer;
     }
 
+    public static ExportWriteWrapper createExportOutputWriter(ExportOperationBean exportOperationBean, AbstractConfiguration configuration) throws IOException {
+
+        Path path = Paths.get(ConfigurationUtil.interpolate(exportOperationBean.getPath(), configuration));
+        Path parent = path.getParent();
+        if (parent != null) {
+            Files.createDirectories(parent);
+        }
+        OutputStream outputStream =  Files.newOutputStream(path,
+                StandardOpenOption.CREATE, //
+                StandardOpenOption.WRITE, //
+                StandardOpenOption.TRUNCATE_EXISTING);
+
+        if (exportOperationBean.isGzip()) {
+            outputStream = new GZIPOutputStream(outputStream);
+        }
+
+        return new ExportWriteWrapper(path, new BufferedWriter(new OutputStreamWriter(outputStream,
+                StandardCharsets.UTF_8)));
+    }
+
+    private String getHeader(CSVStringBuilder builder) {
+
+        for (ColumnMetadata columnMetadata: dataTransfer.getRowMetadata().getColumnsMetadata()) {
+            builder.append(columnMetadata.getName());
+        }
+        builder.eol();
+        return builder.toString();
+    }
+
+    public static CSVStringBuilder createCSVStringBuilder(final String formatFile) throws IOException {
+
+        Properties properties = new Properties();
+        if (StringUtils.isNotBlank(formatFile)) {
+            properties.load(new FileInputStream(formatFile));
+        }
+        CSVConfiguration configuration = new CSVConfiguration.CsvConfigurationBuilder(properties)
+                .build();
+        return new CSVStringBuilder(configuration);
+    }
+
     @Override
     public Integer call() throws SQLException, IOException, InterruptedException {
 
         int totalExportedRows = 0;
+        try {
 
-        CSVConfiguration configuration = new CSVConfiguration.CsvConfigurationBuilder().build();
-        CSVStringBuilder builder = new CSVStringBuilder(configuration);
+            CSVStringBuilder builder = createCSVStringBuilder(bean.getFormatFile());
+            writer.open(getHeader(builder));
+            builder.clear();
 
-        while (true) {
-            List<Object> row = dataTransfer.transfer();
-            if (row == null) {
-                break;
+            while (true) {
+                List<Object> row = dataTransfer.transfer();
+                if (row == null) {
+                    break;
+                }
+                populate(builder, row);
+                taskResult.addProcessedRows(1);
+                totalExportedRows++;
+                if (totalExportedRows % bean.getBatchSize() == 0) {
+                    String line = builder.toString();
+                    writer.write(line);
+                    builder.clear();
+                }
             }
-            populate(builder, row);
-            taskResult.addProcessedRows(1);
-            totalExportedRows++;
-            if (totalExportedRows % bean.getBatchSize() == 0) {
-                writer.write(builder.toString());
-                builder.clear();
-            }
+            String line = builder.toString();
+            writer.write(line);
+        } catch (IOException e) {
+            LOGGER.error("I/O error {}: {}", writer, e.getMessage());
+            throw e;
         }
-        writer.write(builder.toString());
-        writer.flush();
 
         return totalExportedRows;
     }
