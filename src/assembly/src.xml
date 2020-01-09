@@ -42,7 +42,7 @@
             <fileMode>440</fileMode>
         </fileSet>
         <fileSet>
-            <directory>${project.basedir}/src/main/assembly/lib/ext</directory>
+            <directory>${project.basedir}/src/assembly/lib/ext</directory>
             <outputDirectory>lib/ext</outputDirectory>
             <includes>
                 <include>readme</include>
@@ -50,7 +50,7 @@
             <fileMode>440</fileMode>
         </fileSet>
         <fileSet>
-            <directory>${project.basedir}/src/main/assembly/etc</directory>
+            <directory>${project.basedir}/src/assembly/etc</directory>
             <outputDirectory>etc</outputDirectory>
             <fileMode>640</fileMode>
         </fileSet>
