@@ -146,7 +146,7 @@ class DbCopyJob {
                 for (long i = bean.getLowValue(); i < bean.getHighValue(); i += bean.getBlockSize()) {
 
                     final long lowValue = i;
-                    final long highValue = i + bean.getBlockSize();
+                    final long highValue = Math.min(i + bean.getBlockSize(), bean.getHighValue());
 
                     final BaseConfiguration baseConfiguration = createBaseConfiguration();
                     baseConfiguration.setProperty(bean.getId() + ".low", lowValue);
