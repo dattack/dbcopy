@@ -15,7 +15,11 @@
  */
 package com.dattack.dbcopy.engine;
 
-import java.sql.SQLException;
+import com.dattack.jtoolbox.patterns.Command;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * @author cvarela
@@ -26,25 +30,35 @@ public final class DbCopyTaskResult implements DbCopyTaskResultMBean {
     private final String taskName;
     private long startTime;
     private long endTime;
-    private long retrievedRows;
-    private long insertedRows;
-    private SQLException exception;
+    private AtomicLong retrievedRows;
+    private AtomicLong processedRows;
+    private Exception exception;
+    private List<Command> onEndCommandList;
 
     public DbCopyTaskResult(final String taskName) {
         this.taskName = taskName;
-        this.retrievedRows = 0;
-        this.insertedRows = 0;
+        this.retrievedRows = new AtomicLong(0);
+        this.processedRows = new AtomicLong(0);
         this.startTime = 0;
         this.endTime = 0;
         this.exception = null;
+        this.onEndCommandList = new ArrayList<>();
     }
 
-    public void addInsertedRows(final int value) {
-        this.insertedRows += value;
+    public void addProcessedRows(final int value) {
+        this.processedRows.addAndGet(value);
+    }
+
+    public void addOnEndCommand(Command command) {
+        onEndCommandList.add(command);
     }
 
     public void end() {
         this.endTime = System.currentTimeMillis();
+
+        for (Command command : onEndCommandList) {
+            command.execute();
+        }
     }
 
     @Override
@@ -53,8 +67,12 @@ public final class DbCopyTaskResult implements DbCopyTaskResultMBean {
     }
 
     @Override
-    public SQLException getException() {
+    public Exception getException() {
         return exception;
+    }
+
+    public void setException(final Exception exception) {
+        this.exception = exception;
     }
 
     public long getExecutionTime() {
@@ -69,35 +87,35 @@ public final class DbCopyTaskResult implements DbCopyTaskResultMBean {
     }
 
     @Override
-    public long getInsertedRows() {
-        return insertedRows;
+    public long getTotalProcessedRows() {
+        return processedRows.longValue();
     }
 
     @Override
-    public float getRateRowsInsertedPerSecond() {
+    public float getProcessedRowsPerSecond() {
 
         final long executionTime = getExecutionTime();
         if (executionTime <= 0) {
             return 0;
         }
 
-        return getInsertedRows() * 1000F / executionTime;
+        return getTotalProcessedRows() * 1000F / executionTime;
     }
 
     @Override
-    public float getRateRowsRetrievedPerSecond() {
+    public float getRetrievedRowsPerSecond() {
 
         final long executionTime = getExecutionTime();
         if (executionTime <= 0) {
             return 0;
         }
 
-        return getRetrievedRows() * 1000F / executionTime;
+        return getTotalRetrievedRows() * 1000F / executionTime;
     }
 
     @Override
-    public long getRetrievedRows() {
-        return retrievedRows;
+    public long getTotalRetrievedRows() {
+        return retrievedRows.longValue();
     }
 
     @Override
@@ -111,11 +129,7 @@ public final class DbCopyTaskResult implements DbCopyTaskResultMBean {
     }
 
     public void incrementRetrievedRows() {
-        this.retrievedRows += 1;
-    }
-
-    public void setException(final SQLException exception) {
-        this.exception = exception;
+        this.retrievedRows.incrementAndGet();
     }
 
     public void start() {
@@ -127,7 +141,7 @@ public final class DbCopyTaskResult implements DbCopyTaskResultMBean {
 
         final StringBuilder str = new StringBuilder().append("DbCopyTaskResult [taskName=").append(taskName)
                 .append(", retrievedRows=").append(retrievedRows) //
-                .append(", insertedRows=").append(insertedRows);
+                .append(", processedRows=").append(processedRows);
 
         if (exception != null) {
             str.append(", exception=").append(exception);

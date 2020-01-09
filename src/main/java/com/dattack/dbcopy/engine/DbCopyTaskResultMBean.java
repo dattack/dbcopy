@@ -15,8 +15,6 @@
  */
 package com.dattack.dbcopy.engine;
 
-import java.sql.SQLException;
-
 /**
  * @author cvarela
  * @since 0.1
@@ -25,15 +23,15 @@ public interface DbCopyTaskResultMBean {
 
     long getEndTime();
 
-    SQLException getException();
+    Exception getException();
 
-    long getInsertedRows();
+    float getProcessedRowsPerSecond();
 
-    float getRateRowsInsertedPerSecond();
+    float getRetrievedRowsPerSecond();
 
-    float getRateRowsRetrievedPerSecond();
+    long getTotalRetrievedRows();
 
-    long getRetrievedRows();
+    long getTotalProcessedRows();
 
     long getStartTime();
 
