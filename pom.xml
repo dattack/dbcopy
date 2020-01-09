@@ -7,7 +7,7 @@
         <version>2</version>
     </parent>
     <artifactId>dbcopy</artifactId>
-    <version>0.1-SNAPSHOT</version>
+    <version>0.2</version>
     <packaging>jar</packaging>
     <name>dbcopy</name>
     <description>dbCopy is a database copy and conversion tool that moves or copies data from one database to another.</description>
@@ -62,14 +62,14 @@
         <commons-cli.version>1.3.1</commons-cli.version>
         <compiler.source.version>1.7</compiler.source.version>
         <compiler.target.version>1.7</compiler.target.version>
-        <data-formats.version>0.2-SNAPSHOT</data-formats.version>
+        <data-formats.version>0.2.1</data-formats.version>
         <h2.version>1.4.195</h2.version>
         <javax-xml-bind.version>2.2.3</javax-xml-bind.version>
         <junit.version>4.12</junit.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <slf4j.version>1.7.25</slf4j.version>
         <sqlite-jdbc.version>3.28.0</sqlite-jdbc.version>
-        <standalone-jndi.version>0.2-SNAPSHOT</standalone-jndi.version>
+        <standalone-jndi.version>0.2</standalone-jndi.version>
     </properties>
     <dependencies>
         <dependency>
