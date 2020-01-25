@@ -19,6 +19,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 
@@ -34,6 +35,9 @@ public class DbcopyBean implements Serializable {
     @XmlElement(name = "job", required = true, type = DbcopyJobBean.class)
     private final List<DbcopyJobBean> jobList;
 
+    @XmlAttribute(name = "parallel", required = false)
+    private int parallel = 1;
+
     public DbcopyBean() {
         this.jobList = new ArrayList<>();
     }
@@ -43,5 +47,9 @@ public class DbcopyBean implements Serializable {
      */
     public List<DbcopyJobBean> getJobList() {
         return jobList;
+    }
+
+    public int getParallel() {
+        return parallel;
     }
 }

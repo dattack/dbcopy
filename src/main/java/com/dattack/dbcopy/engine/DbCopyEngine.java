@@ -33,6 +33,26 @@ import com.dattack.jtoolbox.io.FilesystemUtils;
  */
 public final class DbCopyEngine {
 
+    private void execute(final DbcopyBean dbcopyBean, final Set<String> jobNames, final AbstractConfiguration configuration) {
+
+        ExecutionController executionController = new ExecutionController("root", dbcopyBean.getParallel(),
+                dbcopyBean.getParallel());
+        MBeanHelper.registerMBean("com.dattack.dbcopy:type=ThreadPool,name=root",
+                executionController);
+
+        for (final DbcopyJobBean jobBean : dbcopyBean.getJobList()) {
+
+            if (jobNames != null && !jobNames.isEmpty() && !jobNames.contains(jobBean.getId())) {
+                continue;
+            }
+
+            final DbCopyJob job = new DbCopyJob(jobBean, configuration);
+            executionController.submit(job);
+        }
+
+        executionController.shutdown();
+    }
+
     private void execute(final File file, final Set<String> jobNames, final AbstractConfiguration configuration)
             throws ConfigurationException, DattackParserException {
 
@@ -48,16 +68,7 @@ public final class DbCopyEngine {
         } else {
 
             final DbcopyBean dbcopyBean = DbcopyParser.parse(file);
-
-            for (final DbcopyJobBean jobBean : dbcopyBean.getJobList()) {
-
-                if (jobNames != null && !jobNames.isEmpty() && !jobNames.contains(jobBean.getId())) {
-                    continue;
-                }
-
-                final DbCopyJob job = new DbCopyJob(jobBean, configuration);
-                job.execute();
-            }
+            execute(dbcopyBean, jobNames, configuration);
         }
     }
 

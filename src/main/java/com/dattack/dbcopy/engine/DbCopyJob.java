@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
@@ -37,7 +38,7 @@ import java.util.concurrent.Future;
  * @author cvarela
  * @since 0.1
  */
-class DbCopyJob {
+class DbCopyJob implements Callable<Void> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DbCopyJob.class);
 
@@ -92,7 +93,8 @@ class DbCopyJob {
         }
     }
 
-    void execute() {
+    @Override
+    public Void call() {
 
         LOGGER.info("Running job '{}' at thread '{}'", dbcopyJobBean.getId(), Thread.currentThread().getName());
 
@@ -137,7 +139,6 @@ class DbCopyJob {
                             jobResult.createTaskResult(taskName));
                     futureList.add(executionController.submit(dbcopyTask));
                 }
-
             }
 
             @Override
@@ -145,11 +146,10 @@ class DbCopyJob {
 
                 for (long i = bean.getLowValue(); i < bean.getHighValue(); i += bean.getBlockSize()) {
 
-                    final long lowValue = i;
                     final long highValue = Math.min(i + bean.getBlockSize(), bean.getHighValue());
 
                     final BaseConfiguration baseConfiguration = createBaseConfiguration();
-                    baseConfiguration.setProperty(bean.getId() + ".low", lowValue);
+                    baseConfiguration.setProperty(bean.getId() + ".low", i);
                     baseConfiguration.setProperty(bean.getId() + ".high", highValue);
 
                     final CompositeConfiguration configuration = new CompositeConfiguration();
@@ -157,7 +157,7 @@ class DbCopyJob {
                     configuration.addConfiguration(ConfigurationUtil.createEnvSystemConfiguration());
                     configuration.addConfiguration(baseConfiguration);
 
-                    final String taskName = String.format("Task_%d_%d", lowValue, highValue);
+                    final String taskName = String.format("Task_%d_%d", i, highValue);
 
                     final DbCopyTask dbcopyTask = new DbCopyTask(dbcopyJobBean, configuration,
                             jobResult.createTaskResult(taskName));
@@ -195,5 +195,7 @@ class DbCopyJob {
 
         LOGGER.info("Job finished (job-name: '{}', thread: '{}')", dbcopyJobBean.getId(),
                 Thread.currentThread().getName());
+
+        return null;
     }
 }
