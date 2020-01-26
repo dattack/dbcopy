@@ -21,6 +21,7 @@ import com.dattack.jtoolbox.jdbc.JDBCUtils;
 import com.dattack.jtoolbox.jdbc.JNDIDataSource;
 import com.dattack.jtoolbox.jdbc.NamedParameterPreparedStatement;
 import org.apache.commons.configuration.AbstractConfiguration;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -120,10 +121,35 @@ class InsertOperation implements Callable<Integer> {
         return connection;
     }
 
+    private String createAutomapSql() {
+        StringBuilder columns = new StringBuilder();
+        StringBuilder refs = new StringBuilder();
+
+        String concat = "";
+
+        for (ColumnMetadata columnMetadata: dataTransfer.getRowMetadata().getColumnsMetadata()) {
+            columns.append(concat).append(columnMetadata.getName());
+            refs.append(concat).append(":").append(columnMetadata.getName());
+            concat = ",";
+        }
+
+        return String.format("INSERT INTO %s(%s) VALUES (%s)", bean.getTable(), columns.toString(), refs.toString());
+    }
+
     private NamedParameterPreparedStatement getPreparedStatement() throws SQLException {
         if (preparedStatement == null) {
+            String sql;
+            if (StringUtils.isNotBlank(bean.getSql())) {
+                sql = bean.getSql();
+            } else if (StringUtils.isNotBlank(bean.getTable())) {
+                sql = createAutomapSql();
+            } else {
+                throw new SQLException("Missing insert statement or table name");
+            }
+
+            LOGGER.info(sql);
             preparedStatement = NamedParameterPreparedStatement.build(getConnection(),
-                    ConfigurationUtil.interpolate(bean.getSql(), configuration));
+                    ConfigurationUtil.interpolate(sql, configuration));
         }
         return preparedStatement;
     }
