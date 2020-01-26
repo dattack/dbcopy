@@ -174,8 +174,14 @@ class ExportOperation implements Callable<Integer> {
                         csvBuilder.append((Timestamp) value);
                         break;
                     case Types.DECIMAL:
+                    case Types.NUMERIC:
                         BigDecimal bigDecimal = (BigDecimal) value;
-                        csvBuilder.append(bigDecimal.doubleValue());
+                        int scale = bigDecimal.scale();
+                         if (scale == 0) {
+                             csvBuilder.append(bigDecimal.longValue());
+                         } else {
+                             csvBuilder.append(bigDecimal.doubleValue());
+                         }
                         break;
                     case Types.DOUBLE:
                         csvBuilder.append(((Number) value).doubleValue());
@@ -189,15 +195,16 @@ class ExportOperation implements Callable<Integer> {
                     case Types.INTEGER:
                         csvBuilder.append(((Number) value).intValue());
                         break;
-                    case Types.NUMERIC:
-                        Number n = (Number) value;
-                        int scale = columnMetadata.getScale();
-                        if (scale == 0) {
-                            csvBuilder.append(n.longValue());
-                        } else {
-                            csvBuilder.append(n.doubleValue());
-                        }
-                        break;
+                    // case Types.NUMERIC:
+                       // BigDecimal bigDecimal = (BigDecimal) value;
+                        // csvBuilder.append(bigDecimal.doubleValue());
+                        // int scale = columnMetadata.getScale();
+                        // if (scale == 0) {
+                        //     csvBuilder.append(n.longValue());
+                        // } else {
+                        //     csvBuilder.append(n.doubleValue());
+                        // }
+                        //break;
                     case Types.BIGINT:
                         Number bigInteger = (Number) value;
                         csvBuilder.append(bigInteger.longValue());
