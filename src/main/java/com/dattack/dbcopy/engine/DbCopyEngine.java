@@ -16,7 +16,11 @@
 package com.dattack.dbcopy.engine;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 
 import org.apache.commons.configuration.AbstractConfiguration;
 import org.apache.commons.configuration.ConfigurationException;
@@ -26,12 +30,16 @@ import com.dattack.dbcopy.beans.DbcopyJobBean;
 import com.dattack.dbcopy.beans.DbcopyParser;
 import com.dattack.jtoolbox.exceptions.DattackParserException;
 import com.dattack.jtoolbox.io.FilesystemUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author cvarela
  * @since 0.1
  */
 public final class DbCopyEngine {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(DbCopyEngine.class);
 
     private void execute(final DbcopyBean dbcopyBean, final Set<String> jobNames, final AbstractConfiguration configuration) {
 
@@ -40,6 +48,7 @@ public final class DbCopyEngine {
         MBeanHelper.registerMBean("com.dattack.dbcopy:type=ThreadPool,name=root",
                 executionController);
 
+        final List<Future<?>> futureList = new ArrayList<>();
         for (final DbcopyJobBean jobBean : dbcopyBean.getJobList()) {
 
             if (jobNames != null && !jobNames.isEmpty() && !jobNames.contains(jobBean.getId())) {
@@ -47,10 +56,18 @@ public final class DbCopyEngine {
             }
 
             final DbCopyJob job = new DbCopyJob(jobBean, configuration);
-            executionController.submit(job);
+            futureList.add(executionController.submit(job));
         }
 
         executionController.shutdown();
+
+        for (final Future<?> future : futureList) {
+            try {
+                LOGGER.info("Future result: {}", future.get());
+            } catch (final InterruptedException | ExecutionException e) {
+                LOGGER.warn("Error getting computed result from Future object", e);
+            }
+        }
     }
 
     private void execute(final File file, final Set<String> jobNames, final AbstractConfiguration configuration)
