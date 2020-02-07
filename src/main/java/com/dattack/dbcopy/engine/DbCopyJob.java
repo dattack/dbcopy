@@ -115,12 +115,12 @@ class DbCopyJob implements Callable<Void> {
             @Override
             public void visite(LiteralListBean bean) {
 
-                Iterator<Integer> it = bean.getValues().iterator();
+                Iterator<String> it = bean.getValues().iterator();
 
                 int taskId = 0;
                 while (it.hasNext()) {
 
-                    List<Integer> values = new ArrayList<>();
+                    List<String> values = new ArrayList<>();
                     while (it.hasNext() && values.size() < bean.getBlockSize()) {
                         values.add(it.next());
                     }

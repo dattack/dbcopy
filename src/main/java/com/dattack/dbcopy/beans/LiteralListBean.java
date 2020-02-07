@@ -38,12 +38,12 @@ public class LiteralListBean extends AbstractVariableBean {
         this.blockSize = DEFAULT_BLOCK_SIZE;
     }
 
-    public List<Integer> getValues() {
+    public List<String> getValues() {
 
-        List<Integer> list = new ArrayList<>();
+        List<String> list = new ArrayList<>();
         String[] items = values.split(",");
         for (String item : items) {
-            list.add(Integer.valueOf(item.trim()));
+            list.add(item.trim());
         }
         return list;
     }
