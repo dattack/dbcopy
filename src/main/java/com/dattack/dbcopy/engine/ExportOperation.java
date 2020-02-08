@@ -18,25 +18,17 @@ package com.dattack.dbcopy.engine;
 import com.dattack.dbcopy.beans.ExportOperationBean;
 import com.dattack.formats.csv.CSVConfiguration;
 import com.dattack.formats.csv.CSVStringBuilder;
-import com.dattack.jtoolbox.commons.configuration.ConfigurationUtil;
-import org.apache.commons.configuration.AbstractConfiguration;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.math.BigDecimal;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
 import java.sql.*;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.Callable;
-import java.util.zip.GZIPOutputStream;
 
 /**
  * Executes the EXPORT operations.
@@ -51,34 +43,15 @@ class ExportOperation implements Callable<Integer> {
     private final ExportOperationBean bean;
     private final DataTransfer dataTransfer;
     private DbCopyTaskResult taskResult;
-    private ExportWriteWrapper writer;
+    private final ExportWriteWrapper writer;
 
     ExportOperation(final ExportOperationBean bean, final DataTransfer dataTransfer,
-                    final DbCopyTaskResult taskResult, final ExportWriteWrapper writer) {
+                    final DbCopyTaskResult taskResult,
+                    ExportWriteWrapper writer) {
         this.bean = bean;
         this.dataTransfer = dataTransfer;
         this.taskResult = taskResult;
         this.writer = writer;
-    }
-
-    public static ExportWriteWrapper createExportOutputWriter(ExportOperationBean exportOperationBean, AbstractConfiguration configuration) throws IOException {
-
-        Path path = Paths.get(ConfigurationUtil.interpolate(exportOperationBean.getPath(), configuration));
-        Path parent = path.getParent();
-        if (parent != null) {
-            Files.createDirectories(parent);
-        }
-        OutputStream outputStream =  Files.newOutputStream(path,
-                StandardOpenOption.CREATE, //
-                StandardOpenOption.WRITE, //
-                StandardOpenOption.TRUNCATE_EXISTING);
-
-        if (exportOperationBean.isGzip()) {
-            outputStream = new GZIPOutputStream(outputStream);
-        }
-
-        return new ExportWriteWrapper(path, new BufferedWriter(new OutputStreamWriter(outputStream,
-                StandardCharsets.UTF_8)));
     }
 
     private String getHeader(CSVStringBuilder builder) {
@@ -90,11 +63,11 @@ class ExportOperation implements Callable<Integer> {
         return builder.toString();
     }
 
-    public static CSVStringBuilder createCSVStringBuilder(final String formatFile) throws IOException {
+    private CSVStringBuilder createCSVStringBuilder() throws IOException {
 
         Properties properties = new Properties();
-        if (StringUtils.isNotBlank(formatFile)) {
-            properties.load(new FileInputStream(formatFile));
+        if (StringUtils.isNotBlank(bean.getFormatFile())) {
+            properties.load(new FileInputStream(bean.getFormatFile()));
         }
         CSVConfiguration configuration = new CSVConfiguration.CsvConfigurationBuilder(properties)
                 .build();
@@ -105,10 +78,10 @@ class ExportOperation implements Callable<Integer> {
     public Integer call() throws SQLException, IOException, InterruptedException {
 
         int totalExportedRows = 0;
-        try {
 
-            CSVStringBuilder builder = createCSVStringBuilder(bean.getFormatFile());
-            writer.open(getHeader(builder));
+        try {
+            CSVStringBuilder builder = createCSVStringBuilder();
+            writer.setHeader(getHeader(builder));
             builder.clear();
 
             while (true) {
@@ -120,8 +93,8 @@ class ExportOperation implements Callable<Integer> {
                 taskResult.addProcessedRows(1);
                 totalExportedRows++;
                 if (totalExportedRows % bean.getBatchSize() == 0) {
-                    String line = builder.toString();
-                    writer.write(line);
+                    LOGGER.debug("Exported rows: {}", totalExportedRows);
+                    writer.write(builder.toString());
                     builder.clear();
                 }
             }

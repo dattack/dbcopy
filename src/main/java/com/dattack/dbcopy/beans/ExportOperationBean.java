@@ -47,6 +47,15 @@ public class ExportOperationBean implements Serializable {
     @XmlAttribute(name = "format-file", required = false)
     private String formatFile;
 
+    @XmlAttribute(name = "rotate-size", required = false)
+    private long rotateSize = -1;
+
+    @XmlAttribute(name = "buffer-size", required = false)
+    private int bufferSize = -1;
+
+    @XmlAttribute(name = "move-to", required = false)
+    private String move2path;
+
     public String getPath() {
         return path;
     }
@@ -69,5 +78,17 @@ public class ExportOperationBean implements Serializable {
 
     public String getFormatFile() {
         return formatFile;
+    }
+
+    public long getRotateSize() {
+        return rotateSize;
+    }
+
+    public String getMove2path() {
+        return move2path;
+    }
+
+    public int getBufferSize() {
+        return bufferSize;
     }
 }

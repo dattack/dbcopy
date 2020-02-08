@@ -15,12 +15,15 @@
  */
 package com.dattack.dbcopy.engine;
 
-import java.io.*;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
+import com.dattack.dbcopy.beans.DbcopyJobBean;
+import com.dattack.jtoolbox.commons.configuration.ConfigurationUtil;
+import com.dattack.jtoolbox.io.IOUtils;
+import com.dattack.jtoolbox.jdbc.JNDIDataSource;
+import org.apache.commons.configuration.AbstractConfiguration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -31,19 +34,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.zip.GZIPOutputStream;
-
-import javax.sql.DataSource;
-
-import com.dattack.formats.csv.CSVStringBuilder;
-import com.dattack.jtoolbox.io.IOUtils;
-import org.apache.commons.configuration.AbstractConfiguration;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.dattack.dbcopy.beans.DbcopyJobBean;
-import com.dattack.jtoolbox.commons.configuration.ConfigurationUtil;
-import com.dattack.jtoolbox.jdbc.JNDIDataSource;
 
 /**
  * @author cvarela
@@ -52,17 +42,58 @@ import com.dattack.jtoolbox.jdbc.JNDIDataSource;
 class DbCopyTask implements Callable<DbCopyTaskResult> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DbCopyTask.class);
-
+    private static final AtomicInteger sequence = new AtomicInteger();
     private final AbstractConfiguration configuration;
     private final DbcopyJobBean dbcopyJobBean;
     private final DbCopyTaskResult taskResult;
-    private static final AtomicInteger sequence = new AtomicInteger();
 
     public DbCopyTask(final DbcopyJobBean dbcopyJobBean, final AbstractConfiguration configuration,
-            final DbCopyTaskResult taskResult) {
+                      final DbCopyTaskResult taskResult) {
         this.dbcopyJobBean = dbcopyJobBean;
         this.configuration = configuration;
         this.taskResult = taskResult;
+    }
+
+    @Override
+    public DbCopyTaskResult call() {
+
+        taskResult.start();
+
+        LOGGER.info("DBCopy task started {} (Thread: {})", taskResult.getTaskName(), Thread.currentThread().getName());
+
+        final String compiledSql = compileSql();
+        LOGGER.info("Executing SQL: {}", compiledSql);
+
+        try (Connection selectConn = getDataSource().getConnection(); //
+             Statement selectStmt = createStatement(selectConn); //
+             ResultSet resultSet = selectStmt.executeQuery(compiledSql) //
+        ) {
+
+            DataTransfer dataTransfer = new DataTransfer(resultSet, taskResult);
+
+            final List<Future<?>> futureList = new ArrayList<>();
+            futureList.addAll(createInsertFutures(dataTransfer));
+            futureList.addAll(createExportFutures(dataTransfer));
+
+            showFutures(futureList);
+            LOGGER.info("DBCopy task finished {}", taskResult.getTaskName());
+
+        } catch (final Exception e) {
+            LOGGER.error("DBCopy task failed {}", taskResult.getTaskName());
+            taskResult.setException(e);
+        }
+
+        taskResult.end();
+        return taskResult;
+    }
+
+    private String compileSql() {
+        return ConfigurationUtil.interpolate(dbcopyJobBean.getSelectBean().getSql(), configuration);
+    }
+
+    private DataSource getDataSource() {
+        return new JNDIDataSource(
+                ConfigurationUtil.interpolate(dbcopyJobBean.getSelectBean().getDatasource(), configuration));
     }
 
     private Statement createStatement(Connection connection) throws SQLException {
@@ -96,8 +127,7 @@ class DbCopyTask implements Callable<DbCopyTaskResult> {
         return futureList;
     }
 
-
-    private List<Future<?>> createExportFutures(DataTransfer dataTransfer) throws IOException {
+    private List<Future<?>> createExportFutures(DataTransfer dataTransfer) {
 
         final List<Future<?>> futureList = new ArrayList<>();
 
@@ -109,11 +139,12 @@ class DbCopyTask implements Callable<DbCopyTaskResult> {
             MBeanHelper.registerMBean("com.dattack.dbcopy:type=ThreadPool,name=Export-" + dbcopyJobBean.getId() + "-"
                     + sequence.getAndIncrement(), executionController);
 
-            ExportWriteWrapper writer = ExportOperation.createExportOutputWriter(dbcopyJobBean.getExportBean(), configuration);
+
+            ExportWriteWrapper writer = new ExportWriteWrapper(dbcopyJobBean.getExportBean(), configuration);
             taskResult.addOnEndCommand(() -> {
                     IOUtils.closeQuietly(writer);
                     return null; }
-                );
+            );
 
             for (int i = 0; i < dbcopyJobBean.getExportBean().getParallel(); i++) {
                 futureList.add(executionController.submit(new ExportOperation(dbcopyJobBean.getExportBean(),
@@ -126,39 +157,6 @@ class DbCopyTask implements Callable<DbCopyTaskResult> {
         return futureList;
     }
 
-    @Override
-    public DbCopyTaskResult call() {
-
-        taskResult.start();
-
-        LOGGER.info("DBCopy task started {} (Thread: {})", taskResult.getTaskName(), Thread.currentThread().getName());
-
-        final String compiledSql = compileSql();
-        LOGGER.info("Executing SQL: {}", compiledSql);
-
-        try (Connection selectConn = getDataSource().getConnection(); //
-                Statement selectStmt = createStatement(selectConn); //
-                ResultSet resultSet = selectStmt.executeQuery(compiledSql) //
-        ) {
-
-            DataTransfer dataTransfer = new DataTransfer(resultSet, taskResult);
-
-            final List<Future<?>> futureList = new ArrayList<>();
-            futureList.addAll(createInsertFutures(dataTransfer));
-            futureList.addAll(createExportFutures(dataTransfer));
-
-            showFutures(futureList);
-            LOGGER.info("DBCopy task finished {}", taskResult.getTaskName());
-
-        } catch (final Exception e) {
-            LOGGER.error("DBCopy task failed {}", taskResult.getTaskName());
-            taskResult.setException(e);
-        }
-
-        taskResult.end();
-        return taskResult;
-    }
-
     private static void showFutures(final List<Future<?>> futureList) {
 
         for (final Future<?> future : futureList) {
@@ -168,14 +166,5 @@ class DbCopyTask implements Callable<DbCopyTaskResult> {
                 LOGGER.warn("Error getting computed result from Future object", e);
             }
         }
-    }
-
-    private String compileSql() {
-        return ConfigurationUtil.interpolate(dbcopyJobBean.getSelectBean().getSql(), configuration);
-    }
-
-    private DataSource getDataSource() {
-        return new JNDIDataSource(
-                ConfigurationUtil.interpolate(dbcopyJobBean.getSelectBean().getDatasource(), configuration));
     }
 }
