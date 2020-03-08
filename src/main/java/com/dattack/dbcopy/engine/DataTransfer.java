@@ -38,15 +38,18 @@ public class DataTransfer {
 
     private final static Logger LOGGER = LoggerFactory.getLogger(DataTransfer.class);
 
+    private static final int DEFAULT_FETCH_SIZE = 10_000;
+    private int fetchSize;
     private ResultSet resultSet;
     private DbCopyTaskResult taskResult;
     private RowMetadata rowMetadata;
     private TransferQueue<List<Object>> transferQueue;
     private Semaphore semaphore;
 
-    DataTransfer(ResultSet resultSet, DbCopyTaskResult taskResult) throws SQLException {
+    DataTransfer(ResultSet resultSet, DbCopyTaskResult taskResult, int fetchSize) throws SQLException {
         this.resultSet = resultSet;
         this.taskResult = taskResult;
+        this.fetchSize = fetchSize > 0 ? fetchSize : DEFAULT_FETCH_SIZE;
         this.transferQueue = new LinkedTransferQueue<>();
         this.semaphore = new Semaphore(1);
         populateRowMetadata();
@@ -96,15 +99,16 @@ public class DataTransfer {
             if (row == null) {
 
                 if (semaphore.tryAcquire(10, TimeUnit.MILLISECONDS)) {
+                    int priority = Thread.currentThread().getPriority();
                     Thread.currentThread().setPriority(Thread.MAX_PRIORITY);
                     int counter = 0;
                     do {
                         moreData = publish();
-                    } while (moreData && counter++ < 100_000);
+                    } while (moreData && counter++ < fetchSize);
                     semaphore.release();
-                    Thread.currentThread().setPriority(Thread.NORM_PRIORITY);
-                    row = transferQueue.poll();
+                    Thread.currentThread().setPriority(priority);
                 }
+                row = transferQueue.poll();
             }
 
         } while (row == null && moreData);

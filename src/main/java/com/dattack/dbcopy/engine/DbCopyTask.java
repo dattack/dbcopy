@@ -20,6 +20,7 @@ import com.dattack.jtoolbox.commons.configuration.ConfigurationUtil;
 import com.dattack.jtoolbox.io.IOUtils;
 import com.dattack.jtoolbox.jdbc.JNDIDataSource;
 import org.apache.commons.configuration.AbstractConfiguration;
+import org.apache.commons.lang.ObjectUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -69,7 +70,9 @@ class DbCopyTask implements Callable<DbCopyTaskResult> {
              ResultSet resultSet = selectStmt.executeQuery(compiledSql) //
         ) {
 
-            DataTransfer dataTransfer = new DataTransfer(resultSet, taskResult);
+            DataTransfer dataTransfer =
+                    new DataTransfer(resultSet, taskResult, //
+                            dbcopyJobBean.getSelectBean().getFetchSize());
 
             final List<Future<?>> futureList = new ArrayList<>();
             futureList.addAll(createInsertFutures(dataTransfer));
@@ -157,13 +160,14 @@ class DbCopyTask implements Callable<DbCopyTaskResult> {
         return futureList;
     }
 
-    private static void showFutures(final List<Future<?>> futureList) {
+    private void showFutures(final List<Future<?>> futureList) {
 
         for (final Future<?> future : futureList) {
             try {
                 LOGGER.info("Future result: {}", future.get());
             } catch (final InterruptedException | ExecutionException e) {
                 LOGGER.warn("Error getting computed result from Future object", e);
+                taskResult.setException(e);
             }
         }
     }
