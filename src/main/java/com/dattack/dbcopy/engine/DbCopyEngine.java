@@ -23,7 +23,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
 import org.apache.commons.configuration.AbstractConfiguration;
-import org.apache.commons.configuration.ConfigurationException;
 
 import com.dattack.dbcopy.beans.DbcopyBean;
 import com.dattack.dbcopy.beans.DbcopyJobBean;
@@ -71,7 +70,7 @@ public final class DbCopyEngine {
     }
 
     private void execute(final File file, final Set<String> jobNames, final AbstractConfiguration configuration)
-            throws ConfigurationException, DattackParserException {
+            throws DattackParserException {
 
         if (file.isDirectory()) {
 
@@ -90,7 +89,7 @@ public final class DbCopyEngine {
     }
 
     public void execute(final String[] filenames, final Set<String> jobNames, final AbstractConfiguration configuration)
-            throws ConfigurationException, DattackParserException {
+            throws DattackParserException {
 
         for (final String filename : filenames) {
             execute(new File(filename), jobNames, configuration);

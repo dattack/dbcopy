@@ -40,7 +40,7 @@ public class ExportOperationBean implements Serializable {
     public static class TypeAdapter extends XmlAdapter<String, Type> {
 
         @Override
-        public Type unmarshal(String type) throws Exception {
+        public Type unmarshal(String type) {
 
             if (StringUtils.isBlank(type)) {
                 return Type.CSV;
@@ -49,7 +49,7 @@ public class ExportOperationBean implements Serializable {
         }
 
         @Override
-        public String marshal(Type status) throws Exception {
+        public String marshal(Type status) {
 
             return status.name();
         }
@@ -58,32 +58,32 @@ public class ExportOperationBean implements Serializable {
     @XmlAttribute(name = "path", required = true)
     private String path;
 
-    @XmlAttribute(name = "type", required = false)
+    @XmlAttribute(name = "type")
     @XmlJavaTypeAdapter(TypeAdapter.class)
     private Type type = Type.CSV;
 
-    @XmlAttribute(name = "gzip", required = false)
+    @XmlAttribute(name = "gzip")
     private Boolean gzip = Boolean.FALSE;
 
-    @XmlAttribute(name = "parallel", required = false)
+    @XmlAttribute(name = "parallel")
     private int parallel = DEFAULT_PARALLEL;
 
-    @XmlAttribute(name = "batch-size", required = false)
+    @XmlAttribute(name = "batch-size")
     private int batchSize = DEFAULT_BATCH_SIZE;
 
-    @XmlAttribute(name = "format-file", required = false)
+    @XmlAttribute(name = "format-file")
     private String formatFile;
 
-    @XmlAttribute(name = "rotate-size", required = false)
+    @XmlAttribute(name = "rotate-size")
     private long rotateSize = -1;
 
-    @XmlAttribute(name = "buffer-size", required = false)
+    @XmlAttribute(name = "buffer-size")
     private int bufferSize = -1;
 
-    @XmlAttribute(name = "page-size", required = false)
+    @XmlAttribute(name = "page-size")
     private int pageSize = -1;
 
-    @XmlAttribute(name = "move-to", required = false)
+    @XmlAttribute(name = "move-to")
     private String move2path = null;
 
     public String getPath() {
