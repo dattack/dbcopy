@@ -16,11 +16,11 @@
 package com.dattack.dbcopy.engine;
 
 import com.dattack.dbcopy.beans.DbcopyJobBean;
+import com.dattack.dbcopy.engine.export.ExportOperationFactory;
+import com.dattack.dbcopy.engine.export.ExportOperationFactoryProducer;
 import com.dattack.jtoolbox.commons.configuration.ConfigurationUtil;
-import com.dattack.jtoolbox.io.IOUtils;
 import com.dattack.jtoolbox.jdbc.JNDIDataSource;
 import org.apache.commons.configuration.AbstractConfiguration;
-import org.apache.commons.lang.ObjectUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -82,7 +82,7 @@ class DbCopyTask implements Callable<DbCopyTaskResult> {
             LOGGER.info("DBCopy task finished {}", taskResult.getTaskName());
 
         } catch (final Exception e) {
-            LOGGER.error("DBCopy task failed {}", taskResult.getTaskName());
+            LOGGER.error("DBCopy task failed {}: {}", taskResult.getTaskName(), e);
             taskResult.setException(e);
         }
 
@@ -116,8 +116,8 @@ class DbCopyTask implements Callable<DbCopyTaskResult> {
             int poolSize = dbcopyJobBean.getInsertBean().getParallel();
             ExecutionController executionController = new ExecutionController("Insert-" + dbcopyJobBean.getId(),
                     poolSize, poolSize);
-            MBeanHelper.registerMBean("com.dattack.dbcopy:type=ThreadPool,name=Insert-" + dbcopyJobBean.getId() + "-"
-                    + sequence.getAndIncrement(), executionController);
+            MBeanHelper.registerMBean("com.dattack.dbcopy:type=ThreadPool,name=Insert-" + dbcopyJobBean.getId()
+                    + "-" + sequence.getAndIncrement(), executionController);
 
             for (int i = 0; i < dbcopyJobBean.getInsertBean().getParallel(); i++) {
                 futureList.add(executionController.submit(new InsertOperation(dbcopyJobBean.getInsertBean(),
@@ -139,19 +139,14 @@ class DbCopyTask implements Callable<DbCopyTaskResult> {
             int poolSize = dbcopyJobBean.getExportBean().getParallel();
             ExecutionController executionController = new ExecutionController("Export-" + dbcopyJobBean.getId(),
                     poolSize, poolSize);
-            MBeanHelper.registerMBean("com.dattack.dbcopy:type=ThreadPool,name=Export-" + dbcopyJobBean.getId() + "-"
-                    + sequence.getAndIncrement(), executionController);
+            MBeanHelper.registerMBean("com.dattack.dbcopy:type=ThreadPool,name=Export-" + dbcopyJobBean.getId()
+                    + "-" + sequence.getAndIncrement(), executionController);
 
-
-            ExportWriteWrapper writer = new ExportWriteWrapper(dbcopyJobBean.getExportBean(), configuration);
-            taskResult.addOnEndCommand(() -> {
-                    IOUtils.closeQuietly(writer);
-                    return null; }
-            );
+            ExportOperationFactory factory = ExportOperationFactoryProducer.getFactory(dbcopyJobBean.getExportBean(),
+                    configuration);
 
             for (int i = 0; i < dbcopyJobBean.getExportBean().getParallel(); i++) {
-                futureList.add(executionController.submit(new ExportOperation(dbcopyJobBean.getExportBean(),
-                        dataTransfer, taskResult, writer)));
+                futureList.add(executionController.submit(factory.createTask(dataTransfer, taskResult)));
             }
 
             executionController.shutdown();

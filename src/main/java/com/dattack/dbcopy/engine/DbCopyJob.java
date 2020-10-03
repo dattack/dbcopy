@@ -20,9 +20,13 @@ import com.dattack.jtoolbox.commons.configuration.ConfigurationUtil;
 import org.apache.commons.configuration.AbstractConfiguration;
 import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.commons.configuration.CompositeConfiguration;
+import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.awt.*;
+import java.io.File;
+import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -55,7 +59,7 @@ class DbCopyJob implements Callable<Void> {
                 executionController);
     }
 
-    private static void show(final DbCopyJobResult jobResult) {
+    private void show(final DbCopyJobResult jobResult) {
 
         final StringBuilder sb = new StringBuilder();
         sb.append("\nJob ID: ").append(jobResult.getJobBean().getId());
@@ -77,6 +81,17 @@ class DbCopyJob implements Callable<Void> {
             if (taskResult.getException() != null) {
                 sb.append("\n\t\tException: ").append(taskResult.getException().getMessage());
             }
+
+            if (taskResult.getTotalRetrievedRows() != taskResult.getTotalProcessedRows()) {
+                sb.append("\n\n\t\tJOB ENDED WITH ERRORS: SOME ROWS WERE NOT PROCESSED.");
+                sb.append("\n\t\tPLEASE CHECK THE LOG FILE FOR MORE DETAILS");
+            }
+        }
+
+        try {
+            FileUtils.writeStringToFile(new File(dbcopyJobBean.getId() + ".log"), sb.toString());
+        } catch (IOException e) {
+            LOGGER.warn("Unable to write log file for job '{}'. {}", dbcopyJobBean.getId(), e);
         }
 
         LOGGER.info(sb.toString());
@@ -112,31 +127,37 @@ class DbCopyJob implements Callable<Void> {
                 return baseConfiguration;
             }
 
+            private CompositeConfiguration createCompositeConfiguration() {
+                final CompositeConfiguration configuration = new CompositeConfiguration();
+                configuration.addConfiguration(externalConfiguration);
+                configuration.addConfiguration(ConfigurationUtil.createEnvSystemConfiguration());
+                return configuration;
+            }
+
             @Override
             public void visite(LiteralListBean bean) {
 
                 Iterator<String> it = bean.getValues().iterator();
 
-                int taskId = 0;
                 while (it.hasNext()) {
+
+                    StringBuilder taskName = new StringBuilder(dbcopyJobBean.getId());
 
                     List<String> values = new ArrayList<>();
                     while (it.hasNext() && values.size() < bean.getBlockSize()) {
-                        values.add(it.next());
+                        String value = it.next();
+                        taskName.append("_").append(value);
+                        values.add(value);
                     }
 
                     final BaseConfiguration baseConfiguration = createBaseConfiguration();
                     baseConfiguration.setProperty(bean.getId() + ".values", values);
 
-                    final CompositeConfiguration configuration = new CompositeConfiguration();
-                    configuration.addConfiguration(externalConfiguration);
-                    configuration.addConfiguration(ConfigurationUtil.createEnvSystemConfiguration());
+                    final CompositeConfiguration configuration = createCompositeConfiguration();
                     configuration.addConfiguration(baseConfiguration);
 
-                    final String taskName = String.format("Task_%d", taskId++);
-
                     final DbCopyTask dbcopyTask = new DbCopyTask(dbcopyJobBean, configuration,
-                            jobResult.createTaskResult(taskName));
+                            jobResult.createTaskResult(taskName.toString()));
                     futureList.add(executionController.submit(dbcopyTask));
                 }
             }
@@ -152,12 +173,10 @@ class DbCopyJob implements Callable<Void> {
                     baseConfiguration.setProperty(bean.getId() + ".low", i);
                     baseConfiguration.setProperty(bean.getId() + ".high", highValue);
 
-                    final CompositeConfiguration configuration = new CompositeConfiguration();
-                    configuration.addConfiguration(externalConfiguration);
-                    configuration.addConfiguration(ConfigurationUtil.createEnvSystemConfiguration());
+                    final CompositeConfiguration configuration = createCompositeConfiguration();
                     configuration.addConfiguration(baseConfiguration);
 
-                    final String taskName = String.format("Task_%d_%d", i, highValue);
+                    final String taskName = String.format("%s_%d_%d", dbcopyJobBean.getId(), i, highValue);
 
                     final DbCopyTask dbcopyTask = new DbCopyTask(dbcopyJobBean, configuration,
                             jobResult.createTaskResult(taskName));
@@ -168,10 +187,8 @@ class DbCopyJob implements Callable<Void> {
             @Override
             public void visite(final NullVariableBean bean) {
 
-                final String taskName = "SingleTask";
-                final CompositeConfiguration configuration = new CompositeConfiguration();
-                configuration.addConfiguration(externalConfiguration);
-                configuration.addConfiguration(ConfigurationUtil.createEnvSystemConfiguration());
+                final String taskName = dbcopyJobBean.getId();
+                final CompositeConfiguration configuration = createCompositeConfiguration();
                 configuration.addConfiguration(createBaseConfiguration());
 
                 final DbCopyTask dbcopyTask = new DbCopyTask(dbcopyJobBean, configuration,

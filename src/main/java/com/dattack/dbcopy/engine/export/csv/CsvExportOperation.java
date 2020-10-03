@@ -13,22 +13,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.dattack.dbcopy.engine;
+package com.dattack.dbcopy.engine.export.csv;
 
 import com.dattack.dbcopy.beans.ExportOperationBean;
+import com.dattack.dbcopy.engine.ColumnMetadata;
+import com.dattack.dbcopy.engine.DataTransfer;
+import com.dattack.dbcopy.engine.DbCopyTaskResult;
+import com.dattack.dbcopy.engine.export.ExportOperation;
 import com.dattack.formats.csv.CSVConfiguration;
 import com.dattack.formats.csv.CSVStringBuilder;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.sql.*;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Properties;
-import java.util.concurrent.Callable;
 
 /**
  * Executes the EXPORT operations.
@@ -36,18 +40,18 @@ import java.util.concurrent.Callable;
  * @author cvarela
  * @since 0.1
  */
-class ExportOperation implements Callable<Integer> {
+public class CsvExportOperation implements ExportOperation {
 
-    private final static Logger LOGGER = LoggerFactory.getLogger(ExportOperation.class);
+    private final static Logger LOGGER = LoggerFactory.getLogger(CsvExportOperation.class);
 
     private final ExportOperationBean bean;
     private final DataTransfer dataTransfer;
     private DbCopyTaskResult taskResult;
-    private final ExportWriteWrapper writer;
+    private final CsvExportWriteWrapper writer;
 
-    ExportOperation(final ExportOperationBean bean, final DataTransfer dataTransfer,
-                    final DbCopyTaskResult taskResult,
-                    ExportWriteWrapper writer) {
+    CsvExportOperation(final ExportOperationBean bean, final DataTransfer dataTransfer,
+                       final DbCopyTaskResult taskResult,
+                       CsvExportWriteWrapper writer) {
         this.bean = bean;
         this.dataTransfer = dataTransfer;
         this.taskResult = taskResult;
@@ -131,6 +135,7 @@ class ExportOperation implements Callable<Integer> {
                         SQLXML xml = (SQLXML) value;
                         csvBuilder.append(xml.getString());
                         break;
+                    case Types.BIT:
                     case Types.BOOLEAN:
                         Boolean b = (Boolean) value;
                         csvBuilder.append(b.toString());
@@ -168,23 +173,26 @@ class ExportOperation implements Callable<Integer> {
                     case Types.INTEGER:
                         csvBuilder.append(((Number) value).intValue());
                         break;
-                    // case Types.NUMERIC:
-                       // BigDecimal bigDecimal = (BigDecimal) value;
-                        // csvBuilder.append(bigDecimal.doubleValue());
-                        // int scale = columnMetadata.getScale();
-                        // if (scale == 0) {
-                        //     csvBuilder.append(n.longValue());
-                        // } else {
-                        //     csvBuilder.append(n.doubleValue());
-                        // }
-                        //break;
                     case Types.BIGINT:
                         Number bigInteger = (Number) value;
                         csvBuilder.append(bigInteger.longValue());
                         break;
+                    // unsupported data types
+                    case Types.BINARY:
+                    case Types.VARBINARY:
+                    case Types.LONGVARBINARY:
+                        // byte[] -> base64
                     case Types.BLOB:
+                    case Types.STRUCT:
+                    case Types.REF:
+                    case Types.ARRAY:
+                    case Types.ROWID:
+                    case Types.NCLOB:
+                        throw new UnsupportedOperationException("Unable to export this data type");
+                    case Types.NCHAR:
                     case Types.CHAR:
                     case Types.VARCHAR:
+                    case Types.LONGVARCHAR:
                     default:
                         csvBuilder.append(value.toString());
                 }

@@ -15,7 +15,11 @@
  */
 package com.dattack.dbcopy.beans;
 
+import org.apache.commons.lang.StringUtils;
+
 import javax.xml.bind.annotation.XmlAttribute;
+import javax.xml.bind.annotation.adapters.XmlAdapter;
+import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 import java.io.Serializable;
 
 /**
@@ -29,11 +33,34 @@ public class ExportOperationBean implements Serializable {
     private static final int DEFAULT_BATCH_SIZE = 10_000;
     private static final int DEFAULT_PARALLEL = 1;
 
+    public enum Type {
+        CSV, PARQUET;
+    }
+
+    public static class TypeAdapter extends XmlAdapter<String, Type> {
+
+        @Override
+        public Type unmarshal(String type) throws Exception {
+
+            if (StringUtils.isBlank(type)) {
+                return Type.CSV;
+            }
+            return Type.valueOf(type.toUpperCase());
+        }
+
+        @Override
+        public String marshal(Type status) throws Exception {
+
+            return status.name();
+        }
+    }
+
     @XmlAttribute(name = "path", required = true)
     private String path;
 
     @XmlAttribute(name = "type", required = false)
-    private String type = "csv";
+    @XmlJavaTypeAdapter(TypeAdapter.class)
+    private Type type = Type.CSV;
 
     @XmlAttribute(name = "gzip", required = false)
     private Boolean gzip = Boolean.FALSE;
@@ -53,14 +80,17 @@ public class ExportOperationBean implements Serializable {
     @XmlAttribute(name = "buffer-size", required = false)
     private int bufferSize = -1;
 
+    @XmlAttribute(name = "page-size", required = false)
+    private int pageSize = -1;
+
     @XmlAttribute(name = "move-to", required = false)
-    private String move2path;
+    private String move2path = null;
 
     public String getPath() {
         return path;
     }
 
-    public String getType() {
+    public Type getType() {
         return type;
     }
 
@@ -90,5 +120,9 @@ public class ExportOperationBean implements Serializable {
 
     public int getBufferSize() {
         return bufferSize;
+    }
+
+    public int getPageSize() {
+        return pageSize;
     }
 }

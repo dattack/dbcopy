@@ -15,6 +15,8 @@
  */
 package com.dattack.dbcopy.engine;
 
+import com.dattack.jtoolbox.patterns.Builder;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -30,18 +32,8 @@ public class RowMetadata {
 
     private List<ColumnMetadata> columnsMetadata;
 
-    public RowMetadata(List<ColumnMetadata> columnMetadataList) {
-        ColumnMetadata[] array = new ColumnMetadata[columnMetadataList.size()];
-        for (ColumnMetadata columnMetadata : columnMetadataList) {
-            int zeroIndex = columnMetadata.getIndex() - 1;
-            ColumnMetadata previous = array[zeroIndex];
-            if (previous != null) {
-                throw new IllegalArgumentException(String.format("Found a duplicate column index on row metadata " +
-                        "[previous: %s, current: %s]", previous, columnMetadata));
-            }
-            array[zeroIndex] = columnMetadata;
-        }
-        this.columnsMetadata = Collections.unmodifiableList(Arrays.asList(array));
+    private RowMetadata(List<ColumnMetadata> columnsMetadata) {
+        this.columnsMetadata = columnsMetadata;
     }
 
     public int getColumnCount() {
@@ -55,5 +47,38 @@ public class RowMetadata {
     @Override
     public String toString() {
         return "RowMetadata{columnsMetadata=" + columnsMetadata + '}';
+    }
+
+    public static class RowMetadataBuilder implements Builder<RowMetadata> {
+
+        private List<ColumnMetadata> list;
+
+        public RowMetadataBuilder() {
+            this.list = new ArrayList<>();
+        }
+
+        public RowMetadataBuilder add(ColumnMetadata item) {
+            list.add(item);
+            return this;
+        }
+
+        @Override
+        public RowMetadata build() {
+            checkIndexes();
+            return new RowMetadata(Collections.unmodifiableList(list));
+        }
+
+        private void checkIndexes() {
+            ColumnMetadata[] array = new ColumnMetadata[list.size()];
+            for (ColumnMetadata columnMetadata : list) {
+                int zeroIndex = columnMetadata.getIndex() - 1;
+                ColumnMetadata previous = array[zeroIndex];
+                if (previous != null) {
+                    throw new IllegalArgumentException(String.format("Found a duplicate column index on row metadata " +
+                            "[previous: %s, current: %s]", previous, columnMetadata));
+                }
+                array[zeroIndex] = columnMetadata;
+            }
+        }
     }
 }

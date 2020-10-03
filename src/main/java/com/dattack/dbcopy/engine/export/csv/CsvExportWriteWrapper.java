@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.dattack.dbcopy.engine;
+package com.dattack.dbcopy.engine.export.csv;
 
 import com.dattack.dbcopy.beans.ExportOperationBean;
 import com.dattack.jtoolbox.commons.configuration.ConfigurationUtil;
@@ -34,9 +34,9 @@ import java.util.zip.GZIPOutputStream;
  * @author cvarela
  * @since 0.2
  */
-class ExportWriteWrapper implements Closeable {
+class CsvExportWriteWrapper implements Closeable {
 
-    private final static Logger LOGGER = LoggerFactory.getLogger(ExportWriteWrapper.class);
+    private final static Logger LOGGER = LoggerFactory.getLogger(CsvExportWriteWrapper.class);
 
     private ExportOperationBean bean;
     private AbstractConfiguration configuration;
@@ -47,7 +47,7 @@ class ExportWriteWrapper implements Closeable {
     private final Object lock;
     private volatile CountingOutputStream cos;
 
-    public ExportWriteWrapper(ExportOperationBean bean, AbstractConfiguration configuration) {
+    public CsvExportWriteWrapper(ExportOperationBean bean, AbstractConfiguration configuration) {
         this.bean = bean;
         this.configuration = configuration;
         this.fileNumber = bean.getRotateSize() > 0 ? new AtomicInteger() : null;

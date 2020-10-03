@@ -57,23 +57,39 @@ public class DataTransfer {
 
     private void populateRowMetadata() throws SQLException {
 
-        List<ColumnMetadata> columnMetadataList = new ArrayList<>(resultSet.getMetaData().getColumnCount());
+        RowMetadata.RowMetadataBuilder rowMetadataBuilder = new RowMetadata.RowMetadataBuilder();
+
         for (int columnIndex = 1; columnIndex <= resultSet.getMetaData().getColumnCount(); columnIndex++) {
-            String columnName = resultSet.getMetaData().getColumnName(columnIndex);
-            int columnType = resultSet.getMetaData().getColumnType(columnIndex);
-            int scale = resultSet.getMetaData().getScale(columnIndex);
-            columnMetadataList.add(new ColumnMetadata(columnName, columnIndex, columnType, scale));
+            ColumnMetadata columnMetadata = new ColumnMetadata.ColumnMetadataBuilder()
+                    .withName(resultSet.getMetaData().getColumnName(columnIndex)) //
+                    .withIndex(columnIndex) //
+                    .withType(resultSet.getMetaData().getColumnType(columnIndex)) //
+                    .withPrecision(resultSet.getMetaData().getPrecision(columnIndex)) //
+                    .withScale(resultSet.getMetaData().getScale(columnIndex)) //
+                    .withNullable(resultSet.getMetaData().isNullable(columnIndex)) //
+                    .build();
+
+            rowMetadataBuilder.add(columnMetadata);
         }
-        rowMetadata = new RowMetadata(columnMetadataList);
+        rowMetadata = rowMetadataBuilder.build();
     }
 
     public RowMetadata getRowMetadata() {
         return rowMetadata;
     }
 
+    private boolean isResultSetClosedQuietly() {
+        try {
+            return resultSet.isClosed();
+        } catch (Throwable t) {
+            // ignore
+        }
+        return false;
+    }
+
     private boolean publish() throws SQLException, InterruptedException {
 
-        if (resultSet.isClosed() || !resultSet.next()) {
+        if (isResultSetClosedQuietly() || !resultSet.next()) {
             return false;
         }
 

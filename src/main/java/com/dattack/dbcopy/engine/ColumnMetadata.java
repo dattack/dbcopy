@@ -15,6 +15,10 @@
  */
 package com.dattack.dbcopy.engine;
 
+import com.dattack.jtoolbox.patterns.Builder;
+
+import java.sql.ResultSetMetaData;
+
 /**
  * Set of metadata corresponding to a column returned by {@link DataTransfer#transfer()}.
  *
@@ -26,13 +30,17 @@ public class ColumnMetadata {
     private String name;
     private int index;
     private int type;
+    private int precision;
     private int scale;
+    private boolean nullable;
 
-    public ColumnMetadata(String name, int index, int type, int scale) {
-        this.name = name;
-        this.index = index;
-        this.type = type;
-        this.scale = scale;
+    private ColumnMetadata(ColumnMetadataBuilder builder) {
+        this.name = builder.getName();
+        this.index = builder.getIndex();
+        this.type = builder.getType();
+        this.precision = builder.getPrecision();
+        this.scale = builder.getScale();
+        this.nullable = builder.isNullable();
     }
 
     public int getIndex() {
@@ -47,8 +55,16 @@ public class ColumnMetadata {
         return name;
     }
 
+    public int getPrecision() {
+        return precision;
+    }
+
     public int getScale() {
         return scale;
+    }
+
+    public boolean isNullable() {
+        return nullable;
     }
 
     @Override
@@ -57,8 +73,79 @@ public class ColumnMetadata {
                 .append("name='").append(getName()).append('\'') //
                 .append(", index=").append(getIndex()) //
                 .append(", type=").append(getType()) //
+                .append(", precision=").append(getPrecision()) //
                 .append(", scale=").append(getScale()) //
+                .append(", nullable=").append(isNullable()) //
                 .append('}')
                 .toString();
+    }
+
+    public static class ColumnMetadataBuilder implements Builder<ColumnMetadata> {
+
+        private String name;
+        private int index;
+        private int type;
+        private int precision;
+        private int scale;
+        private int nullable;
+
+        private int getIndex() {
+            return index;
+        }
+
+        private int getType() {
+            return type;
+        }
+
+        private String getName() {
+            return name;
+        }
+
+        private int getPrecision() {
+            return precision;
+        }
+
+        private int getScale() {
+            return scale;
+        }
+
+        private boolean isNullable() {
+            return nullable != ResultSetMetaData.columnNoNulls;
+        }
+
+        public ColumnMetadataBuilder withName(String value) {
+            this.name = value;
+            return this;
+        }
+
+        public ColumnMetadataBuilder withIndex(int value) {
+            this.index = value;
+            return this;
+        }
+
+        public ColumnMetadataBuilder withType(int value) {
+            this.type = value;
+            return this;
+        }
+
+        public ColumnMetadataBuilder withPrecision(int value) {
+            this.precision = value;
+            return this;
+        }
+
+        public ColumnMetadataBuilder withScale(int value) {
+            this.scale = value;
+            return this;
+        }
+
+        public ColumnMetadataBuilder withNullable(int value) {
+            this.nullable = value;
+            return this;
+        }
+
+        @Override
+        public ColumnMetadata build() {
+            return new ColumnMetadata(this);
+        }
     }
 }
