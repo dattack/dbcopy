@@ -133,9 +133,11 @@ public class ParquetExportOperationFactory implements ExportOperationFactory {
                 break;
             case Types.DECIMAL:
             case Types.NUMERIC:
-                type = SchemaBuilder.nullable().type( //
-                            LogicalTypes.decimal(columnMetadata.getPrecision(), columnMetadata.getScale()) //
-                                .addToSchema(Schema.create(Schema.Type.BYTES)));
+                if (columnMetadata.getScale() == 0) {
+                    type = SchemaBuilder.nullable().longType();
+                } else {
+                    type = SchemaBuilder.nullable().doubleType();
+                }
                 break;
             case Types.REAL:
             case Types.FLOAT:
