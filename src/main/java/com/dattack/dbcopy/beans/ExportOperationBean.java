@@ -16,6 +16,8 @@
 package com.dattack.dbcopy.beans;
 
 import org.apache.commons.lang.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.adapters.XmlAdapter;
@@ -28,13 +30,20 @@ import java.io.Serializable;
  */
 public class ExportOperationBean implements Serializable {
 
+    private final static Logger LOGGER = LoggerFactory.getLogger(ExportOperationBean.class);
+
     private static final long serialVersionUID = 75388957947238367L;
 
     private static final int DEFAULT_BATCH_SIZE = 10_000;
     private static final int DEFAULT_PARALLEL = 1;
+    private static final int DEFAULT_PAGE_SIZE = 1_048_576; // in bytes (default: 1048576 = 1024 * 1024)
 
     public enum Type {
         CSV, PARQUET;
+    }
+
+    public enum Compression {
+        UNCOMPRESSED, SNAPPY, GZIP, LZO;
     }
 
     public static class TypeAdapter extends XmlAdapter<String, Type> {
@@ -55,6 +64,23 @@ public class ExportOperationBean implements Serializable {
         }
     }
 
+    public static class CompressionAdapter extends XmlAdapter<String, Compression> {
+
+        @Override
+        public Compression unmarshal(String type) {
+
+            if (StringUtils.isBlank(type)) {
+                return Compression.UNCOMPRESSED;
+            }
+            return Compression.valueOf(type.toUpperCase());
+        }
+
+        @Override
+        public String marshal(Compression compression) {
+            return compression.name();
+        }
+    }
+
     @XmlAttribute(name = "path", required = true)
     private String path;
 
@@ -62,8 +88,12 @@ public class ExportOperationBean implements Serializable {
     @XmlJavaTypeAdapter(TypeAdapter.class)
     private Type type = Type.CSV;
 
-    @XmlAttribute(name = "gzip")
-    private Boolean gzip = Boolean.FALSE;
+    @XmlAttribute(name = "compression")
+    @XmlJavaTypeAdapter(CompressionAdapter.class)
+    private Compression compression = Compression.UNCOMPRESSED;
+
+    @Deprecated
+    private Boolean gzip;
 
     @XmlAttribute(name = "parallel")
     private int parallel = DEFAULT_PARALLEL;
@@ -81,7 +111,7 @@ public class ExportOperationBean implements Serializable {
     private int bufferSize = -1;
 
     @XmlAttribute(name = "page-size")
-    private int pageSize = -1;
+    private int pageSize = DEFAULT_PAGE_SIZE;
 
     @XmlAttribute(name = "move-to")
     private String move2path = null;
@@ -92,6 +122,14 @@ public class ExportOperationBean implements Serializable {
 
     public Type getType() {
         return type;
+    }
+
+    @XmlAttribute(name = "gzip")
+    public void setGzip(Boolean value) {
+        if (value != null) {
+            LOGGER.warn("Check your configuration: the 'gzip' attribute is deprecated, use 'compression' instead.");
+            compression = value ? Compression.GZIP : Compression.UNCOMPRESSED;
+        }
     }
 
     public boolean isGzip() {
@@ -124,5 +162,9 @@ public class ExportOperationBean implements Serializable {
 
     public int getPageSize() {
         return pageSize;
+    }
+
+    public Compression getCompression() {
+        return compression;
     }
 }

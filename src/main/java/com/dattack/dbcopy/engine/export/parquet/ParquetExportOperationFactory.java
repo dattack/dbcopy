@@ -42,7 +42,7 @@ import java.util.List;
 
 /**
  * @author cvarela
- * @since 0.1
+ * @since 0.3
  */
 public class ParquetExportOperationFactory implements ExportOperationFactory {
 
@@ -87,24 +87,41 @@ public class ParquetExportOperationFactory implements ExportOperationFactory {
 
             schema = Schema.createRecord("row", "row doc", "com.dattack.ns", false);
             schema.setFields(fieldList);
-
-            System.out.println(schema);
         }
+    }
+
+    private CompressionCodecName getCompression() {
+
+        CompressionCodecName compression = null;
+        switch (bean.getCompression()) {
+            case LZO:
+                compression = CompressionCodecName.LZO;
+                break;
+            case GZIP:
+                compression = CompressionCodecName.GZIP;
+                break;
+            case SNAPPY:
+                compression = CompressionCodecName.SNAPPY;
+                break;
+            case UNCOMPRESSED:
+            default:
+                compression = CompressionCodecName.UNCOMPRESSED;
+        }
+        return compression;
     }
 
     private synchronized void initWriter() throws IOException {
 
         if (writer == null) {
-            int pageSize = 65535;
 
             String filename = ConfigurationUtil.interpolate(bean.getPath(), configuration);
             Path hdfsPath = new Path(filename);
 
             writer = AvroParquetWriter.builder(hdfsPath)
-                    .withSchema(schema)
-                    .withCompressionCodec(CompressionCodecName.SNAPPY)
-                    .withPageSize(pageSize)
-                    .withWriteMode(ParquetFileWriter.Mode.OVERWRITE)
+                    .withSchema(schema) //
+                    .withCompressionCodec(getCompression()) //
+                    .withPageSize(bean.getPageSize()) //
+                    .withWriteMode(ParquetFileWriter.Mode.OVERWRITE) //
                     .build();
         }
     }
