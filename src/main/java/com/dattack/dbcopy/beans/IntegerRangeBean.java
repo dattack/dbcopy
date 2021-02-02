@@ -23,13 +23,15 @@ import javax.xml.bind.annotation.XmlAttribute;
  */
 public class IntegerRangeBean extends AbstractVariableBean {
 
+    private static final long DEFAULT_BLOCK_SIZE = 1;
+
     @XmlAttribute(name = "low-value", required = true)
     private long lowValue;
 
     @XmlAttribute(name = "high-value", required = true)
     private long highValue;
 
-    @XmlAttribute(name = "block-size", required = true)
+    @XmlAttribute(name = "block-size")
     private long blockSize;
 
     @Override
@@ -38,6 +40,9 @@ public class IntegerRangeBean extends AbstractVariableBean {
     }
 
     public long getBlockSize() {
+        if (blockSize < DEFAULT_BLOCK_SIZE) {
+            return DEFAULT_BLOCK_SIZE;
+        }
         return blockSize;
     }
 

@@ -16,6 +16,7 @@
 package com.dattack.dbcopy.engine;
 
 import com.dattack.dbcopy.beans.InsertOperationBean;
+import com.dattack.dbcopy.engine.datatype.*;
 import com.dattack.jtoolbox.commons.configuration.ConfigurationUtil;
 import com.dattack.jtoolbox.jdbc.JDBCUtils;
 import com.dattack.jtoolbox.jdbc.JNDIDataSource;
@@ -31,7 +32,6 @@ import java.io.OutputStream;
 import java.io.Writer;
 import java.sql.*;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.Callable;
 
@@ -50,7 +50,7 @@ class InsertOperation implements Callable<Integer> {
     private final AbstractConfiguration configuration;
     private Connection connection;
     private NamedParameterPreparedStatement preparedStatement;
-    private DbCopyTaskResult taskResult;
+    private final DbCopyTaskResult taskResult;
     private int rowNumber;
     private volatile List<ColumnMetadata> columnsMetadata2Process;
 
@@ -104,6 +104,8 @@ class InsertOperation implements Callable<Integer> {
             insertedRows = executeBatch();
         }
 
+        taskResult.addProcessedRows(insertedRows);
+
         JDBCUtils.closeQuietly(preparedStatement);
         JDBCUtils.closeQuietly(connection);
 
@@ -154,102 +156,42 @@ class InsertOperation implements Callable<Integer> {
         return preparedStatement;
     }
 
-    @Override
-    public Integer call() throws SQLException, InterruptedException {
+    private int execute() throws SQLException {
 
+        int insertedRows;
+
+        if (bean.getBatchSize() > 0) {
+            insertedRows = addBatch();
+        } else {
+            insertedRows = getPreparedStatement().executeUpdate();
+        }
+
+        taskResult.addProcessedRows(insertedRows);
+
+        return insertedRows;
+    }
+    @Override
+    public Integer call() throws Exception {
+
+        Visitor visitor = new Visitor();
         int totalInsertedRows = 0;
+
         while (true) {
-            List<Object> row = dataTransfer.transfer();
+            AbstractDataType<?>[] row = dataTransfer.transfer();
             if (row == null) {
                 break;
             }
 
-            populateStatement(getPreparedStatement(), row);
-
-            int insertedRows;
-            if (bean.getBatchSize() > 0) {
-                insertedRows = addBatch();
-            } else {
-                insertedRows = getPreparedStatement().executeUpdate();
+            for (ColumnMetadata columnMetadata : getColumns(getPreparedStatement())) {
+                visitor.set(columnMetadata, row[columnMetadata.getIndex() - 1]);
             }
-            taskResult.addProcessedRows(insertedRows);
-            totalInsertedRows += insertedRows;
+
+            totalInsertedRows += execute();
         }
 
-        int insertedRows = flush();
-        taskResult.addProcessedRows(insertedRows);
+        totalInsertedRows += flush();
 
-        totalInsertedRows += insertedRows;
         return totalInsertedRows;
-    }
-
-    private void populateBlob(NamedParameterPreparedStatement preparedStatement, Blob value, String columnName)
-            throws SQLException {
-
-        try {
-            Blob targetBlob = preparedStatement.getConnection().createBlob();
-            OutputStream output = targetBlob.setBinaryStream(1);
-
-            InputStream in = value.getBinaryStream();
-            byte[] buf = new byte[1024];
-            int len;
-            while ((len = in.read(buf)) != -1) {
-                output.write(buf, 0, len);
-            }
-
-            preparedStatement.setBlob(columnName, targetBlob);
-            value.free();
-        } catch (IOException e) {
-            throw new SQLException("Unable to create Clob object: " + e.getMessage());
-        }
-    }
-
-    private void populateClob(NamedParameterPreparedStatement preparedStatement, Clob value, String columnName)
-            throws SQLException {
-
-        try {
-            Clob targetClob = preparedStatement.getConnection().createClob();
-            Writer clobWriter = targetClob.setCharacterStream(1);
-            clobWriter.write(value.getSubString(0L, (int) value.length()));
-            preparedStatement.setClob(columnName, targetClob);
-            value.free();
-        } catch (IOException e) {
-            throw new SQLException("Unable to create Clob object: " + e.getMessage());
-        }
-    }
-
-    private void populateSqlXml(NamedParameterPreparedStatement preparedStatement, SQLXML value, String columnName)
-            throws SQLException {
-        SQLXML targetXml = preparedStatement.getConnection().createSQLXML();
-        targetXml.setString(value.getString());
-        preparedStatement.setSQLXML(columnName, targetXml);
-        value.free();
-    }
-
-    private void populateStatement(NamedParameterPreparedStatement preparedStatement, List<Object> dataList)
-            throws SQLException {
-
-        Iterator<Object> dataIterator = dataList.iterator();
-        for (ColumnMetadata columnMetadata : getColumns(preparedStatement)) {
-            final Object value = dataIterator.next();
-            if (value == null) {
-                preparedStatement.setNull(columnMetadata.getName(), columnMetadata.getType());
-            } else {
-                switch (columnMetadata.getType()) {
-                    case Types.CLOB:
-                        populateClob(preparedStatement, (Clob) value, columnMetadata.getName());
-                        break;
-                    case Types.BLOB:
-                        populateBlob(preparedStatement, (Blob) value, columnMetadata.getName());
-                        break;
-                    case Types.SQLXML:
-                        populateSqlXml(preparedStatement, (SQLXML) value, columnMetadata.getName());
-                        break;
-                    default:
-                        preparedStatement.setObject(columnMetadata.getName(), value);
-                }
-            }
-        }
     }
 
     private List<ColumnMetadata> getColumns(NamedParameterPreparedStatement preparedStatement) {
@@ -267,5 +209,142 @@ class InsertOperation implements Callable<Integer> {
         }
 
         return columnsMetadata2Process;
+    }
+
+    private class Visitor implements DataTypeVisitor {
+
+        private ColumnMetadata columnMetadata;
+
+        public void setColumnMetadata(ColumnMetadata columnMetadata) {
+            this.columnMetadata = columnMetadata;
+        }
+
+        @Override
+        public void visit(BigDecimalType type) throws SQLException {
+            getPreparedStatement().setBigDecimal(columnMetadata.getName(), type.getValue());
+        }
+
+        @Override
+        public void visit(BlobType type) throws SQLException {
+
+            try {
+                Blob targetBlob = getPreparedStatement().getConnection().createBlob();
+                OutputStream output = targetBlob.setBinaryStream(1);
+
+                InputStream in = type.getValue().getBinaryStream();
+                byte[] buffer = new byte[1024]; // TODO: configurable size
+                int len;
+                while ((len = in.read(buffer)) != -1) {
+                    output.write(buffer, 0, len);
+                }
+
+                getPreparedStatement().setBlob(columnMetadata.getName(), targetBlob);
+            } catch (IOException e) {
+                throw new SQLException("Unable to create Clob object: " + e.getMessage());
+            }
+        }
+
+        @Override
+        public void visit(BooleanType type) throws SQLException {
+            getPreparedStatement().setBoolean(columnMetadata.getName(), type.getValue());
+        }
+
+        @Override
+        public void visit(ByteType type) throws SQLException {
+            getPreparedStatement().setByte(columnMetadata.getName(), type.getValue());
+        }
+
+        @Override
+        public void visit(BytesType type) throws SQLException {
+            getPreparedStatement().setBytes(columnMetadata.getName(), type.getValue());
+        }
+
+        @Override
+        public void visit(ClobType type) throws SQLException {
+            try {
+                Clob targetClob = getPreparedStatement().getConnection().createClob();
+                Writer clobWriter = targetClob.setCharacterStream(1);
+                clobWriter.write(type.getValue().getSubString(0L, (int) type.getValue().length()));
+                getPreparedStatement().setClob(columnMetadata.getName(), targetClob);
+            } catch (IOException e) {
+                throw new SQLException("Unable to create Clob object: " + e.getMessage());
+            }
+        }
+
+        @Override
+        public void visit(DateType type) throws SQLException {
+            getPreparedStatement().setDate(columnMetadata.getName(), type.getValue());
+        }
+
+        @Override
+        public void visit(DoubleType type) throws SQLException {
+            getPreparedStatement().setDouble(columnMetadata.getName(), type.getValue());
+        }
+
+        @Override
+        public void visit(FloatType type) throws SQLException {
+            getPreparedStatement().setFloat(columnMetadata.getName(), type.getValue());
+        }
+
+        @Override
+        public void visit(IntegerType type) throws SQLException {
+            getPreparedStatement().setInt(columnMetadata.getName(), type.getValue());
+        }
+
+        @Override
+        public void visit(LongType type) throws SQLException {
+            getPreparedStatement().setLong(columnMetadata.getName(), type.getValue());
+        }
+
+        @Override
+        public void visit(NClobType type) throws SQLException {
+            getPreparedStatement().setNClob(columnMetadata.getName(), type.getValue());
+        }
+
+        @Override
+        public void visit(NStringType type) throws SQLException {
+            getPreparedStatement().setNString(columnMetadata.getName(), type.getValue());
+        }
+
+        @Override
+        public void visit(NullType type) throws SQLException {
+            getPreparedStatement().setNull(columnMetadata.getName(), columnMetadata.getType());
+        }
+
+        @Override
+        public void visit(ShortType type) throws SQLException {
+            getPreparedStatement().setShort(columnMetadata.getName(), type.getValue());
+        }
+
+        @Override
+        public void visit(StringType type) throws SQLException {
+            getPreparedStatement().setString(columnMetadata.getName(), type.getValue());
+        }
+
+        @Override
+        public void visit(TimeType type) throws SQLException {
+            getPreparedStatement().setTime(columnMetadata.getName(), type.getValue());
+        }
+
+        @Override
+        public void visit(TimestampType type) throws SQLException {
+            getPreparedStatement().setTimestamp(columnMetadata.getName(), type.getValue());
+        }
+
+        @Override
+        public void visit(XmlType type) throws SQLException {
+            SQLXML targetXml = getPreparedStatement().getConnection().createSQLXML();
+            targetXml.setString(type.getValue().getString());
+            getPreparedStatement().setSQLXML(columnMetadata.getName(), targetXml);
+        }
+
+        private void set(ColumnMetadata columnMetadata, AbstractDataType<?> value) throws Exception {
+            this.columnMetadata = columnMetadata;
+            if (value == null || value.isNull()) {
+                getPreparedStatement().setNull(columnMetadata.getName(), columnMetadata.getType());
+            } else {
+                value.accept(this);
+            }
+        }
     }
 }

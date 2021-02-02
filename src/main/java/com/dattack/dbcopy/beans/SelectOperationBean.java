@@ -27,7 +27,7 @@ public class SelectOperationBean extends AbstractDbOperationBean {
 
     private static final int DEFAULT_FETCH_SIZE = 0;
 
-    @XmlAttribute(name = "fetch-size", required = false)
+    @XmlAttribute(name = "fetch-size")
     private int fetchSize = DEFAULT_FETCH_SIZE;
 
     public int getFetchSize() {

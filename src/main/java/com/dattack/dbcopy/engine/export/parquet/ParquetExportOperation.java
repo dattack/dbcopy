@@ -19,6 +19,7 @@ import com.dattack.dbcopy.beans.ExportOperationBean;
 import com.dattack.dbcopy.engine.ColumnMetadata;
 import com.dattack.dbcopy.engine.DataTransfer;
 import com.dattack.dbcopy.engine.DbCopyTaskResult;
+import com.dattack.dbcopy.engine.datatype.*;
 import com.dattack.dbcopy.engine.export.ExportOperation;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
@@ -27,11 +28,7 @@ import org.apache.parquet.hadoop.ParquetWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.math.BigDecimal;
-import java.sql.*;
-import java.util.Iterator;
-import java.util.List;
+import java.sql.SQLException;
 
 /**
  * Executes the EXPORT operations.
@@ -43,9 +40,11 @@ class ParquetExportOperation implements ExportOperation {
 
     private final static Logger LOGGER = LoggerFactory.getLogger(ParquetExportOperation.class);
 
+    private final ThreadLocal<Visitor> visitorThreadLocal = new ThreadLocal<>();
+
     private final ExportOperationBean bean;
     private final DataTransfer dataTransfer;
-    private DbCopyTaskResult taskResult;
+    private final DbCopyTaskResult taskResult;
     private final ParquetWriter<Object> writer;
     private final Schema schema;
 
@@ -61,13 +60,16 @@ class ParquetExportOperation implements ExportOperation {
     }
 
     @Override
-    public Integer call() throws SQLException, IOException, InterruptedException {
+    public Integer call() throws Exception {
 
         int totalExportedRows = 0;
 
         try {
+
+            visitorThreadLocal.set(new Visitor());
+
             while (true) {
-                List<Object> row = dataTransfer.transfer();
+                AbstractDataType<?>[] row = dataTransfer.transfer();
                 if (row == null) {
                     break;
                 }
@@ -79,110 +81,195 @@ class ParquetExportOperation implements ExportOperation {
                 }
             }
 
-        } catch (IOException e) {
-            LOGGER.error("I/O error {}: {}", writer, e.getMessage());
+        } catch (Exception e) {
+            LOGGER.error("Error {}: {}", writer, e.getMessage());
             throw e;
+        } finally {
+            // clean thread-local object
+            visitorThreadLocal.remove();
         }
 
         return totalExportedRows;
     }
 
-    private void write(List<Object> dataList) throws SQLException, IOException {
+    private void write(AbstractDataType<?>[] dataList) throws Exception {
 
-        Iterator<Object> dataIterator = dataList.iterator();
+        visitorThreadLocal.get().setGenericRecord(new GenericData.Record(schema));
 
-        GenericRecord genericRecord = new GenericData.Record(schema);
+        for (ColumnMetadata columnMetadata : dataTransfer.getRowMetadata().getColumnsMetadata()) {
 
-        for (ColumnMetadata columnMetadata: dataTransfer.getRowMetadata().getColumnsMetadata()) {
+            visitorThreadLocal.get().setColumnMetadata(columnMetadata);
 
-            int index = columnMetadata.getIndex() - 1;
-            final Object value = dataIterator.next();
+            final AbstractDataType<?> value = dataList[columnMetadata.getIndex() - 1];
             if (value == null) {
-                genericRecord.put(index, null);
+                visitorThreadLocal.get().getGenericRecord().put(visitorThreadLocal.get().getIndex(), null);
             } else {
-                switch (columnMetadata.getType()) {
-                    case Types.CLOB:
-                        String str;
-                        if (value instanceof String) {
-                            str = value.toString();
-                        } else {
-                            Clob clob = (Clob) value;
-                            str = clob.getSubString(0L, (int) clob.length());
-                        }
-                        genericRecord.put(index, str);
-                        break;
-                    case Types.SQLXML:
-                        SQLXML xml = (SQLXML) value;
-                        genericRecord.put(index, xml.getString());
-                        break;
-                    case Types.BIT:
-                        Boolean isTrue = ((Number) value).intValue() == 1;
-                        genericRecord.put(index, isTrue);
-                        break;
-                    case Types.BOOLEAN:
-                        genericRecord.put(index, (Boolean) value);
-                        break;
-                    case Types.DATE:
-                        // A date logical type annotates an Avro int, where the int stores the number of days from
-                        // the unix epoch, 1 January 1970 (ISO calendar).
-                        Date date = (Date) value;
-                        genericRecord.put(index, date.toLocalDate().toEpochDay());
-                        break;
-                    case Types.TIME:
-                    case Types.TIME_WITH_TIMEZONE:
-                        // A time-millis logical type annotates an Avro int, where the int stores the number of
-                        // milliseconds after midnight, 00:00:00.000.
-                        Time time = (Time) value;
-                        genericRecord.put(index, time.getTime());
-                        break;
-                    case Types.TIMESTAMP:
-                    case Types.TIMESTAMP_WITH_TIMEZONE:
-                        // A timestamp-millis logical type annotates an Avro long, where the long stores the number
-                        // of milliseconds from the unix epoch, 1 January 1970 00:00:00.000 UTC.
-                        Timestamp timestamp = (Timestamp) value;
-                        genericRecord.put(index, timestamp.getTime());
-                        break;
-                    case Types.DECIMAL:
-                    case Types.NUMERIC:
-                        BigDecimal bigDecimal = (BigDecimal) value;
-                        int scale = bigDecimal.scale();
-                         if (scale == 0) {
-                             genericRecord.put(index, bigDecimal.longValue());
-                         } else {
-                             genericRecord.put(index, bigDecimal.doubleValue());
-                         }
-                        break;
-                    case Types.REAL:
-                    case Types.FLOAT:
-                    case Types.TINYINT:
-                    case Types.SMALLINT:
-                    case Types.INTEGER:
-                    case Types.DOUBLE:
-                        genericRecord.put(index, (Number) value);
-                        break;
-                    case Types.BIGINT:
-                        Number bigInteger = (Number) value;
-                        genericRecord.put(index, bigInteger.longValue());
-                        break;
-                    case Types.BINARY:
-                    case Types.VARBINARY:
-                    case Types.LONGVARBINARY:
-                        byte[] bytes = (byte[]) value;
-                        genericRecord.put(index, bytes);
-                        break;
-                    case Types.BLOB:
-                        throw new UnsupportedOperationException("Unable to export Blob type");
-                    case Types.CHAR:
-                    case Types.VARCHAR:
-                    case Types.LONGVARCHAR:
-                    default:
-                        genericRecord.put(index, value.toString());
-                }
+                value.accept(visitorThreadLocal.get());
             }
         }
 
         synchronized (writer) {
-            writer.write(genericRecord);
+            writer.write(visitorThreadLocal.get().getGenericRecord());
+        }
+    }
+
+    private static class Visitor implements DataTypeVisitor {
+
+        private GenericRecord genericRecord;
+        private ColumnMetadata columnMetadata;
+
+        void setColumnMetadata(ColumnMetadata columnMetadata) {
+            this.columnMetadata = columnMetadata;
+        }
+
+        void setGenericRecord(GenericRecord genericRecord) {
+            this.genericRecord = genericRecord;
+        }
+
+        private int getIndex() {
+            return columnMetadata.getIndex() - 1;
+        }
+
+        private GenericRecord getGenericRecord() {
+            return genericRecord;
+        }
+
+        private void put(Number value) {
+            getGenericRecord().put(getIndex(), value);
+        }
+
+        private void put(String value) {
+            getGenericRecord().put(getIndex(), value);
+        }
+
+        private void put(byte[] value) {
+            getGenericRecord().put(getIndex(), value);
+        }
+
+        private void putNull() {
+            getGenericRecord().put(getIndex(), null);
+        }
+
+        @Override
+        public void visit(BigDecimalType type) {
+            if (type.isNotNull()) {
+                int scale = type.getValue().scale();
+                if (scale == 0) {
+                    put(type.getValue().longValue());
+                } else {
+                    put(type.getValue().doubleValue());
+                }
+            }
+        }
+
+        @Override
+        public void visit(BlobType type) throws SQLException {
+            if (type.isNotNull()) {
+                put(type.getValue().getBytes(0, (int) type.getValue().length()));
+            }
+        }
+
+        @Override
+        public void visit(BooleanType type) {
+            genericRecord.put(getIndex(), type.getValue());
+        }
+
+        @Override
+        public void visit(ByteType type) {
+            put(type.getValue());
+        }
+
+        @Override
+        public void visit(BytesType type) {
+            put(type.getValue());
+        }
+
+        @Override
+        public void visit(ClobType type) throws SQLException {
+            if (type.isNotNull()) {
+                put(type.getValue().getSubString(0L, (int) type.getValue().length()));
+            }
+        }
+
+        @Override
+        public void visit(DateType type) {
+            // A date logical type annotates an Avro int, where the int stores the number of days from
+            // the unix epoch, 1 January 1970 (ISO calendar).
+            if (type.isNotNull()) {
+                put(type.getValue().toLocalDate().toEpochDay());
+            }
+        }
+
+        @Override
+        public void visit(DoubleType type) {
+            put(type.getValue());
+        }
+
+        @Override
+        public void visit(FloatType type) {
+            put(type.getValue());
+        }
+
+        @Override
+        public void visit(IntegerType type) {
+            put(type.getValue());
+        }
+
+        @Override
+        public void visit(LongType type) {
+            put(type.getValue());
+        }
+
+        @Override
+        public void visit(NClobType type) throws SQLException {
+            if (type.isNotNull()) {
+                put(type.getValue().getSubString(0L, (int) type.getValue().length()));
+            }
+        }
+
+        @Override
+        public void visit(NStringType type) {
+            put(type.getValue());
+        }
+
+        @Override
+        public void visit(NullType type) {
+            putNull();
+        }
+
+        @Override
+        public void visit(ShortType type) {
+            put(type.getValue());
+        }
+
+        @Override
+        public void visit(StringType type) {
+            put(type.getValue());
+        }
+
+        @Override
+        public void visit(TimeType type) {
+            // A time-millis logical type annotates an Avro int, where the int stores the number of
+            // milliseconds after midnight, 00:00:00.000.
+            if (type.isNotNull()) {
+                put(type.getValue().getTime());
+            }
+        }
+
+        @Override
+        public void visit(TimestampType type) {
+            // A timestamp-millis logical type annotates an Avro long, where the long stores the number
+            // of milliseconds from the unix epoch, 1 January 1970 00:00:00.000 UTC.
+            if (type.isNotNull()) {
+                put(type.getValue().getTime());
+            }
+        }
+
+        @Override
+        public void visit(XmlType type) throws SQLException {
+            if (type.isNotNull()) {
+                put(type.getValue().getString());
+            }
         }
     }
 }

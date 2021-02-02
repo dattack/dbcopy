@@ -31,7 +31,7 @@ public class LiteralListBean extends AbstractVariableBean {
     @XmlAttribute(name = "values", required = true)
     private String values;
 
-    @XmlAttribute(name = "block-size", required = false)
+    @XmlAttribute(name = "block-size")
     private int blockSize;
 
     public LiteralListBean() {

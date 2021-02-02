@@ -35,7 +35,7 @@ public class DbcopyBean implements Serializable {
     @XmlElement(name = "job", required = true, type = DbcopyJobBean.class)
     private final List<DbcopyJobBean> jobList;
 
-    @XmlAttribute(name = "parallel", required = false)
+    @XmlAttribute(name = "parallel")
     private int parallel = 1;
 
     public DbcopyBean() {

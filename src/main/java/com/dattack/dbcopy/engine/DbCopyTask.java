@@ -66,7 +66,7 @@ class DbCopyTask implements Callable<DbCopyTaskResult> {
         LOGGER.info("Executing SQL: {}", compiledSql);
 
         try (Connection selectConn = getDataSource().getConnection(); //
-             Statement selectStmt = createStatement(selectConn); //
+             Statement selectStmt = setFetchSize(selectConn.createStatement()); //
              ResultSet resultSet = selectStmt.executeQuery(compiledSql) //
         ) {
 
@@ -99,8 +99,7 @@ class DbCopyTask implements Callable<DbCopyTaskResult> {
                 ConfigurationUtil.interpolate(dbcopyJobBean.getSelectBean().getDatasource(), configuration));
     }
 
-    private Statement createStatement(Connection connection) throws SQLException {
-        Statement stmt = connection.createStatement();
+    private Statement setFetchSize(Statement stmt) throws SQLException {
         if (dbcopyJobBean.getSelectBean().getFetchSize() > 0) {
             stmt.setFetchSize(dbcopyJobBean.getSelectBean().getFetchSize());
         }

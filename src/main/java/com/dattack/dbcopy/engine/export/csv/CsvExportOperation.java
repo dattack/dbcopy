@@ -19,9 +19,11 @@ import com.dattack.dbcopy.beans.ExportOperationBean;
 import com.dattack.dbcopy.engine.ColumnMetadata;
 import com.dattack.dbcopy.engine.DataTransfer;
 import com.dattack.dbcopy.engine.DbCopyTaskResult;
+import com.dattack.dbcopy.engine.datatype.*;
 import com.dattack.dbcopy.engine.export.ExportOperation;
 import com.dattack.formats.csv.CSVConfiguration;
 import com.dattack.formats.csv.CSVStringBuilder;
+import com.dattack.jtoolbox.exceptions.DattackNestableRuntimeException;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,9 +31,10 @@ import org.slf4j.LoggerFactory;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.sql.*;
-import java.util.Iterator;
-import java.util.List;
+import java.nio.charset.StandardCharsets;
+import java.sql.Clob;
+import java.sql.SQLException;
+import java.sql.SQLXML;
 import java.util.Properties;
 
 /**
@@ -46,7 +49,7 @@ public class CsvExportOperation implements ExportOperation {
 
     private final ExportOperationBean bean;
     private final DataTransfer dataTransfer;
-    private DbCopyTaskResult taskResult;
+    private final DbCopyTaskResult taskResult;
     private final CsvExportWriteWrapper writer;
 
     CsvExportOperation(final ExportOperationBean bean, final DataTransfer dataTransfer,
@@ -60,7 +63,7 @@ public class CsvExportOperation implements ExportOperation {
 
     private String getHeader(CSVStringBuilder builder) {
 
-        for (ColumnMetadata columnMetadata: dataTransfer.getRowMetadata().getColumnsMetadata()) {
+        for (ColumnMetadata columnMetadata : dataTransfer.getRowMetadata().getColumnsMetadata()) {
             builder.append(columnMetadata.getName());
         }
         builder.eol();
@@ -71,7 +74,9 @@ public class CsvExportOperation implements ExportOperation {
 
         Properties properties = new Properties();
         if (StringUtils.isNotBlank(bean.getFormatFile())) {
-            properties.load(new FileInputStream(bean.getFormatFile()));
+            try (FileInputStream fis = new FileInputStream(bean.getFormatFile())) {
+                properties.load(fis);
+            }
         }
         CSVConfiguration configuration = new CSVConfiguration.CsvConfigurationBuilder(properties)
                 .build();
@@ -79,32 +84,33 @@ public class CsvExportOperation implements ExportOperation {
     }
 
     @Override
-    public Integer call() throws SQLException, IOException, InterruptedException {
+    public Integer call() throws Exception {
 
         int totalExportedRows = 0;
 
         try {
-            CSVStringBuilder builder = createCSVStringBuilder();
-            writer.setHeader(getHeader(builder));
-            builder.clear();
+            CSVStringBuilder csvStringBuilder = createCSVStringBuilder();
+            writer.setHeader(getHeader(csvStringBuilder));
+            csvStringBuilder.clear();
 
+            Visitor visitor = new Visitor(csvStringBuilder);
             while (true) {
-                List<Object> row = dataTransfer.transfer();
+                AbstractDataType<?>[] row = dataTransfer.transfer();
                 if (row == null) {
                     break;
                 }
-                populate(builder, row);
+                populate(visitor, csvStringBuilder, row);
                 taskResult.addProcessedRows(1);
                 totalExportedRows++;
                 if (totalExportedRows % bean.getBatchSize() == 0) {
                     LOGGER.debug("Exported rows: {}", totalExportedRows);
-                    writer.write(builder.toString());
-                    builder.clear();
+                    writer.write(csvStringBuilder.toString());
+                    csvStringBuilder.clear();
                 }
             }
-            String line = builder.toString();
+            String line = csvStringBuilder.toString();
             writer.write(line);
-        } catch (IOException e) {
+        } catch (Exception e) {
             LOGGER.error("I/O error {}: {}", writer, e.getMessage());
             throw e;
         }
@@ -113,91 +119,148 @@ public class CsvExportOperation implements ExportOperation {
     }
 
 
-    private void populate(CSVStringBuilder csvBuilder, List<Object> dataList) throws SQLException {
+    private void populate(Visitor visitor, CSVStringBuilder csvStringBuilder, AbstractDataType<?>[] dataList) throws Exception {
 
-        Iterator<Object> dataIterator = dataList.iterator();
-
-        for (ColumnMetadata columnMetadata: dataTransfer.getRowMetadata().getColumnsMetadata()) {
-            final Object value = dataIterator.next();
-            if (value == null) {
-                csvBuilder.append((String) null);
+        for (ColumnMetadata columnMetadata : dataTransfer.getRowMetadata().getColumnsMetadata()) {
+            final AbstractDataType<?> value = dataList[columnMetadata.getIndex() - 1];
+            if (value == null || value.isNull()) {
+                csvStringBuilder.append((String) null);
             } else {
-                switch (columnMetadata.getType()) {
-                    case Types.CLOB:
-                        if (value instanceof String) {
-                            csvBuilder.append(value.toString());
-                        } else {
-                            Clob clob = (Clob) value;
-                            csvBuilder.append(clob.getSubString(0L, (int) clob.length()));
-                        }
-                        break;
-                    case Types.SQLXML:
-                        SQLXML xml = (SQLXML) value;
-                        csvBuilder.append(xml.getString());
-                        break;
-                    case Types.BIT:
-                    case Types.BOOLEAN:
-                        Boolean b = (Boolean) value;
-                        csvBuilder.append(b.toString());
-                        break;
-                    case Types.DATE:
-                        csvBuilder.append((Date) value);
-                        break;
-                    case Types.TIME:
-                    case Types.TIME_WITH_TIMEZONE:
-                        csvBuilder.append((Time) value);
-                        break;
-                    case Types.TIMESTAMP:
-                    case Types.TIMESTAMP_WITH_TIMEZONE:
-                        csvBuilder.append((Timestamp) value);
-                        break;
-                    case Types.DECIMAL:
-                    case Types.NUMERIC:
-                        BigDecimal bigDecimal = (BigDecimal) value;
-                        int scale = bigDecimal.scale();
-                         if (scale == 0) {
-                             csvBuilder.append(bigDecimal.longValue());
-                         } else {
-                             csvBuilder.append(bigDecimal.doubleValue());
-                         }
-                        break;
-                    case Types.DOUBLE:
-                        csvBuilder.append(((Number) value).doubleValue());
-                        break;
-                    case Types.REAL:
-                    case Types.FLOAT:
-                        csvBuilder.append(((Number) value).floatValue());
-                        break;
-                    case Types.TINYINT:
-                    case Types.SMALLINT:
-                    case Types.INTEGER:
-                        csvBuilder.append(((Number) value).intValue());
-                        break;
-                    case Types.BIGINT:
-                        Number bigInteger = (Number) value;
-                        csvBuilder.append(bigInteger.longValue());
-                        break;
-                    // unsupported data types
-                    case Types.BINARY:
-                    case Types.VARBINARY:
-                    case Types.LONGVARBINARY:
-                        // byte[] -> base64
-                    case Types.BLOB:
-                    case Types.STRUCT:
-                    case Types.REF:
-                    case Types.ARRAY:
-                    case Types.ROWID:
-                    case Types.NCLOB:
-                        throw new UnsupportedOperationException("Unable to export this data type");
-                    case Types.NCHAR:
-                    case Types.CHAR:
-                    case Types.VARCHAR:
-                    case Types.LONGVARCHAR:
-                    default:
-                        csvBuilder.append(value.toString());
-                }
+                value.accept(visitor);
             }
         }
-        csvBuilder.eol();
+        csvStringBuilder.eol();
+    }
+
+    private static class Visitor implements DataTypeVisitor {
+
+        private final CSVStringBuilder csvStringBuilder;
+
+        public Visitor(CSVStringBuilder csvStringBuilder) {
+            this.csvStringBuilder = csvStringBuilder;
+        }
+
+        @Override
+        public void visit(BigDecimalType value) {
+            BigDecimal bigDecimal = value.getValue();
+            int scale = bigDecimal.scale();
+            if (scale == 0) {
+                csvStringBuilder.append(bigDecimal.longValue());
+            } else {
+                csvStringBuilder.append(bigDecimal.doubleValue());
+            }
+        }
+
+        @Override
+        public void visit(BlobType value) {
+            try {
+                appendEncodedBytes(value.getValue().getBytes(0, (int) value.getValue().length()));
+            } catch (SQLException e) {
+                throw new DattackNestableRuntimeException(e);
+            }
+        }
+
+        @Override
+        public void visit(BooleanType value) {
+            csvStringBuilder.append(value.getValue());
+        }
+
+        @Override
+        public void visit(ByteType value) {
+            csvStringBuilder.append(value.getValue().intValue());
+        }
+
+        @Override
+        public void visit(BytesType value) {
+            appendEncodedBytes(value.getValue());
+        }
+
+        @Override
+        public void visit(ClobType value) {
+            try {
+                Clob clob = value.getValue();
+                csvStringBuilder.append(clob.getSubString(0L, (int) clob.length()));
+            } catch (SQLException e) {
+                throw new DattackNestableRuntimeException(e);
+            }
+        }
+
+        @Override
+        public void visit(DateType value) {
+            csvStringBuilder.append(value.getValue());
+        }
+
+        @Override
+        public void visit(DoubleType value) {
+            csvStringBuilder.append(value.getValue());
+        }
+
+        @Override
+        public void visit(FloatType value) {
+            csvStringBuilder.append(value.getValue());
+        }
+
+        @Override
+        public void visit(IntegerType value) {
+            csvStringBuilder.append(value.getValue());
+        }
+
+        @Override
+        public void visit(LongType value) {
+            csvStringBuilder.append(value.getValue());
+        }
+
+        @Override
+        public void visit(NClobType value) {
+            try {
+                csvStringBuilder.append(value.getValue().getSubString(0, (int) value.getValue().length()));
+            } catch (SQLException e) {
+                throw new DattackNestableRuntimeException(e);
+            }
+        }
+
+        @Override
+        public void visit(NStringType value) {
+            csvStringBuilder.append(value.getValue());
+        }
+
+        @Override
+        public void visit(NullType value) {
+            csvStringBuilder.append((String) null);
+        }
+
+        @Override
+        public void visit(ShortType value) {
+            csvStringBuilder.append(value.getValue().intValue());
+        }
+
+        @Override
+        public void visit(StringType value) {
+            csvStringBuilder.append(value.getValue());
+        }
+
+        @Override
+        public void visit(TimeType value) {
+            csvStringBuilder.append(value.getValue());
+        }
+
+        @Override
+        public void visit(TimestampType value) {
+            csvStringBuilder.append(value.getValue());
+        }
+
+        @Override
+        public void visit(XmlType value) {
+            try {
+                SQLXML xml = value.getValue();
+                csvStringBuilder.append(xml.getString());
+            } catch (SQLException e) {
+                throw new DattackNestableRuntimeException(e);
+            }
+        }
+
+        private void appendEncodedBytes(byte[] bytes) {
+            csvStringBuilder.append(new String(bytes, StandardCharsets.UTF_8));
+        }
     }
 }
