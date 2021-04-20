@@ -94,7 +94,7 @@ public class ExportOperationBean implements Serializable {
 
     @Deprecated
     @XmlAttribute(name = "gzip")
-    private Boolean gzip;
+    private Boolean gzip = Boolean.FALSE;
 
     @XmlAttribute(name = "parallel")
     private int parallel = DEFAULT_PARALLEL;
