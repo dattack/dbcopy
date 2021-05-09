@@ -26,12 +26,14 @@ import javax.xml.bind.annotation.XmlAttribute;
  */
 public class LiteralListBean extends AbstractVariableBean {
 
+    private static final long serialVersionUID = 5767020179827950329L;
+
     private static final int DEFAULT_BLOCK_SIZE = 1;
 
     @XmlAttribute(name = "values", required = true)
     private String values;
 
-    @XmlAttribute(name = "block-size", required = false)
+    @XmlAttribute(name = "block-size")
     private int blockSize;
 
     public LiteralListBean() {
@@ -55,7 +57,7 @@ public class LiteralListBean extends AbstractVariableBean {
 
     public int getBlockSize() {
         if (blockSize < DEFAULT_BLOCK_SIZE) {
-            return DEFAULT_BLOCK_SIZE;
+            blockSize = DEFAULT_BLOCK_SIZE;
         }
         return blockSize;
     }

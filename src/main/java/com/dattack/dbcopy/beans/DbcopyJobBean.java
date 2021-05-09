@@ -35,7 +35,7 @@ public class DbcopyJobBean implements Serializable {
     @XmlAttribute(name = "id", required = true)
     private String taskId;
 
-    @XmlAttribute(name = "threads", required = false)
+    @XmlAttribute(name = "threads")
     private int threads = DEFAULT_THREADS;
 
     @XmlElement(name = "select", type = SelectOperationBean.class, required = true)

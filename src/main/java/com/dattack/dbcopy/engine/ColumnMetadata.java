@@ -15,9 +15,11 @@
  */
 package com.dattack.dbcopy.engine;
 
+import com.dattack.dbcopy.engine.functions.*;
 import com.dattack.jtoolbox.patterns.Builder;
 
 import java.sql.ResultSetMetaData;
+import java.sql.Types;
 
 /**
  * Set of metadata corresponding to a column returned by {@link DataTransfer#transfer()}.
@@ -27,12 +29,13 @@ import java.sql.ResultSetMetaData;
  */
 public class ColumnMetadata {
 
-    private String name;
-    private int index;
-    private int type;
-    private int precision;
-    private int scale;
-    private boolean nullable;
+    private final String name;
+    private final int index;
+    private final int type;
+    private final int precision;
+    private final int scale;
+    private final boolean nullable;
+    private AbstractDataFunction<?> function;
 
     private ColumnMetadata(ColumnMetadataBuilder builder) {
         this.name = builder.getName();
@@ -41,6 +44,119 @@ public class ColumnMetadata {
         this.precision = builder.getPrecision();
         this.scale = builder.getScale();
         this.nullable = builder.isNullable();
+        createFunction();
+    }
+
+    private void createFunction() {
+
+        switch (type) {
+
+            case Types.BIGINT:
+                this.function = new LongFunction(this);
+                break;
+
+            case Types.BINARY:
+            case Types.VARBINARY:
+            case Types.LONGVARBINARY:
+                // BINARY, VARBINARY, LONGVARBINARY --> byte[]
+                this.function = new BytesFunction(this);
+                break;
+            // Boolean
+
+            case Types.BIT:
+            case Types.BOOLEAN:
+                // BIT, BOOLEAN --> Boolean
+                function = new BooleanFunction(this);
+                break;
+
+            case Types.BLOB:
+                function = new BlobFunction(this);
+                break;
+
+            case Types.CLOB:
+                function = new ClobFunction(this);
+                break;
+
+            case Types.DATE:
+                function = new DateFunction(this);
+                break;
+
+            case Types.DECIMAL:
+            case Types.NUMERIC:
+                // DECIMAL, NUMERIC --> BigDecimal
+                function = new BigDecimalFunction(this);
+                break;
+
+            case Types.DOUBLE:
+            case Types.FLOAT:
+                // DOUBLE, FLOAT --> Double
+                function = new DoubleFunction(this);
+                break;
+
+            case Types.INTEGER:
+                function = new IntegerFunction(this);
+                break;
+
+            case Types.NCLOB:
+                function = new NClobFunction(this);
+                break;
+
+            case Types.REAL:
+                // REAL --> Float
+                function = new FloatFunction(this);
+                break;
+
+            case Types.SMALLINT:
+                // SMALLINT --> Short
+                function = new ShortFunction(this);
+                break;
+
+            case Types.SQLXML:
+                function = new XmlFunction(this);
+                break;
+
+            case Types.TIME:
+            case Types.TIME_WITH_TIMEZONE:
+                function = new TimeFunction(this);
+                break;
+
+            case Types.TIMESTAMP:
+            case Types.TIMESTAMP_WITH_TIMEZONE:
+                function = new TimestampFunction(this);
+                break;
+
+            case Types.TINYINT:
+                function = new ByteFunction(this);
+                break;
+
+            case Types.NCHAR:
+            case Types.LONGNVARCHAR:
+            case Types.NVARCHAR:
+                // NCHAR, LONGNVARCHAR, NVARCHAR --> NString
+                function = new NStringFunction(this);
+                break;
+
+            case Types.CHAR:
+            case Types.LONGVARCHAR:
+            case Types.VARCHAR:
+                // CHAR, LONGVARCHAR, VARCHAR --> String
+                function = new StringFunction(this);
+                break;
+
+            case Types.ARRAY:
+            case Types.NULL:
+            case Types.OTHER:
+            case Types.DATALINK:
+            case Types.DISTINCT:
+            case Types.JAVA_OBJECT:
+            case Types.STRUCT:
+            case Types.REF_CURSOR:
+            case Types.ROWID:
+            default:
+                // unsupported data type
+                function = new NullFunction(this);
+                break;
+        }
     }
 
     public int getIndex() {
@@ -67,17 +183,21 @@ public class ColumnMetadata {
         return nullable;
     }
 
+    public AbstractDataFunction<?> getFunction() {
+        return function;
+    }
+
     @Override
     public String toString() {
-        return new StringBuilder("ColumnMetadata{") //
-                .append("name='").append(getName()).append('\'') //
-                .append(", index=").append(getIndex()) //
-                .append(", type=").append(getType()) //
-                .append(", precision=").append(getPrecision()) //
-                .append(", scale=").append(getScale()) //
-                .append(", nullable=").append(isNullable()) //
-                .append('}')
-                .toString();
+        return "ColumnMetadata{" + //
+                "name='" + getName() + '\'' + //
+                ", index=" + getIndex() + //
+                ", type=" + getType() + //
+                ", precision=" + getPrecision() + //
+                ", scale=" + getScale() + //
+                ", nullable=" + isNullable() + //
+                ", function=" + function + //
+                '}';
     }
 
     public static class ColumnMetadataBuilder implements Builder<ColumnMetadata> {

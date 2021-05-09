@@ -66,10 +66,11 @@ public class CsvExportOperationFactory implements ExportOperationFactory {
 
         Properties properties = new Properties();
         if (StringUtils.isNotBlank(bean.getFormatFile())) {
-            properties.load(new FileInputStream(bean.getFormatFile()));
+            try(FileInputStream fis = new FileInputStream(bean.getFormatFile())) {
+                properties.load(fis);
+            }
         }
-        CSVConfiguration configuration = new CSVConfiguration.CsvConfigurationBuilder(properties)
-                .build();
+        CSVConfiguration configuration = CSVConfiguration.custom(properties).build();
         return new CSVStringBuilder(configuration);
     }
 

@@ -21,10 +21,17 @@ import com.dattack.dbcopy.engine.export.ExportOperationFactoryProducer;
 import com.dattack.jtoolbox.commons.configuration.ConfigurationUtil;
 import com.dattack.jtoolbox.jdbc.JNDIDataSource;
 import org.apache.commons.configuration.AbstractConfiguration;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.sql.DataSource;
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -62,12 +69,9 @@ class DbCopyTask implements Callable<DbCopyTaskResult> {
 
         LOGGER.info("DBCopy task started {} (Thread: {})", taskResult.getTaskName(), Thread.currentThread().getName());
 
-        final String compiledSql = compileSql();
-        LOGGER.info("Executing SQL: {}", compiledSql);
-
         try (Connection selectConn = getDataSource().getConnection(); //
-             Statement selectStmt = createStatement(selectConn); //
-             ResultSet resultSet = selectStmt.executeQuery(compiledSql) //
+             Statement selectStmt = setFetchSize(selectConn.createStatement()); //
+             ResultSet resultSet = selectStmt.executeQuery(compileSql()) //
         ) {
 
             DataTransfer dataTransfer =
@@ -90,8 +94,16 @@ class DbCopyTask implements Callable<DbCopyTaskResult> {
         return taskResult;
     }
 
-    private String compileSql() {
-        return ConfigurationUtil.interpolate(dbcopyJobBean.getSelectBean().getSql(), configuration);
+    private String compileSql() throws URISyntaxException, IOException {
+
+        String sql = StringUtils.trimToEmpty(dbcopyJobBean.getSelectBean().getSql());
+        if (StringUtils.startsWithIgnoreCase(sql,"file://")) {
+            sql = new String(Files.readAllBytes(Paths.get(new URI(sql))), StandardCharsets.UTF_8);
+        }
+
+        String compiledSql = ConfigurationUtil.interpolate(sql, configuration);
+        LOGGER.info("Executing SQL: {}", compiledSql);
+        return compiledSql;
     }
 
     private DataSource getDataSource() {
@@ -99,8 +111,7 @@ class DbCopyTask implements Callable<DbCopyTaskResult> {
                 ConfigurationUtil.interpolate(dbcopyJobBean.getSelectBean().getDatasource(), configuration));
     }
 
-    private Statement createStatement(Connection connection) throws SQLException {
-        Statement stmt = connection.createStatement();
+    private Statement setFetchSize(Statement stmt) throws SQLException {
         if (dbcopyJobBean.getSelectBean().getFetchSize() > 0) {
             stmt.setFetchSize(dbcopyJobBean.getSelectBean().getFetchSize());
         }

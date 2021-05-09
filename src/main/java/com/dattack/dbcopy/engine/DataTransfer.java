@@ -15,15 +15,12 @@
  */
 package com.dattack.dbcopy.engine;
 
+import com.dattack.dbcopy.engine.datatype.AbstractDataType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.sql.Clob;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Types;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -39,12 +36,12 @@ public class DataTransfer {
     private final static Logger LOGGER = LoggerFactory.getLogger(DataTransfer.class);
 
     private static final int DEFAULT_FETCH_SIZE = 10_000;
-    private int fetchSize;
-    private ResultSet resultSet;
-    private DbCopyTaskResult taskResult;
-    private RowMetadata rowMetadata;
-    private TransferQueue<List<Object>> transferQueue;
-    private Semaphore semaphore;
+    private final int fetchSize;
+    private final DbCopyTaskResult taskResult;
+    private final TransferQueue<AbstractDataType<?>[]> transferQueue;
+    private final Semaphore semaphore;
+    private final ResultSet resultSet;
+    private final RowMetadata rowMetadata;
 
     DataTransfer(ResultSet resultSet, DbCopyTaskResult taskResult, int fetchSize) throws SQLException {
         this.resultSet = resultSet;
@@ -52,10 +49,54 @@ public class DataTransfer {
         this.fetchSize = fetchSize > 0 ? fetchSize : DEFAULT_FETCH_SIZE;
         this.transferQueue = new LinkedTransferQueue<>();
         this.semaphore = new Semaphore(1);
-        populateRowMetadata();
+        this.rowMetadata = createRowMetadata();
     }
 
-    private void populateRowMetadata() throws SQLException {
+    public AbstractDataType<?>[] transfer() throws SQLException, InterruptedException {
+
+        AbstractDataType<?>[] row;
+
+        boolean moreData = true;
+        do {
+            row = transferQueue.poll();
+
+            if (row == null) {
+
+                if (semaphore.tryAcquire(10, TimeUnit.MILLISECONDS)) {
+                    LOGGER.trace("Semaphore acquired by thread '{}'", Thread.currentThread().getName());
+                    int priority = Thread.currentThread().getPriority();
+                    Thread.currentThread().setPriority(Thread.MAX_PRIORITY);
+                    int counter = 0;
+                    do {
+                        row = publish();
+
+                        if (row == null) {
+                            moreData = false;
+                            break;
+                        }
+                        transferQueue.put(row);
+                        taskResult.incrementRetrievedRows();
+
+                    } while (counter++ < fetchSize);
+                    semaphore.release();
+                    LOGGER.trace("Semaphore released by thread '{}'. Fetched rows {}",
+                            Thread.currentThread().getName(), counter);
+                    Thread.currentThread().setPriority(priority);
+                }
+                row = transferQueue.poll();
+            }
+
+        } while (row == null && moreData);
+
+        return row;
+    }
+
+
+    public RowMetadata getRowMetadata() {
+        return rowMetadata;
+    }
+
+    private RowMetadata createRowMetadata() throws SQLException {
 
         RowMetadata.RowMetadataBuilder rowMetadataBuilder = new RowMetadata.RowMetadataBuilder();
 
@@ -71,11 +112,21 @@ public class DataTransfer {
 
             rowMetadataBuilder.add(columnMetadata);
         }
-        rowMetadata = rowMetadataBuilder.build();
+        return rowMetadataBuilder.build();
     }
 
-    public RowMetadata getRowMetadata() {
-        return rowMetadata;
+    private synchronized AbstractDataType<?>[] publish() throws SQLException {
+
+        if (isResultSetClosedQuietly() || !resultSet.next()) {
+            return null;
+        }
+
+        final AbstractDataType<?>[] dataList = new AbstractDataType[rowMetadata.getColumnCount()];
+        for (final ColumnMetadata columnMetadata: rowMetadata.getColumnsMetadata()) {
+            dataList[columnMetadata.getIndex() - 1] = columnMetadata.getFunction().get(resultSet);
+        }
+
+        return dataList;
     }
 
     private boolean isResultSetClosedQuietly() {
@@ -85,76 +136,5 @@ public class DataTransfer {
             // ignore
         }
         return false;
-    }
-
-    private boolean publish() throws SQLException, InterruptedException {
-
-        if (isResultSetClosedQuietly() || !resultSet.next()) {
-            return false;
-        }
-
-        List<Object> dataList = new ArrayList<>(rowMetadata.getColumnCount());
-        for (ColumnMetadata columnMetadata: rowMetadata.getColumnsMetadata()) {
-            dataList.add(retrieveData(columnMetadata));
-        }
-
-        transferQueue.put(dataList);
-        taskResult.incrementRetrievedRows();
-
-        return true;
-    }
-
-    public List<Object> transfer() throws SQLException, InterruptedException {
-
-        List<Object> row;
-
-        boolean moreData = true;
-        do {
-            row = transferQueue.poll();
-
-            if (row == null) {
-
-                if (semaphore.tryAcquire(10, TimeUnit.MILLISECONDS)) {
-                    int priority = Thread.currentThread().getPriority();
-                    Thread.currentThread().setPriority(Thread.MAX_PRIORITY);
-                    int counter = 0;
-                    do {
-                        moreData = publish();
-                    } while (moreData && counter++ < fetchSize);
-                    semaphore.release();
-                    Thread.currentThread().setPriority(priority);
-                }
-                row = transferQueue.poll();
-            }
-
-        } while (row == null && moreData);
-
-        return row;
-    }
-
-    private Object retrieveData(ColumnMetadata columnMetadata) throws SQLException {
-
-        Object value = resultSet.getObject(columnMetadata.getIndex());
-        if (resultSet.wasNull()) {
-            value = null;
-        } else {
-
-            switch (columnMetadata.getType()) {
-                case Types.CLOB:
-                    Clob sourceClob = resultSet.getClob(columnMetadata.getIndex());
-                    value = sourceClob.getSubString(1L, (int) sourceClob.length());
-                    break;
-
-                case Types.BLOB:
-                    value = resultSet.getBlob(columnMetadata.getIndex());
-                    break;
-                case Types.SQLXML:
-                    value = resultSet.getSQLXML(columnMetadata.getIndex());
-                    break;
-                default:
-            }
-        }
-
-        return value;
     }
 }

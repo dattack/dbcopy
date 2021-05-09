@@ -28,13 +28,13 @@ public class InsertOperationBean extends AbstractDbOperationBean {
     private static final int DEFAULT_BATCH_SIZE = 0;
     private static final int DEFAULT_PARALLEL = 1;
 
-    @XmlAttribute(name = "batch-size", required = false)
+    @XmlAttribute(name = "batch-size")
     private int batchSize = DEFAULT_BATCH_SIZE;
 
-    @XmlAttribute(name = "parallel", required = false)
+    @XmlAttribute(name = "parallel")
     private int parallel = DEFAULT_PARALLEL;
 
-    @XmlAttribute(name = "table", required = false)
+    @XmlAttribute(name = "table")
     private String table;
 
     public int getBatchSize() {

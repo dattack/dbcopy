@@ -22,6 +22,7 @@ import com.dattack.dbcopy.engine.DbCopyTaskResult;
 import com.dattack.dbcopy.engine.RowMetadata;
 import com.dattack.dbcopy.engine.export.ExportOperation;
 import com.dattack.dbcopy.engine.export.ExportOperationFactory;
+import com.dattack.dbcopy.engine.functions.*;
 import com.dattack.jtoolbox.commons.configuration.ConfigurationUtil;
 import com.dattack.jtoolbox.io.IOUtils;
 import org.apache.avro.LogicalTypes;
@@ -36,7 +37,7 @@ import org.apache.parquet.hadoop.ParquetWriter;
 import org.apache.parquet.hadoop.metadata.CompressionCodecName;
 
 import java.io.IOException;
-import java.sql.Types;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -71,28 +72,33 @@ public class ParquetExportOperationFactory implements ExportOperationFactory {
 
             return new ParquetExportOperation(bean, dataTransfer, taskResult, writer, schema);
 
-        } catch (IOException e) {
+        } catch (Exception e) {
             throw new NestableRuntimeException(e);
         }
     }
 
-    private synchronized void initSchema(RowMetadata rowMetadata) {
+    private synchronized void initSchema(RowMetadata rowMetadata) throws Exception {
 
         if (schema == null) {
             List<Schema.Field> fieldList = new ArrayList<>();
 
+            Visitor visitor = new Visitor();
             for (ColumnMetadata columnMetadata : rowMetadata.getColumnsMetadata()) {
-                fieldList.add(new Schema.Field(columnMetadata.getName(), getType(columnMetadata), null, null));
+                columnMetadata.getFunction().accept(visitor);
+                Schema columnSchema = visitor.getSchema();
+                fieldList.add(new Schema.Field(columnMetadata.getName(), columnSchema, null, null));
             }
 
             schema = Schema.createRecord("row", "row doc", "com.dattack.ns", false);
             schema.setFields(fieldList);
+
+            System.out.println("Schema: " + schema);
         }
     }
 
     private CompressionCodecName getCompression() {
 
-        CompressionCodecName compression = null;
+        CompressionCodecName compression;
         switch (bean.getCompression()) {
             case LZO:
                 compression = CompressionCodecName.LZO;
@@ -126,61 +132,114 @@ public class ParquetExportOperationFactory implements ExportOperationFactory {
         }
     }
 
-    private static Schema getType(ColumnMetadata columnMetadata) {
+    private static class Visitor implements FunctionVisitor {
 
-        Schema type;
-        switch (columnMetadata.getType()) {
-            case Types.BIT:
-            case Types.BOOLEAN:
-                type = SchemaBuilder.nullable().booleanType();
-                break;
-            case Types.DATE:
-                type = SchemaBuilder.nullable().type(LogicalTypes.date() //
-                            .addToSchema(Schema.create(Schema.Type.INT)));
-                break;
-            case Types.TIME:
-            case Types.TIME_WITH_TIMEZONE:
-                type = SchemaBuilder.nullable().type(LogicalTypes.timeMillis() //
-                            .addToSchema(Schema.create(Schema.Type.LONG)));
-                break;
-            case Types.TIMESTAMP:
-            case Types.TIMESTAMP_WITH_TIMEZONE:
-                type = SchemaBuilder.nullable().type(LogicalTypes.timestampMillis() //
-                            .addToSchema(Schema.create(Schema.Type.LONG)));
-                break;
-            case Types.DECIMAL:
-            case Types.NUMERIC:
-                if (columnMetadata.getScale() == 0) {
-                    type = SchemaBuilder.nullable().longType();
-                } else {
-                    type = SchemaBuilder.nullable().doubleType();
-                }
-                break;
-            case Types.REAL:
-            case Types.FLOAT:
-                type = SchemaBuilder.nullable().floatType();
-            case Types.TINYINT:
-            case Types.SMALLINT:
-            case Types.INTEGER:
-                type = SchemaBuilder.nullable().intType();
-                break;
-            case Types.DOUBLE:
-                type = SchemaBuilder.nullable().doubleType();
-                break;
-            case Types.BIGINT:
-                type = SchemaBuilder.nullable().longType();
-                break;
-            case Types.BLOB:
-                type = SchemaBuilder.nullable().bytesType();
-                break;
-            case Types.CHAR:
-            case Types.VARCHAR:
-            case Types.LONGVARCHAR:
-            case Types.CLOB:
-            case Types.SQLXML:
-            default:
-                type = SchemaBuilder.nullable().stringType();
+        private Schema schema;
+
+        public Schema getSchema() {
+            return schema;
         }
-        return type;
+
+        @Override
+        public void visit(BigDecimalFunction function) throws SQLException {
+            if (function.getColumnMetadata().getScale() == 0) {
+                schema = SchemaBuilder.nullable().longType();
+            } else {
+                schema = SchemaBuilder.nullable().doubleType();
+            }
+        }
+
+        @Override
+        public void visit(BlobFunction function) throws SQLException {
+            schema = SchemaBuilder.nullable().bytesType();
+        }
+
+        @Override
+        public void visit(BooleanFunction function) throws SQLException {
+            schema = SchemaBuilder.nullable().booleanType();
+        }
+
+        @Override
+        public void visit(ByteFunction function) throws SQLException {
+            schema = SchemaBuilder.nullable().intType();
+        }
+
+        @Override
+        public void visit(BytesFunction function) throws SQLException {
+            schema = SchemaBuilder.nullable().bytesType();
+        }
+
+        @Override
+        public void visit(ClobFunction function) throws SQLException {
+            schema = SchemaBuilder.nullable().stringType();
+        }
+
+        @Override
+        public void visit(DateFunction function) throws SQLException {
+            schema = SchemaBuilder.nullable().type(LogicalTypes.date() //
+                    .addToSchema(Schema.create(Schema.Type.INT)));
+        }
+
+        @Override
+        public void visit(DoubleFunction function) throws SQLException {
+            schema = SchemaBuilder.nullable().doubleType();
+        }
+
+        @Override
+        public void visit(FloatFunction function) throws SQLException {
+            schema = SchemaBuilder.nullable().floatType();
+        }
+
+        @Override
+        public void visit(IntegerFunction function) throws SQLException {
+            schema = SchemaBuilder.nullable().intType();
+        }
+
+        @Override
+        public void visit(LongFunction function) throws SQLException {
+            schema = SchemaBuilder.nullable().longType();
+        }
+
+        @Override
+        public void visit(NClobFunction function) throws SQLException {
+            schema = SchemaBuilder.nullable().stringType();
+        }
+
+        @Override
+        public void visit(NStringFunction function) throws SQLException {
+            schema = SchemaBuilder.nullable().stringType();
+        }
+
+        @Override
+        public void visit(NullFunction function) throws SQLException {
+            schema = SchemaBuilder.nullable().stringType();
+        }
+
+        @Override
+        public void visit(ShortFunction function) throws SQLException {
+            schema = SchemaBuilder.nullable().intType();
+        }
+
+        @Override
+        public void visit(StringFunction function) throws SQLException {
+            schema = SchemaBuilder.nullable().stringType();
+        }
+
+        @Override
+        public void visit(TimeFunction function) throws SQLException {
+            schema = SchemaBuilder.nullable().type(LogicalTypes.timeMillis() //
+                    .addToSchema(Schema.create(Schema.Type.LONG)));
+        }
+
+        @Override
+        public void visit(TimestampFunction function) throws SQLException {
+            schema = SchemaBuilder.nullable().type(LogicalTypes.timestampMillis() //
+                    .addToSchema(Schema.create(Schema.Type.LONG)));
+        }
+
+        @Override
+        public void visit(XmlFunction function) throws SQLException {
+            schema = SchemaBuilder.nullable().stringType();
+        }
     }
 }

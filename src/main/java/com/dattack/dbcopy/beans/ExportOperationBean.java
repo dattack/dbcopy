@@ -93,7 +93,8 @@ public class ExportOperationBean implements Serializable {
     private Compression compression = Compression.UNCOMPRESSED;
 
     @Deprecated
-    private Boolean gzip;
+    @XmlAttribute(name = "gzip")
+    private Boolean gzip = Boolean.FALSE;
 
     @XmlAttribute(name = "parallel")
     private int parallel = DEFAULT_PARALLEL;

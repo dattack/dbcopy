@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, The Dattack team (http://www.dattack.com)
+ * Copyright (c) 2021, The Dattack team (http://www.dattack.com)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,25 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.dattack.dbcopy.beans;
+package com.dattack.dbcopy.engine.datatype;
 
-import java.io.Serializable;
-import javax.xml.bind.annotation.XmlAttribute;
+import java.math.BigDecimal;
 
 /**
  * @author cvarela
- * @since 0.1
+ * @since 0.3
  */
-public abstract class AbstractVariableBean implements Serializable {
+public class BigDecimalType extends AbstractDataType<BigDecimal> {
 
-    private static final long serialVersionUID = 1431778064140594144L;
+    public static final BigDecimalType NULL = new BigDecimalType(null);
 
-    @XmlAttribute(name = "id", required = true)
-    private String id;
+    public BigDecimalType(BigDecimal value) {
+        super(value);
+    }
 
-    public abstract void accept(final VariableVisitor visitor);
-
-    public String getId() {
-        return id;
+    @Override
+    public void accept(DataTypeVisitor visitor) throws Exception {
+        visitor.visit(this);
     }
 }

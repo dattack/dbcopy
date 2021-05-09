@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, The Dattack team (http://www.dattack.com)
+ * Copyright (c) 2021, The Dattack team (http://www.dattack.com)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,25 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.dattack.dbcopy.beans;
-
-import java.io.Serializable;
-import javax.xml.bind.annotation.XmlAttribute;
+package com.dattack.dbcopy.engine.datatype;
 
 /**
  * @author cvarela
- * @since 0.1
+ * @since 0.3
  */
-public abstract class AbstractVariableBean implements Serializable {
+public class NullType extends AbstractDataType<Void> {
 
-    private static final long serialVersionUID = 1431778064140594144L;
+    public static final NullType NULL = new NullType();
 
-    @XmlAttribute(name = "id", required = true)
-    private String id;
+    public static final NullType NULL_TYPE = new NullType();
 
-    public abstract void accept(final VariableVisitor visitor);
-
-    public String getId() {
-        return id;
+    public NullType() {
+        super(null);
     }
+
+    @Override
+    public void accept(DataTypeVisitor visitor) throws Exception {
+        visitor.visit(this);
+    }
+
 }
