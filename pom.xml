@@ -44,12 +44,12 @@
         <url>http://github.com/dattack/dbcopy</url>
     </scm>
     <issueManagement>
-        <system>GitHub Issue Management</system>
+        <system>GitHub</system>
         <url>https://github.com/dattack/dbcopy/issues</url>
     </issueManagement>
     <ciManagement>
         <system>Travis CI</system>
-        <url>https://travis-ci.org/dattack/dbcopy</url>
+        <url>https://travis-ci.com/dattack/dbcopy</url>
     </ciManagement>
     <distributionManagement>
         <site>
