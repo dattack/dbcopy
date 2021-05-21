@@ -61,23 +61,24 @@ public class ParquetExportOperationFactory implements ExportOperationFactory {
     public ExportOperation createTask(DataTransfer dataTransfer, DbCopyTaskResult taskResult) {
 
         try {
-            initSchema(dataTransfer.getRowMetadata());
-            initWriter();
+            final ParquetWriter<Object> outputWriter = getWriter();
+            final ParquetWriter<Object> writer = getWriter();
 
             taskResult.addOnEndCommand(() -> {
-                        IOUtils.closeQuietly(writer);
+                        IOUtils.closeQuietly(outputWriter);
                         return null;
                     }
             );
 
-            return new ParquetExportOperation(bean, dataTransfer, taskResult, writer, schema);
+            return new ParquetExportOperation(bean, dataTransfer, taskResult, outputWriter,
+                    getSchema(dataTransfer.getRowMetadata()));
 
         } catch (Exception e) {
             throw new NestableRuntimeException(e);
         }
     }
 
-    private synchronized void initSchema(RowMetadata rowMetadata) throws Exception {
+    private synchronized Schema getSchema(RowMetadata rowMetadata) throws Exception {
 
         if (schema == null) {
             List<Schema.Field> fieldList = new ArrayList<>();
@@ -94,6 +95,7 @@ public class ParquetExportOperationFactory implements ExportOperationFactory {
 
             System.out.println("Schema: " + schema);
         }
+        return schema;
     }
 
     private CompressionCodecName getCompression() {
@@ -116,7 +118,7 @@ public class ParquetExportOperationFactory implements ExportOperationFactory {
         return compression;
     }
 
-    private synchronized void initWriter() throws IOException {
+    private synchronized ParquetWriter<Object> getWriter() throws IOException {
 
         if (writer == null) {
 
@@ -130,6 +132,7 @@ public class ParquetExportOperationFactory implements ExportOperationFactory {
                     .withWriteMode(ParquetFileWriter.Mode.OVERWRITE) //
                     .build();
         }
+        return writer;
     }
 
     private static class Visitor implements FunctionVisitor {

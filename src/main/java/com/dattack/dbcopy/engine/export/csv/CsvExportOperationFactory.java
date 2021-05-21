@@ -45,11 +45,12 @@ public class CsvExportOperationFactory implements ExportOperationFactory {
         this.configuration = configuration;
     }
 
-    private synchronized void initWriter(RowMetadata rowMetadata) throws IOException {
+    private synchronized CsvExportWriteWrapper getWriter(RowMetadata rowMetadata) throws IOException {
         if (writer == null) {
             writer = new CsvExportWriteWrapper(bean, configuration);
             writer.setHeader(getHeader(rowMetadata));
         }
+        return writer;
     }
 
     private String getHeader(RowMetadata rowMetadata) throws IOException {
@@ -78,15 +79,15 @@ public class CsvExportOperationFactory implements ExportOperationFactory {
     public ExportOperation createTask(DataTransfer dataTransfer, DbCopyTaskResult taskResult) {
 
         try {
-            initWriter(dataTransfer.getRowMetadata());
+            final CsvExportWriteWrapper outputWriter = getWriter(dataTransfer.getRowMetadata());
 
             taskResult.addOnEndCommand(() -> {
-                        IOUtils.closeQuietly(writer);
+                        IOUtils.closeQuietly(outputWriter);
                         return null;
                     }
             );
 
-            return new CsvExportOperation(bean, dataTransfer, taskResult, writer);
+            return new CsvExportOperation(bean, dataTransfer, taskResult, outputWriter);
 
         } catch (IOException e) {
             throw new NestableRuntimeException(e);

@@ -107,7 +107,7 @@ class InsertOperation implements Callable<Integer> {
         taskResult.addProcessedRows(insertedRows);
 
         JDBCUtils.closeQuietly(preparedStatement);
-        JDBCUtils.closeQuietly(connection);
+        JDBCUtils.closeQuietly(getConnection());
 
         return insertedRows;
     }
