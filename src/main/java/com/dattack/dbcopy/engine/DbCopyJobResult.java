@@ -21,6 +21,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
+ * MBean implementation to access the result of the execution of a job.
+ *
  * @author cvarela
  * @since 0.1
  */

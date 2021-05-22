@@ -17,11 +17,12 @@ package com.dattack.dbcopy.engine.functions;
 
 import com.dattack.dbcopy.engine.ColumnMetadata;
 import com.dattack.dbcopy.engine.datatype.AbstractDataType;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
 /**
+ * Definition of a function to retrieve a value from a ResultSet of a given data type.
+ *
  * @author cvarela
  * @since 0.3
  */
@@ -33,21 +34,33 @@ public abstract class AbstractDataFunction<T extends AbstractDataType<?>> {
         this.columnMetadata = columnMetadata;
     }
 
-    public ColumnMetadata getColumnMetadata() {
-        return columnMetadata;
-    }
+    public abstract void accept(FunctionVisitor visitor) throws Exception;
 
+    /**
+     * Returns the value of the ResultSet corresponding to the column on which this function is executed.
+     *
+     * @param rs the ResultSet object
+     * @return the value of the ResultSet corresponding to the column on which this function is executed.
+     * @throws SQLException if a database access error occurs or this method is called on a closed result set.
+     */
     public T get(ResultSet rs) throws SQLException {
         T result = doGet(rs, columnMetadata.getIndex());
         if (rs.wasNull()) {
-            return getNull();
+            result = getNull();
         }
         return result;
     }
 
     abstract T doGet(ResultSet rs, int index) throws SQLException;
 
+    /**
+     * Returns the representation of the NULL value for this data type.
+     *
+     * @return the representation of the NULL value for this data type.
+     */
     abstract T getNull();
 
-    public abstract void accept(FunctionVisitor visitor) throws Exception;
+    public ColumnMetadata getColumnMetadata() {
+        return columnMetadata;
+    }
 }

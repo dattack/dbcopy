@@ -25,12 +25,14 @@ import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 import java.io.Serializable;
 
 /**
+ * bean representing an export operation.
+ *
  * @author cvarela
  * @since 0.1
  */
 public class ExportOperationBean implements Serializable {
 
-    private final static Logger LOGGER = LoggerFactory.getLogger(ExportOperationBean.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ExportOperationBean.class);
 
     private static final long serialVersionUID = 75388957947238367L;
 

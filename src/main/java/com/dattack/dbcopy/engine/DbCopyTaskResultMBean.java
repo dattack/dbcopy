@@ -16,9 +16,12 @@
 package com.dattack.dbcopy.engine;
 
 /**
+ * MBean to access the result of the execution of a task.
+ *
  * @author cvarela
  * @since 0.1
  */
+@SuppressWarnings("checkstyle:AbbreviationAsWordInName")
 public interface DbCopyTaskResultMBean {
 
     long getEndTime();

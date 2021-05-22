@@ -23,31 +23,41 @@ import org.apache.commons.io.output.CountingOutputStream;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.*;
+import java.io.BufferedWriter;
+import java.io.Closeable;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.zip.GZIPOutputStream;
 
 /**
+ * Wrapper of a Writer that performs data writing in CSV format.
+ *
  * @author cvarela
  * @since 0.2
  */
 class CsvExportWriteWrapper implements Closeable {
 
-    private final static Logger LOGGER = LoggerFactory.getLogger(CsvExportWriteWrapper.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(CsvExportWriteWrapper.class);
 
-    private ExportOperationBean bean;
-    private AbstractConfiguration configuration;
+    private final ExportOperationBean bean;
+    private final AbstractConfiguration configuration;
     private volatile Path path;
     private volatile Writer writer;
     private String header;
-    private volatile AtomicInteger fileNumber;
+    private final AtomicInteger fileNumber;
     private final Object lock;
     private volatile CountingOutputStream cos;
 
-    public CsvExportWriteWrapper(ExportOperationBean bean, AbstractConfiguration configuration) {
+    public CsvExportWriteWrapper(final ExportOperationBean bean, final AbstractConfiguration configuration) {
         this.bean = bean;
         this.configuration = configuration;
         this.fileNumber = bean.getRotateSize() > 0 ? new AtomicInteger() : null;
@@ -87,7 +97,7 @@ class CsvExportWriteWrapper implements Closeable {
         }
     }
 
-    private static String createPartFilename(String filename, int fileNumber) {
+    private static String createPartFilename(final String filename, final int fileNumber) {
         String baseName = FilenameUtils.getBaseName(filename);
         String extension = FilenameUtils.getExtension(filename);
 
@@ -119,11 +129,11 @@ class CsvExportWriteWrapper implements Closeable {
         return writer;
     }
 
-    void setHeader(String header) {
+    void setHeader(final String header) {
         this.header = header;
     }
 
-    void write(String text) throws IOException {
+    void write(final String text) throws IOException {
         synchronized (lock) {
             getWriter().write(text);
         }

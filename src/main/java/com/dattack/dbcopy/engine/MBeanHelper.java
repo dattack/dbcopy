@@ -25,9 +25,12 @@ import javax.management.NotCompliantMBeanException;
 import javax.management.ObjectName;
 
 /**
+ * Helper class for MBean management.
+ *
  * @author cvarela
  * @since 0.1
  */
+@SuppressWarnings("checkstyle:AbbreviationAsWordInName")
 public class MBeanHelper {
 
     public static void registerMBean(final String name, final Object object) {

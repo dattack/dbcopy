@@ -19,9 +19,12 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 
 /**
+ * MBean to manage a thread pool.
+ *
  * @author cvarela
  * @since 0.1
  */
+@SuppressWarnings("checkstyle:AbbreviationAsWordInName")
 public interface ExecutionControllerMBean {
 
     public int getCorePoolSize();

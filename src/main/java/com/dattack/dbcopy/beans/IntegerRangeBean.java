@@ -18,10 +18,14 @@ package com.dattack.dbcopy.beans;
 import javax.xml.bind.annotation.XmlAttribute;
 
 /**
+ * Variable representing a range of number values and allowing iteration through them.
+ *
  * @author cvarela
  * @since 0.1
  */
 public class IntegerRangeBean extends AbstractVariableBean {
+
+    private static final long serialVersionUID = -1202210289450031802L;
 
     private static final long DEFAULT_BLOCK_SIZE = 1;
 

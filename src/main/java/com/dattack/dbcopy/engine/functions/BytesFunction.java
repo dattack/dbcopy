@@ -17,11 +17,12 @@ package com.dattack.dbcopy.engine.functions;
 
 import com.dattack.dbcopy.engine.ColumnMetadata;
 import com.dattack.dbcopy.engine.datatype.BytesType;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
 /**
+ * {@link AbstractDataFunction} implementation to retrieve values of type {@link BytesType}.
+ *
  * @author cvarela
  * @since 0.3
  */

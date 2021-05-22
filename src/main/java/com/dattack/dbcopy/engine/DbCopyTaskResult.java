@@ -16,12 +16,13 @@
 package com.dattack.dbcopy.engine;
 
 import com.dattack.jtoolbox.patterns.Command;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
+ * MBean implementation to access the result of the execution of a task.
+ *
  * @author cvarela
  * @since 0.1
  */
@@ -30,10 +31,10 @@ public final class DbCopyTaskResult implements DbCopyTaskResultMBean {
     private final String taskName;
     private long startTime;
     private long endTime;
-    private AtomicLong retrievedRows;
-    private AtomicLong processedRows;
+    private final AtomicLong retrievedRows;
+    private final AtomicLong processedRows;
     private Exception exception;
-    private List<Command> onEndCommandList;
+    private final List<Command<?>> onEndCommandList;
 
     public DbCopyTaskResult(final String taskName) {
         this.taskName = taskName;
@@ -49,16 +50,13 @@ public final class DbCopyTaskResult implements DbCopyTaskResultMBean {
         this.processedRows.addAndGet(value);
     }
 
-    public void addOnEndCommand(Command command) {
+    public void addOnEndCommand(Command<?> command) {
         onEndCommandList.add(command);
     }
 
     public void end() {
         this.endTime = System.currentTimeMillis();
-
-        for (Command command : onEndCommandList) {
-            command.execute();
-        }
+        onEndCommandList.forEach(Command::execute);
     }
 
     @Override
@@ -76,14 +74,15 @@ public final class DbCopyTaskResult implements DbCopyTaskResultMBean {
     }
 
     public long getExecutionTime() {
-        if (startTime <= 0) {
-            return 0;
+        long result = 0;
+        if (startTime > 0) {
+            if (endTime <= 0) {
+                result = System.currentTimeMillis() - startTime;
+            } else {
+                result = endTime - startTime;
+            }
         }
-
-        if (endTime <= 0) {
-            return System.currentTimeMillis() - startTime;
-        }
-        return endTime - startTime;
+        return result;
     }
 
     @Override

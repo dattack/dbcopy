@@ -20,10 +20,14 @@ import javax.xml.bind.annotation.XmlValue;
 import java.io.Serializable;
 
 /**
+ * Abstract class containing the common properties of all the operations executed by DBCopy.
+ *
  * @author cvarela
  * @since 0.1
  */
 public abstract class AbstractDbOperationBean implements Serializable {
+
+    private static final long serialVersionUID = -3160515038190663322L;
 
     @XmlAttribute(name = "datasource", required = true)
     private String datasource;

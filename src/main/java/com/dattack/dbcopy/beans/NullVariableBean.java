@@ -16,10 +16,14 @@
 package com.dattack.dbcopy.beans;
 
 /**
+ * Variable not configured and therefore does not represent a further action.
+ *
  * @author cvarela
  * @since 0.1
  */
 public class NullVariableBean extends AbstractVariableBean {
+
+    private static final long serialVersionUID = -62449415737599438L;
 
     @Override
     public void accept(final VariableVisitor visitor) {

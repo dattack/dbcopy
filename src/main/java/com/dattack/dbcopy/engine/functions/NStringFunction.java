@@ -17,14 +17,16 @@ package com.dattack.dbcopy.engine.functions;
 
 import com.dattack.dbcopy.engine.ColumnMetadata;
 import com.dattack.dbcopy.engine.datatype.NStringType;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
 /**
+ * {@link AbstractDataFunction} implementation to retrieve values of type {@link NStringType}.
+ *
  * @author cvarela
  * @since 0.3
  */
+@SuppressWarnings("checkstyle:AbbreviationAsWordInName")
 public class NStringFunction extends AbstractDataFunction<NStringType> {
 
     public NStringFunction(ColumnMetadata columnMetadata) {

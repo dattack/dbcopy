@@ -18,6 +18,8 @@ package com.dattack.dbcopy.beans;
 import javax.xml.bind.annotation.XmlAttribute;
 
 /**
+ * Bean representing a insert operation.
+ *
  * @author cvarela
  * @since 0.1
  */

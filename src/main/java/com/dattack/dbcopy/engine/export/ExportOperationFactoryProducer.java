@@ -21,6 +21,9 @@ import com.dattack.dbcopy.engine.export.parquet.ParquetExportOperationFactory;
 import org.apache.commons.configuration.AbstractConfiguration;
 
 /**
+ * Factory responsible for instantiating the required {@link ExportOperationFactory} object according to the type
+ * specified in the ExportOperationBean.
+ *
  * @author cvarela
  * @since 0.1
  */
@@ -32,8 +35,7 @@ public class ExportOperationFactoryProducer {
 
     public static ExportOperationFactory getFactory(final ExportOperationBean bean,
                                                     final AbstractConfiguration configuration) {
-
-        ExportOperationFactory factory = null;
+        ExportOperationFactory factory;
         switch (bean.getType()) {
             case PARQUET:
                 factory = new ParquetExportOperationFactory(bean, configuration);

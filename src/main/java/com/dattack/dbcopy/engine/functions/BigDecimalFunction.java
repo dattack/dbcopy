@@ -17,12 +17,12 @@ package com.dattack.dbcopy.engine.functions;
 
 import com.dattack.dbcopy.engine.ColumnMetadata;
 import com.dattack.dbcopy.engine.datatype.BigDecimalType;
-
-import java.math.BigDecimal;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
 /**
+ * {@link AbstractDataFunction} implementation to retrieve values of type {@link BigDecimalType}.
+ *
  * @author cvarela
  * @since 0.3
  */
@@ -38,12 +38,12 @@ public class BigDecimalFunction extends AbstractDataFunction<BigDecimalType> {
     }
 
     @Override
-    public void accept(FunctionVisitor visitor) throws Exception {
-        visitor.visit(this);
+    BigDecimalType getNull() {
+        return BigDecimalType.NULL;
     }
 
     @Override
-    BigDecimalType getNull() {
-        return BigDecimalType.NULL;
+    public void accept(FunctionVisitor visitor) throws Exception {
+        visitor.visit(this);
     }
 }

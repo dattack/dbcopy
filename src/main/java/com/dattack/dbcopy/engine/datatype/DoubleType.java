@@ -16,6 +16,8 @@
 package com.dattack.dbcopy.engine.datatype;
 
 /**
+ * {@link AbstractDataType} implementation for {@link Double} data type.
+ *
  * @author cvarela
  * @since 0.3
  */
@@ -31,5 +33,4 @@ public class DoubleType extends AbstractDataType<Double> {
     public void accept(DataTypeVisitor visitor) throws Exception {
         visitor.visit(this);
     }
-
 }

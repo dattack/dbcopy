@@ -24,6 +24,8 @@ import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 
 /**
+ * Bean representing a dbcopy configuration file.
+ *
  * @author cvarela
  * @since 0.1
  */
@@ -42,9 +44,6 @@ public class DbcopyBean implements Serializable {
         this.jobList = new ArrayList<>();
     }
 
-    /**
-     * @return the job list
-     */
     public List<DbcopyJobBean> getJobList() {
         return jobList;
     }

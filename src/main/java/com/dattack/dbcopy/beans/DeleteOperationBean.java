@@ -16,6 +16,8 @@
 package com.dattack.dbcopy.beans;
 
 /**
+ * Bean representing a deletion operation.
+ *
  * @author cvarela
  * @since 0.1
  */

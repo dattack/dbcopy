@@ -18,9 +18,12 @@ package com.dattack.dbcopy.engine.datatype;
 import java.sql.NClob;
 
 /**
+ * {@link AbstractDataType} implementation for {@link NClob} data type.
+ *
  * @author cvarela
  * @since 0.3
  */
+@SuppressWarnings("checkstyle:AbbreviationAsWordInName")
 public class NClobType extends AbstractDataType<NClob> {
 
     public static final NClobType NULL = new NClobType(null);
@@ -33,5 +36,4 @@ public class NClobType extends AbstractDataType<NClob> {
     public void accept(DataTypeVisitor visitor) throws Exception {
         visitor.visit(this);
     }
-
 }

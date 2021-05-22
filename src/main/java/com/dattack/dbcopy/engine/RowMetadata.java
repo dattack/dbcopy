@@ -74,8 +74,8 @@ public class RowMetadata {
                 int zeroIndex = columnMetadata.getIndex() - 1;
                 ColumnMetadata previous = array[zeroIndex];
                 if (previous != null) {
-                    throw new IllegalArgumentException(String.format("Found a duplicate column index on row metadata " +
-                            "[previous: %s, current: %s]", previous, columnMetadata));
+                    throw new IllegalArgumentException(String.format("Found a duplicate column index on row metadata "
+                            + "[previous: %s, current: %s]", previous, columnMetadata));
                 }
                 array[zeroIndex] = columnMetadata;
             }

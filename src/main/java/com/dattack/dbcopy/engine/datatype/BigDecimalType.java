@@ -18,6 +18,8 @@ package com.dattack.dbcopy.engine.datatype;
 import java.math.BigDecimal;
 
 /**
+ * {@link AbstractDataType} implementation for {@link BigDecimal} data type.
+ *
  * @author cvarela
  * @since 0.3
  */

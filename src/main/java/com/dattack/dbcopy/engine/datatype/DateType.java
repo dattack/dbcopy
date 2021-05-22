@@ -18,6 +18,8 @@ package com.dattack.dbcopy.engine.datatype;
 import java.sql.Date;
 
 /**
+ * {@link AbstractDataType} implementation for {@link Date} data type.
+ *
  * @author cvarela
  * @since 0.3
  */
@@ -33,5 +35,4 @@ public class DateType extends AbstractDataType<Date> {
     public void accept(DataTypeVisitor visitor) throws Exception {
         visitor.visit(this);
     }
-
 }

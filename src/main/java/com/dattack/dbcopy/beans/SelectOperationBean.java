@@ -18,6 +18,8 @@ package com.dattack.dbcopy.beans;
 import javax.xml.bind.annotation.XmlAttribute;
 
 /**
+ * Bean representing a query operation executed to retrieve a ResultSet.
+ *
  * @author cvarela
  * @since 0.1
  */

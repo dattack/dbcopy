@@ -16,7 +16,10 @@
 package com.dattack.dbcopy.engine.export.csv;
 
 import com.dattack.dbcopy.beans.ExportOperationBean;
-import com.dattack.dbcopy.engine.*;
+import com.dattack.dbcopy.engine.ColumnMetadata;
+import com.dattack.dbcopy.engine.DataTransfer;
+import com.dattack.dbcopy.engine.DbCopyTaskResult;
+import com.dattack.dbcopy.engine.RowMetadata;
 import com.dattack.dbcopy.engine.export.ExportOperation;
 import com.dattack.dbcopy.engine.export.ExportOperationFactory;
 import com.dattack.formats.csv.CSVConfiguration;
@@ -25,12 +28,13 @@ import com.dattack.jtoolbox.io.IOUtils;
 import org.apache.commons.configuration.AbstractConfiguration;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.exception.NestableRuntimeException;
-
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Properties;
 
 /**
+ * Factory responsible for the instantiation of export operations in CSV format.
+ *
  * @author cvarela
  * @since 0.1
  */
@@ -45,7 +49,7 @@ public class CsvExportOperationFactory implements ExportOperationFactory {
         this.configuration = configuration;
     }
 
-    private synchronized CsvExportWriteWrapper getWriter(RowMetadata rowMetadata) throws IOException {
+    private synchronized CsvExportWriteWrapper getWriter(final RowMetadata rowMetadata) throws IOException {
         if (writer == null) {
             writer = new CsvExportWriteWrapper(bean, configuration);
             writer.setHeader(getHeader(rowMetadata));
@@ -53,21 +57,22 @@ public class CsvExportOperationFactory implements ExportOperationFactory {
         return writer;
     }
 
-    private String getHeader(RowMetadata rowMetadata) throws IOException {
+    private String getHeader(final RowMetadata rowMetadata) throws IOException {
 
         CSVStringBuilder builder = createCSVStringBuilder();
-        for (ColumnMetadata columnMetadata: rowMetadata.getColumnsMetadata()) {
+        for (ColumnMetadata columnMetadata : rowMetadata.getColumnsMetadata()) {
             builder.append(columnMetadata.getName());
         }
         builder.eol();
         return builder.toString();
     }
 
+    @SuppressWarnings("checkstyle:AbbreviationAsWordInName")
     private CSVStringBuilder createCSVStringBuilder() throws IOException {
 
         Properties properties = new Properties();
         if (StringUtils.isNotBlank(bean.getFormatFile())) {
-            try(FileInputStream fis = new FileInputStream(bean.getFormatFile())) {
+            try (FileInputStream fis = new FileInputStream(bean.getFormatFile())) {
                 properties.load(fis);
             }
         }
@@ -76,15 +81,15 @@ public class CsvExportOperationFactory implements ExportOperationFactory {
     }
 
     @Override
-    public ExportOperation createTask(DataTransfer dataTransfer, DbCopyTaskResult taskResult) {
+    public ExportOperation createTask(final DataTransfer dataTransfer, final DbCopyTaskResult taskResult) {
 
         try {
             final CsvExportWriteWrapper outputWriter = getWriter(dataTransfer.getRowMetadata());
 
             taskResult.addOnEndCommand(() -> {
-                        IOUtils.closeQuietly(outputWriter);
-                        return null;
-                    }
+                    IOUtils.closeQuietly(outputWriter);
+                    return null;
+                }
             );
 
             return new CsvExportOperation(bean, dataTransfer, taskResult, outputWriter);

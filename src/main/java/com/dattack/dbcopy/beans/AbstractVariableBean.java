@@ -19,6 +19,8 @@ import java.io.Serializable;
 import javax.xml.bind.annotation.XmlAttribute;
 
 /**
+ * Bean representing a variable configuration.
+ *
  * @author cvarela
  * @since 0.1
  */

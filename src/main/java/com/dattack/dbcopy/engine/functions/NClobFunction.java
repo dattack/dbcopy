@@ -17,14 +17,16 @@ package com.dattack.dbcopy.engine.functions;
 
 import com.dattack.dbcopy.engine.ColumnMetadata;
 import com.dattack.dbcopy.engine.datatype.NClobType;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
 /**
+ * {@link AbstractDataFunction} implementation to retrieve values of type {@link NClobType}.
+ *
  * @author cvarela
  * @since 0.3
  */
+@SuppressWarnings("checkstyle:AbbreviationAsWordInName")
 public class NClobFunction extends AbstractDataFunction<NClobType> {
 
     public NClobFunction(ColumnMetadata columnMetadata) {

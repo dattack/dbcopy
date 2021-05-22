@@ -44,6 +44,8 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
+ * Represents a task that is part of an executed job.
+ *
  * @author cvarela
  * @since 0.1
  */
@@ -85,7 +87,7 @@ class DbCopyTask implements Callable<DbCopyTaskResult> {
             showFutures(futureList);
             LOGGER.info("DBCopy task finished {}", taskResult.getTaskName());
 
-        } catch (final Exception e) {
+        } catch (final SQLException | URISyntaxException | IOException e) {
             LOGGER.error("DBCopy task failed {}: {}", taskResult.getTaskName(), e);
             taskResult.setException(e);
         }
@@ -97,7 +99,7 @@ class DbCopyTask implements Callable<DbCopyTaskResult> {
     private String compileSql() throws URISyntaxException, IOException {
 
         String sql = StringUtils.trimToEmpty(dbcopyJobBean.getSelectBean().getSql());
-        if (StringUtils.startsWithIgnoreCase(sql,"file://")) {
+        if (StringUtils.startsWithIgnoreCase(sql, "file://")) {
             sql = new String(Files.readAllBytes(Paths.get(new URI(sql))), StandardCharsets.UTF_8);
         }
 

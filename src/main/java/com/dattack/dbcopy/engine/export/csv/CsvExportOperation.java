@@ -19,7 +19,27 @@ import com.dattack.dbcopy.beans.ExportOperationBean;
 import com.dattack.dbcopy.engine.ColumnMetadata;
 import com.dattack.dbcopy.engine.DataTransfer;
 import com.dattack.dbcopy.engine.DbCopyTaskResult;
-import com.dattack.dbcopy.engine.datatype.*;
+import com.dattack.dbcopy.engine.datatype.AbstractDataType;
+import com.dattack.dbcopy.engine.datatype.BigDecimalType;
+import com.dattack.dbcopy.engine.datatype.BlobType;
+import com.dattack.dbcopy.engine.datatype.BooleanType;
+import com.dattack.dbcopy.engine.datatype.ByteType;
+import com.dattack.dbcopy.engine.datatype.BytesType;
+import com.dattack.dbcopy.engine.datatype.ClobType;
+import com.dattack.dbcopy.engine.datatype.DataTypeVisitor;
+import com.dattack.dbcopy.engine.datatype.DateType;
+import com.dattack.dbcopy.engine.datatype.DoubleType;
+import com.dattack.dbcopy.engine.datatype.FloatType;
+import com.dattack.dbcopy.engine.datatype.IntegerType;
+import com.dattack.dbcopy.engine.datatype.LongType;
+import com.dattack.dbcopy.engine.datatype.NClobType;
+import com.dattack.dbcopy.engine.datatype.NStringType;
+import com.dattack.dbcopy.engine.datatype.NullType;
+import com.dattack.dbcopy.engine.datatype.ShortType;
+import com.dattack.dbcopy.engine.datatype.StringType;
+import com.dattack.dbcopy.engine.datatype.TimeType;
+import com.dattack.dbcopy.engine.datatype.TimestampType;
+import com.dattack.dbcopy.engine.datatype.XmlType;
 import com.dattack.dbcopy.engine.export.ExportOperation;
 import com.dattack.formats.csv.CSVConfiguration;
 import com.dattack.formats.csv.CSVStringBuilder;
@@ -27,7 +47,6 @@ import com.dattack.jtoolbox.exceptions.DattackNestableRuntimeException;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -38,14 +57,14 @@ import java.sql.SQLXML;
 import java.util.Properties;
 
 /**
- * Executes the EXPORT operations.
+ * data export operation in CSV format.
  *
  * @author cvarela
  * @since 0.1
  */
 public class CsvExportOperation implements ExportOperation {
 
-    private final static Logger LOGGER = LoggerFactory.getLogger(CsvExportOperation.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(CsvExportOperation.class);
 
     private final ExportOperationBean bean;
     private final DataTransfer dataTransfer;
@@ -70,6 +89,7 @@ public class CsvExportOperation implements ExportOperation {
         return builder.toString();
     }
 
+    @SuppressWarnings("checkstyle:AbbreviationAsWordInName")
     private CSVStringBuilder createCSVStringBuilder() throws IOException {
 
         Properties properties = new Properties();
@@ -118,7 +138,8 @@ public class CsvExportOperation implements ExportOperation {
     }
 
 
-    private void populate(Visitor visitor, CSVStringBuilder csvStringBuilder, AbstractDataType<?>[] dataList) throws Exception {
+    private void populate(Visitor visitor, CSVStringBuilder csvStringBuilder, AbstractDataType<?>[] dataList)
+            throws Exception {
 
         for (ColumnMetadata columnMetadata : dataTransfer.getRowMetadata().getColumnsMetadata()) {
             final AbstractDataType<?> value = dataList[columnMetadata.getIndex() - 1];

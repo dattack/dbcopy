@@ -19,7 +19,27 @@ import com.dattack.dbcopy.beans.ExportOperationBean;
 import com.dattack.dbcopy.engine.ColumnMetadata;
 import com.dattack.dbcopy.engine.DataTransfer;
 import com.dattack.dbcopy.engine.DbCopyTaskResult;
-import com.dattack.dbcopy.engine.datatype.*;
+import com.dattack.dbcopy.engine.datatype.AbstractDataType;
+import com.dattack.dbcopy.engine.datatype.BigDecimalType;
+import com.dattack.dbcopy.engine.datatype.BlobType;
+import com.dattack.dbcopy.engine.datatype.BooleanType;
+import com.dattack.dbcopy.engine.datatype.ByteType;
+import com.dattack.dbcopy.engine.datatype.BytesType;
+import com.dattack.dbcopy.engine.datatype.ClobType;
+import com.dattack.dbcopy.engine.datatype.DataTypeVisitor;
+import com.dattack.dbcopy.engine.datatype.DateType;
+import com.dattack.dbcopy.engine.datatype.DoubleType;
+import com.dattack.dbcopy.engine.datatype.FloatType;
+import com.dattack.dbcopy.engine.datatype.IntegerType;
+import com.dattack.dbcopy.engine.datatype.LongType;
+import com.dattack.dbcopy.engine.datatype.NClobType;
+import com.dattack.dbcopy.engine.datatype.NStringType;
+import com.dattack.dbcopy.engine.datatype.NullType;
+import com.dattack.dbcopy.engine.datatype.ShortType;
+import com.dattack.dbcopy.engine.datatype.StringType;
+import com.dattack.dbcopy.engine.datatype.TimeType;
+import com.dattack.dbcopy.engine.datatype.TimestampType;
+import com.dattack.dbcopy.engine.datatype.XmlType;
 import com.dattack.dbcopy.engine.export.ExportOperation;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
@@ -27,18 +47,17 @@ import org.apache.avro.generic.GenericRecord;
 import org.apache.parquet.hadoop.ParquetWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import java.sql.SQLException;
 
 /**
- * Executes the EXPORT operations.
+ * Data export operation in Parquet format.
  *
  * @author cvarela
  * @since 0.1
  */
 class ParquetExportOperation implements ExportOperation {
 
-    private final static Logger LOGGER = LoggerFactory.getLogger(ParquetExportOperation.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ParquetExportOperation.class);
 
     private final ThreadLocal<Visitor> visitorThreadLocal = new ThreadLocal<>();
 

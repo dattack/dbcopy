@@ -16,6 +16,8 @@
 package com.dattack.dbcopy.engine.datatype;
 
 /**
+ * {@link AbstractDataType} implementation for {@link Void} data type.
+ *
  * @author cvarela
  * @since 0.3
  */
@@ -33,5 +35,4 @@ public class NullType extends AbstractDataType<Void> {
     public void accept(DataTypeVisitor visitor) throws Exception {
         visitor.visit(this);
     }
-
 }

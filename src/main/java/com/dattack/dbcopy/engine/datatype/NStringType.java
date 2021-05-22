@@ -16,9 +16,12 @@
 package com.dattack.dbcopy.engine.datatype;
 
 /**
+ * {@link AbstractDataType} implementation for {@link String} data type.
+ *
  * @author cvarela
  * @since 0.3
  */
+@SuppressWarnings("checkstyle:AbbreviationAsWordInName")
 public class NStringType extends AbstractDataType<String> {
 
     public static final NStringType NULL = new NStringType(null);
@@ -31,5 +34,4 @@ public class NStringType extends AbstractDataType<String> {
     public void accept(DataTypeVisitor visitor) throws Exception {
         visitor.visit(this);
     }
-
 }

@@ -18,6 +18,8 @@ package com.dattack.dbcopy.engine.datatype;
 import java.sql.Timestamp;
 
 /**
+ * {@link AbstractDataType} implementation for {@link Timestamp} data type.
+ *
  * @author cvarela
  * @since 0.3
  */
@@ -33,5 +35,4 @@ public class TimestampType extends AbstractDataType<Timestamp> {
     public void accept(DataTypeVisitor visitor) throws Exception {
         visitor.visit(this);
     }
-
 }

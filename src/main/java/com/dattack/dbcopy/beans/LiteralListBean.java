@@ -21,6 +21,8 @@ import java.util.List;
 import javax.xml.bind.annotation.XmlAttribute;
 
 /**
+ * Variable representing a set of literal values and allowing iteration through them.
+ *
  * @author cvarela
  * @since 0.1
  */

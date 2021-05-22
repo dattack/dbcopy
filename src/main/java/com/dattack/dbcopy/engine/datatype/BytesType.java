@@ -16,6 +16,8 @@
 package com.dattack.dbcopy.engine.datatype;
 
 /**
+ * {@link AbstractDataType} implementation for <code>byte[]</code> data type.
+ *
  * @author cvarela
  * @since 0.3
  */

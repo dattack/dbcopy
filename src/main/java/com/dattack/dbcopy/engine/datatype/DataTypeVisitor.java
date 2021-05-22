@@ -16,6 +16,8 @@
 package com.dattack.dbcopy.engine.datatype;
 
 /**
+ * Visitor of the internal data type hierarchy.
+ *
  * @author cvarela
  * @since 0.3
  */

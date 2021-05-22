@@ -22,7 +22,26 @@ import com.dattack.dbcopy.engine.DbCopyTaskResult;
 import com.dattack.dbcopy.engine.RowMetadata;
 import com.dattack.dbcopy.engine.export.ExportOperation;
 import com.dattack.dbcopy.engine.export.ExportOperationFactory;
-import com.dattack.dbcopy.engine.functions.*;
+import com.dattack.dbcopy.engine.functions.BigDecimalFunction;
+import com.dattack.dbcopy.engine.functions.BlobFunction;
+import com.dattack.dbcopy.engine.functions.BooleanFunction;
+import com.dattack.dbcopy.engine.functions.ByteFunction;
+import com.dattack.dbcopy.engine.functions.BytesFunction;
+import com.dattack.dbcopy.engine.functions.ClobFunction;
+import com.dattack.dbcopy.engine.functions.DateFunction;
+import com.dattack.dbcopy.engine.functions.DoubleFunction;
+import com.dattack.dbcopy.engine.functions.FloatFunction;
+import com.dattack.dbcopy.engine.functions.FunctionVisitor;
+import com.dattack.dbcopy.engine.functions.IntegerFunction;
+import com.dattack.dbcopy.engine.functions.LongFunction;
+import com.dattack.dbcopy.engine.functions.NClobFunction;
+import com.dattack.dbcopy.engine.functions.NStringFunction;
+import com.dattack.dbcopy.engine.functions.NullFunction;
+import com.dattack.dbcopy.engine.functions.ShortFunction;
+import com.dattack.dbcopy.engine.functions.StringFunction;
+import com.dattack.dbcopy.engine.functions.TimeFunction;
+import com.dattack.dbcopy.engine.functions.TimestampFunction;
+import com.dattack.dbcopy.engine.functions.XmlFunction;
 import com.dattack.jtoolbox.commons.configuration.ConfigurationUtil;
 import com.dattack.jtoolbox.io.IOUtils;
 import org.apache.avro.LogicalTypes;
@@ -30,18 +49,22 @@ import org.apache.avro.Schema;
 import org.apache.avro.SchemaBuilder;
 import org.apache.commons.configuration.AbstractConfiguration;
 import org.apache.commons.lang.exception.NestableRuntimeException;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.parquet.avro.AvroParquetWriter;
 import org.apache.parquet.hadoop.ParquetFileWriter;
 import org.apache.parquet.hadoop.ParquetWriter;
 import org.apache.parquet.hadoop.metadata.CompressionCodecName;
-
+import org.apache.parquet.hadoop.util.HadoopOutputFile;
+import org.apache.parquet.io.OutputFile;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
+ * factory responsible for instantiating {@link ParquetExportOperation} objects.
+ *
  * @author cvarela
  * @since 0.3
  */

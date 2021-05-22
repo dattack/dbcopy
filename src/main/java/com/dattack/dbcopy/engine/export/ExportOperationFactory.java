@@ -19,6 +19,8 @@ import com.dattack.dbcopy.engine.DataTransfer;
 import com.dattack.dbcopy.engine.DbCopyTaskResult;
 
 /**
+ * Interface to be implemented by the factories responsible for ExportOperation instantiation.
+ *
  * @author cvarela
  * @since 0.1
  */

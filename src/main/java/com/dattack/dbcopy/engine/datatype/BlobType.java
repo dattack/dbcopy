@@ -18,6 +18,8 @@ package com.dattack.dbcopy.engine.datatype;
 import java.sql.Blob;
 
 /**
+ * {@link AbstractDataType} implementation for {@link Blob} data type.
+ *
  * @author cvarela
  * @since 0.3
  */

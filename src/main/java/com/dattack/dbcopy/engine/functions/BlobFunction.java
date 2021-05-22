@@ -22,6 +22,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 
 /**
+ * {@link AbstractDataFunction} implementation to retrieve values of type {@link BlobType}.
+ *
  * @author cvarela
  * @since 0.3
  */

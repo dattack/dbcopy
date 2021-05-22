@@ -33,6 +33,8 @@ import com.dattack.dbcopy.engine.DbCopyEngine;
 import com.dattack.jtoolbox.exceptions.DattackParserException;
 
 /**
+ * DbCopy CLI tool.
+ *
  * @author cvarela
  * @since 0.1
  */

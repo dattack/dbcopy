@@ -27,13 +27,14 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TransferQueue;
 
 /**
+ * Responsible for the control of the data transfer of a ResultSet.
  *
  * @author cvarela
  * @since 0.1
  */
 public class DataTransfer {
 
-    private final static Logger LOGGER = LoggerFactory.getLogger(DataTransfer.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(DataTransfer.class);
 
     private static final int DEFAULT_FETCH_SIZE = 10_000;
     private final int fetchSize;
@@ -43,7 +44,8 @@ public class DataTransfer {
     private final ResultSet resultSet;
     private final RowMetadata rowMetadata;
 
-    DataTransfer(ResultSet resultSet, DbCopyTaskResult taskResult, int fetchSize) throws SQLException {
+    DataTransfer(final ResultSet resultSet, final DbCopyTaskResult taskResult, final int fetchSize)
+            throws SQLException {
         this.resultSet = resultSet;
         this.taskResult = taskResult;
         this.fetchSize = fetchSize > 0 ? fetchSize : DEFAULT_FETCH_SIZE;
@@ -52,6 +54,14 @@ public class DataTransfer {
         this.rowMetadata = createRowMetadata();
     }
 
+    /**
+     * Returns the next row of data or null if there is no more data.
+     *
+     * @return the next row of data or null if there is no more data.
+     * @throws SQLException if a database access error occurs or this method is called on a closed result set.
+     * @throws InterruptedException if the current thread is interrupted
+     */
+    @SuppressWarnings("checkstyle:VariableDeclarationUsageDistance")
     public AbstractDataType<?>[] transfer() throws SQLException, InterruptedException {
 
         AbstractDataType<?>[] row;
@@ -64,7 +74,7 @@ public class DataTransfer {
 
                 if (semaphore.tryAcquire(10, TimeUnit.MILLISECONDS)) {
                     LOGGER.trace("Semaphore acquired by thread '{}'", Thread.currentThread().getName());
-                    int priority = Thread.currentThread().getPriority();
+                    int previousPriority = Thread.currentThread().getPriority();
                     Thread.currentThread().setPriority(Thread.MAX_PRIORITY);
                     int counter = 0;
                     do {
@@ -81,7 +91,7 @@ public class DataTransfer {
                     semaphore.release();
                     LOGGER.trace("Semaphore released by thread '{}'. Fetched rows {}",
                             Thread.currentThread().getName(), counter);
-                    Thread.currentThread().setPriority(priority);
+                    Thread.currentThread().setPriority(previousPriority);
                 }
                 row = transferQueue.poll();
             }
@@ -122,7 +132,7 @@ public class DataTransfer {
         }
 
         final AbstractDataType<?>[] dataList = new AbstractDataType[rowMetadata.getColumnCount()];
-        for (final ColumnMetadata columnMetadata: rowMetadata.getColumnsMetadata()) {
+        for (final ColumnMetadata columnMetadata : rowMetadata.getColumnsMetadata()) {
             dataList[columnMetadata.getIndex() - 1] = columnMetadata.getFunction().get(resultSet);
         }
 

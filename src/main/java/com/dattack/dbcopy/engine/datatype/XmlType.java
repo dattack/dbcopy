@@ -18,6 +18,8 @@ package com.dattack.dbcopy.engine.datatype;
 import java.sql.SQLXML;
 
 /**
+ * {@link AbstractDataType} implementation for {@link SQLXml} data type.
+ *
  * @author cvarela
  * @since 0.3
  */
@@ -33,5 +35,4 @@ public class XmlType extends AbstractDataType<SQLXML> {
     public void accept(DataTypeVisitor visitor) throws Exception {
         visitor.visit(this);
     }
-
 }

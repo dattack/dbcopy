@@ -18,6 +18,8 @@ package com.dattack.dbcopy.engine.functions;
 import java.sql.SQLException;
 
 /**
+ * Visitor of the hierarchy of AbstractDataFunction.
+ *
  * @author cvarela
  * @since 0.3
  */

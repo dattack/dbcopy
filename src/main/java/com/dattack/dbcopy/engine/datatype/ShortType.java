@@ -16,6 +16,8 @@
 package com.dattack.dbcopy.engine.datatype;
 
 /**
+ * {@link AbstractDataType} implementation for {@link Short} data type.
+ *
  * @author cvarela
  * @since 0.3
  */
@@ -31,5 +33,4 @@ public class ShortType extends AbstractDataType<Short> {
     public void accept(DataTypeVisitor visitor) throws Exception {
         visitor.visit(this);
     }
-
 }

@@ -34,17 +34,26 @@ import java.io.FileInputStream;
 import java.io.IOException;
 
 /**
+ * XML file parser that instantiates the equivalent Bean object.
+ *
  * @author cvarela
  * @since 0.1
  */
 public final class DbcopyParser {
 
-    private final static Logger LOGGER = LoggerFactory.getLogger(DbcopyParser.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(DbcopyParser.class);
 
     private DbcopyParser() {
         // static class
     }
 
+    /**
+     * Parses an XML file and returns the DbcopyBean that represents the configuration specified in that file.
+     *
+     * @param file the XML file to parse
+     * @return the DbcopyBean containing the configuration
+     * @throws DattackParserException if an error occurs when parsing the file
+     */
     public static DbcopyBean parse(final File file) throws DattackParserException {
 
         if (file == null) {

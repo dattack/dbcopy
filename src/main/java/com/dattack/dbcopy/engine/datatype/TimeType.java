@@ -18,6 +18,8 @@ package com.dattack.dbcopy.engine.datatype;
 import java.sql.Time;
 
 /**
+ * {@link AbstractDataType} implementation for {@link Time} data type.
+ *
  * @author cvarela
  * @since 0.3
  */
@@ -33,5 +35,4 @@ public class TimeType extends AbstractDataType<Time> {
     public void accept(DataTypeVisitor visitor) throws Exception {
         visitor.visit(this);
     }
-
 }

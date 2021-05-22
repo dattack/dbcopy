@@ -16,6 +16,8 @@
 package com.dattack.dbcopy.beans;
 
 /**
+ * AbstractVariableBean hierarchy visitor.
+ *
  * @author cvarela
  * @since 0.1
  */

@@ -16,6 +16,8 @@
 package com.dattack.dbcopy.engine.datatype;
 
 /**
+ * {@link AbstractDataType} implementation for {@link Long} data type.
+ *
  * @author cvarela
  * @since 0.3
  */
@@ -31,5 +33,4 @@ public class LongType extends AbstractDataType<Long> {
     public void accept(DataTypeVisitor visitor) throws Exception {
         visitor.visit(this);
     }
-
 }

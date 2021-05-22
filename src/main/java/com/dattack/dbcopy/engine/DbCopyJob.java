@@ -15,7 +15,12 @@
  */
 package com.dattack.dbcopy.engine;
 
-import com.dattack.dbcopy.beans.*;
+import com.dattack.dbcopy.beans.AbstractVariableBean;
+import com.dattack.dbcopy.beans.DbcopyJobBean;
+import com.dattack.dbcopy.beans.IntegerRangeBean;
+import com.dattack.dbcopy.beans.LiteralListBean;
+import com.dattack.dbcopy.beans.NullVariableBean;
+import com.dattack.dbcopy.beans.VariableVisitor;
 import com.dattack.jtoolbox.commons.configuration.ConfigurationUtil;
 import org.apache.commons.configuration.AbstractConfiguration;
 import org.apache.commons.configuration.BaseConfiguration;
@@ -23,8 +28,6 @@ import org.apache.commons.configuration.CompositeConfiguration;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.awt.*;
 import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;

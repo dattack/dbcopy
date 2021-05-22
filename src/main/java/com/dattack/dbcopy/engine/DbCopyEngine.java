@@ -33,6 +33,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * Responsible of the execution of one or more jobs.
+ *
  * @author cvarela
  * @since 0.1
  */
@@ -40,7 +42,8 @@ public final class DbCopyEngine {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DbCopyEngine.class);
 
-    private void execute(final DbcopyBean dbcopyBean, final Set<String> jobNames, final AbstractConfiguration configuration) {
+    private void execute(final DbcopyBean dbcopyBean, final Set<String> jobNames,
+                         final AbstractConfiguration configuration) {
 
         ExecutionController executionController = new ExecutionController("root", dbcopyBean.getParallel(),
                 dbcopyBean.getParallel());

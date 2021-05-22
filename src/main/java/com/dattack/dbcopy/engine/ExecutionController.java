@@ -15,10 +15,17 @@
  */
 package com.dattack.dbcopy.engine;
 
-import java.util.concurrent.*;
+import java.util.concurrent.Callable;
+import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
+ * MBean implementation to manage a thread pool.
+ *
  * @author cvarela
  * @since 0.1
  */
@@ -31,7 +38,7 @@ public class ExecutionController implements ExecutionControllerMBean {
     public ExecutionController(final String name, final int corePoolSize, final int maximumPoolSize) {
         this.name = name;
         this.threadPoolExecutor = new ThreadPoolExecutor(corePoolSize, maximumPoolSize, 1L, TimeUnit.MINUTES,
-                new LinkedBlockingQueue<Runnable>(), getThreadFactory());
+                new LinkedBlockingQueue<>(), getThreadFactory());
     }
 
     @Override

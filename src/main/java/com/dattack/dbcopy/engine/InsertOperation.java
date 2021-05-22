@@ -16,7 +16,27 @@
 package com.dattack.dbcopy.engine;
 
 import com.dattack.dbcopy.beans.InsertOperationBean;
-import com.dattack.dbcopy.engine.datatype.*;
+import com.dattack.dbcopy.engine.datatype.AbstractDataType;
+import com.dattack.dbcopy.engine.datatype.BigDecimalType;
+import com.dattack.dbcopy.engine.datatype.BlobType;
+import com.dattack.dbcopy.engine.datatype.BooleanType;
+import com.dattack.dbcopy.engine.datatype.ByteType;
+import com.dattack.dbcopy.engine.datatype.BytesType;
+import com.dattack.dbcopy.engine.datatype.ClobType;
+import com.dattack.dbcopy.engine.datatype.DataTypeVisitor;
+import com.dattack.dbcopy.engine.datatype.DateType;
+import com.dattack.dbcopy.engine.datatype.DoubleType;
+import com.dattack.dbcopy.engine.datatype.FloatType;
+import com.dattack.dbcopy.engine.datatype.IntegerType;
+import com.dattack.dbcopy.engine.datatype.LongType;
+import com.dattack.dbcopy.engine.datatype.NClobType;
+import com.dattack.dbcopy.engine.datatype.NStringType;
+import com.dattack.dbcopy.engine.datatype.NullType;
+import com.dattack.dbcopy.engine.datatype.ShortType;
+import com.dattack.dbcopy.engine.datatype.StringType;
+import com.dattack.dbcopy.engine.datatype.TimeType;
+import com.dattack.dbcopy.engine.datatype.TimestampType;
+import com.dattack.dbcopy.engine.datatype.XmlType;
 import com.dattack.jtoolbox.commons.configuration.ConfigurationUtil;
 import com.dattack.jtoolbox.jdbc.JDBCUtils;
 import com.dattack.jtoolbox.jdbc.JNDIDataSource;
@@ -25,12 +45,17 @@ import org.apache.commons.configuration.AbstractConfiguration;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Writer;
-import java.sql.*;
+import java.sql.BatchUpdateException;
+import java.sql.Blob;
+import java.sql.Clob;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.sql.SQLXML;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -43,7 +68,7 @@ import java.util.concurrent.Callable;
  */
 class InsertOperation implements Callable<Integer> {
 
-    private final static Logger LOGGER = LoggerFactory.getLogger(InsertOperation.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(InsertOperation.class);
 
     private final InsertOperationBean bean;
     private final DataTransfer dataTransfer;
@@ -129,7 +154,7 @@ class InsertOperation implements Callable<Integer> {
 
         String concat = "";
 
-        for (ColumnMetadata columnMetadata: dataTransfer.getRowMetadata().getColumnsMetadata()) {
+        for (ColumnMetadata columnMetadata : dataTransfer.getRowMetadata().getColumnsMetadata()) {
             columns.append(concat).append(columnMetadata.getName());
             refs.append(concat).append(":").append(columnMetadata.getName());
             concat = ",";
@@ -170,6 +195,7 @@ class InsertOperation implements Callable<Integer> {
 
         return insertedRows;
     }
+
     @Override
     public Integer call() throws Exception {
 
