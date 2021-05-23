@@ -108,10 +108,10 @@ public class DataTransfer {
 
     private RowMetadata createRowMetadata() throws SQLException {
 
-        final RowMetadata.RowMetadataBuilder rowMetadataBuilder = new RowMetadata.RowMetadataBuilder();
+        final RowMetadata.RowMetadataBuilder rowMetadataBuilder = RowMetadata.custom();
 
         for (int columnIndex = 1; columnIndex <= resultSet.getMetaData().getColumnCount(); columnIndex++) {
-            final ColumnMetadata columnMetadata = new ColumnMetadata.ColumnMetadataBuilder() //NOPMD
+            final ColumnMetadata columnMetadata = ColumnMetadata.custom() //NOPMD
                     .withName(resultSet.getMetaData().getColumnName(columnIndex)) //
                     .withIndex(columnIndex) //
                     .withType(resultSet.getMetaData().getColumnType(columnIndex)) //

@@ -47,13 +47,13 @@ import java.sql.Types;
  */
 public class ColumnMetadata {
 
-    private final String name;
+    private final AbstractDataFunction<?> function;
     private final int index;
-    private final int type;
+    private final String name;
+    private final boolean nullable;
     private final int precision;
     private final int scale;
-    private final boolean nullable;
-    private final AbstractDataFunction<?> function;
+    private final int type;
 
     private ColumnMetadata(final ColumnMetadataBuilder builder) {
         this.name = builder.getName();
@@ -170,28 +170,8 @@ public class ColumnMetadata {
         return result;
     }
 
-    public int getIndex() {
-        return index;
-    }
-
-    public int getType() {
-        return type;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public int getPrecision() {
-        return precision;
-    }
-
-    public int getScale() {
-        return scale;
-    }
-
-    public boolean isNullable() {
-        return nullable;
+    public static ColumnMetadataBuilder custom() {
+        return new ColumnMetadataBuilder();
     }
 
     public AbstractDataFunction<?> getFunction() {
@@ -211,24 +191,83 @@ public class ColumnMetadata {
                 '}';
     }
 
+    public String getName() {
+        return name;
+    }
+
+    public int getIndex() {
+        return index;
+    }
+
+    public int getType() {
+        return type;
+    }
+
+    public int getPrecision() {
+        return precision;
+    }
+
+    public int getScale() {
+        return scale;
+    }
+
+    public boolean isNullable() {
+        return nullable;
+    }
+
     /**
      * Builder implementation for {@link ColumnMetadata}.
      */
     public static class ColumnMetadataBuilder implements Builder<ColumnMetadata> {
 
-        private transient String name;
         private transient int index;
-        private transient int type;
+        private transient String name;
+        private transient int nullable;
         private transient int precision;
         private transient int scale;
-        private transient int nullable;
+        private transient int type;
+
+        private ColumnMetadataBuilder() {
+            // private
+        }
+
+        @Override
+        public ColumnMetadata build() {
+            return new ColumnMetadata(this);
+        }
+
+        public ColumnMetadataBuilder withIndex(final int value) {
+            this.index = value;
+            return this;
+        }
+
+        public ColumnMetadataBuilder withName(final String value) {
+            this.name = value;
+            return this;
+        }
+
+        public ColumnMetadataBuilder withNullable(final int value) {
+            this.nullable = value;
+            return this;
+        }
+
+        public ColumnMetadataBuilder withPrecision(final int value) {
+            this.precision = value;
+            return this;
+        }
+
+        public ColumnMetadataBuilder withScale(final int value) {
+            this.scale = value;
+            return this;
+        }
+
+        public ColumnMetadataBuilder withType(final int value) {
+            this.type = value;
+            return this;
+        }
 
         private int getIndex() {
             return index;
-        }
-
-        private int getType() {
-            return type;
         }
 
         private String getName() {
@@ -243,43 +282,12 @@ public class ColumnMetadata {
             return scale;
         }
 
+        private int getType() {
+            return type;
+        }
+
         private boolean isNullable() {
             return nullable != ResultSetMetaData.columnNoNulls;
-        }
-
-        public ColumnMetadataBuilder withName(final String value) {
-            this.name = value;
-            return this;
-        }
-
-        public ColumnMetadataBuilder withIndex(final int value) {
-            this.index = value;
-            return this;
-        }
-
-        public ColumnMetadataBuilder withType(final int value) {
-            this.type = value;
-            return this;
-        }
-
-        public ColumnMetadataBuilder withPrecision(final int value) {
-            this.precision = value;
-            return this;
-        }
-
-        public ColumnMetadataBuilder withScale(final int value) {
-            this.scale = value;
-            return this;
-        }
-
-        public ColumnMetadataBuilder withNullable(final int value) {
-            this.nullable = value;
-            return this;
-        }
-
-        @Override
-        public ColumnMetadata build() {
-            return new ColumnMetadata(this);
         }
     }
 }

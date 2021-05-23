@@ -28,10 +28,14 @@ import java.util.List;
  */
 public class RowMetadata {
 
-    private transient List<ColumnMetadata> columnsMetadata;
+    private final transient List<ColumnMetadata> columnsMetadata;
 
     private RowMetadata(final List<ColumnMetadata> columnsMetadata) {
         this.columnsMetadata = columnsMetadata;
+    }
+
+    public static RowMetadataBuilder custom() {
+        return new RowMetadataBuilder();
     }
 
     public int getColumnCount() {
@@ -52,9 +56,9 @@ public class RowMetadata {
      */
     public static class RowMetadataBuilder implements Builder<RowMetadata> {
 
-        private transient List<ColumnMetadata> list;
+        private final transient List<ColumnMetadata> list;
 
-        public RowMetadataBuilder() {
+        private RowMetadataBuilder() {
             this.list = new ArrayList<>();
         }
 
