@@ -28,22 +28,22 @@ import java.sql.SQLException;
  */
 public class FloatFunction extends AbstractDataFunction<FloatType> {
 
-    public FloatFunction(ColumnMetadata columnMetadata) {
+    public FloatFunction(final ColumnMetadata columnMetadata) {
         super(columnMetadata);
     }
 
     @Override
-    public FloatType doGet(ResultSet rs, int index) throws SQLException {
+    public FloatType doGet(final ResultSet rs, final int index) throws SQLException {
         return new FloatType(rs.getFloat(index));
     }
 
     @Override
-    public void accept(FunctionVisitor visitor) throws Exception {
+    public void accept(final FunctionVisitor visitor) throws Exception {
         visitor.visit(this);
     }
 
     @Override
-    FloatType getNull() {
+    protected FloatType getNull() {
         return FloatType.NULL;
     }
 }

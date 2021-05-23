@@ -28,22 +28,22 @@ import java.sql.SQLException;
  */
 public class TimestampFunction extends AbstractDataFunction<TimestampType> {
 
-    public TimestampFunction(ColumnMetadata columnMetadata) {
+    public TimestampFunction(final ColumnMetadata columnMetadata) {
         super(columnMetadata);
     }
 
     @Override
-    public TimestampType doGet(ResultSet rs, int index) throws SQLException {
+    public TimestampType doGet(final ResultSet rs, final int index) throws SQLException {
         return new TimestampType(rs.getTimestamp(index));
     }
 
     @Override
-    public void accept(FunctionVisitor visitor) throws Exception {
+    public void accept(final FunctionVisitor visitor) throws Exception {
         visitor.visit(this);
     }
 
     @Override
-    TimestampType getNull() {
+    protected TimestampType getNull() {
         return TimestampType.NULL;
     }
 }

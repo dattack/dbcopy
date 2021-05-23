@@ -15,18 +15,22 @@
  */
 package com.dattack.dbcopy.beans;
 
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
+
 /**
  * Variable not configured and therefore does not represent a further action.
  *
  * @author cvarela
  * @since 0.1
  */
+@XmlAccessorType(XmlAccessType.FIELD)
 public class NullVariableBean extends AbstractVariableBean {
 
     private static final long serialVersionUID = -62449415737599438L;
 
     @Override
     public void accept(final VariableVisitor visitor) {
-        visitor.visite(this);
+        visitor.visit(this);
     }
 }

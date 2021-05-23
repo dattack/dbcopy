@@ -23,9 +23,9 @@ package com.dattack.dbcopy.beans;
  */
 public interface VariableVisitor {
 
-    void visite(LiteralListBean bean);
+    void visit(LiteralListBean bean);
 
-    void visite(IntegerRangeBean bean);
+    void visit(IntegerRangeBean bean);
 
-    void visite(NullVariableBean bean);
+    void visit(NullVariableBean bean);
 }

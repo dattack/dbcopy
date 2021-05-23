@@ -27,12 +27,12 @@ public class XmlType extends AbstractDataType<SQLXML> {
 
     public static final XmlType NULL = new XmlType(null);
 
-    public XmlType(SQLXML value) {
+    public XmlType(final SQLXML value) {
         super(value);
     }
 
     @Override
-    public void accept(DataTypeVisitor visitor) throws Exception {
+    public void accept(final DataTypeVisitor visitor) throws Exception {
         visitor.visit(this);
     }
 }

@@ -52,10 +52,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 class DbCopyTask implements Callable<DbCopyTaskResult> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DbCopyTask.class);
-    private static final AtomicInteger sequence = new AtomicInteger();
-    private final AbstractConfiguration configuration;
-    private final DbcopyJobBean dbcopyJobBean;
-    private final DbCopyTaskResult taskResult;
+    private static final AtomicInteger SEQUENCE = new AtomicInteger();
+
+    private final transient AbstractConfiguration configuration;
+    private final transient DbcopyJobBean dbcopyJobBean;
+    private final transient DbCopyTaskResult taskResult;
 
     public DbCopyTask(final DbcopyJobBean dbcopyJobBean, final AbstractConfiguration configuration,
                       final DbCopyTaskResult taskResult) {
@@ -72,11 +73,11 @@ class DbCopyTask implements Callable<DbCopyTaskResult> {
         LOGGER.info("DBCopy task started {} (Thread: {})", taskResult.getTaskName(), Thread.currentThread().getName());
 
         try (Connection selectConn = getDataSource().getConnection(); //
-             Statement selectStmt = setFetchSize(selectConn.createStatement()); //
+             Statement selectStmt = createStatement(selectConn); //
              ResultSet resultSet = selectStmt.executeQuery(compileSql()) //
         ) {
 
-            DataTransfer dataTransfer =
+            final DataTransfer dataTransfer =
                     new DataTransfer(resultSet, taskResult, //
                             dbcopyJobBean.getSelectBean().getFetchSize());
 
@@ -103,7 +104,7 @@ class DbCopyTask implements Callable<DbCopyTaskResult> {
             sql = new String(Files.readAllBytes(Paths.get(new URI(sql))), StandardCharsets.UTF_8);
         }
 
-        String compiledSql = ConfigurationUtil.interpolate(sql, configuration);
+        final String compiledSql = ConfigurationUtil.interpolate(sql, configuration);
         LOGGER.info("Executing SQL: {}", compiledSql);
         return compiledSql;
     }
@@ -113,27 +114,28 @@ class DbCopyTask implements Callable<DbCopyTaskResult> {
                 ConfigurationUtil.interpolate(dbcopyJobBean.getSelectBean().getDatasource(), configuration));
     }
 
-    private Statement setFetchSize(Statement stmt) throws SQLException {
+    private Statement createStatement(final Connection connection) throws SQLException {
+        final Statement stmt = connection.createStatement();
         if (dbcopyJobBean.getSelectBean().getFetchSize() > 0) {
             stmt.setFetchSize(dbcopyJobBean.getSelectBean().getFetchSize());
         }
         return stmt;
     }
 
-    private List<Future<?>> createInsertFutures(DataTransfer dataTransfer) {
+    private List<Future<?>> createInsertFutures(final DataTransfer dataTransfer) {
 
         final List<Future<?>> futureList = new ArrayList<>();
 
         if (dbcopyJobBean.getInsertBean() != null) {
 
-            int poolSize = dbcopyJobBean.getInsertBean().getParallel();
-            ExecutionController executionController = new ExecutionController("Insert-" + dbcopyJobBean.getId(),
+            final int poolSize = dbcopyJobBean.getInsertBean().getParallel();
+            final ExecutionController executionController = new ExecutionController("Insert-" + dbcopyJobBean.getId(),
                     poolSize, poolSize);
             MBeanHelper.registerMBean("com.dattack.dbcopy:type=ThreadPool,name=Insert-" + dbcopyJobBean.getId()
-                    + "-" + sequence.getAndIncrement(), executionController);
+                    + "-" + SEQUENCE.getAndIncrement(), executionController);
 
             for (int i = 0; i < dbcopyJobBean.getInsertBean().getParallel(); i++) {
-                futureList.add(executionController.submit(new InsertOperation(dbcopyJobBean.getInsertBean(),
+                futureList.add(executionController.submit(new InsertOperation(dbcopyJobBean.getInsertBean(), //NOPMD
                         dataTransfer, configuration, taskResult)));
             }
 
@@ -143,19 +145,19 @@ class DbCopyTask implements Callable<DbCopyTaskResult> {
         return futureList;
     }
 
-    private List<Future<?>> createExportFutures(DataTransfer dataTransfer) {
+    private List<Future<?>> createExportFutures(final DataTransfer dataTransfer) {
 
         final List<Future<?>> futureList = new ArrayList<>();
 
         if (dbcopyJobBean.getExportBean() != null) {
 
-            int poolSize = dbcopyJobBean.getExportBean().getParallel();
-            ExecutionController executionController = new ExecutionController("Export-" + dbcopyJobBean.getId(),
+            final int poolSize = dbcopyJobBean.getExportBean().getParallel();
+            final ExecutionController executionController = new ExecutionController("Export-" + dbcopyJobBean.getId(),
                     poolSize, poolSize);
             MBeanHelper.registerMBean("com.dattack.dbcopy:type=ThreadPool,name=Export-" + dbcopyJobBean.getId()
-                    + "-" + sequence.getAndIncrement(), executionController);
+                    + "-" + SEQUENCE.getAndIncrement(), executionController);
 
-            ExportOperationFactory factory = ExportOperationFactoryProducer.getFactory(dbcopyJobBean.getExportBean(),
+            final ExportOperationFactory factory = ExportOperationFactoryProducer.getFactory(dbcopyJobBean.getExportBean(),
                     configuration);
 
             for (int i = 0; i < dbcopyJobBean.getExportBean().getParallel(); i++) {

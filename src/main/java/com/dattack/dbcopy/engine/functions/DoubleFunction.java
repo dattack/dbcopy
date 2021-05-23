@@ -28,22 +28,22 @@ import java.sql.SQLException;
  */
 public class DoubleFunction extends AbstractDataFunction<DoubleType> {
 
-    public DoubleFunction(ColumnMetadata columnMetadata) {
+    public DoubleFunction(final ColumnMetadata columnMetadata) {
         super(columnMetadata);
     }
 
     @Override
-    public DoubleType doGet(ResultSet rs, int index) throws SQLException {
+    public DoubleType doGet(final ResultSet rs, final int index) throws SQLException {
         return new DoubleType(rs.getDouble(index));
     }
 
     @Override
-    public void accept(FunctionVisitor visitor) throws Exception {
+    public void accept(final FunctionVisitor visitor) throws Exception {
         visitor.visit(this);
     }
 
     @Override
-    DoubleType getNull() {
+    protected DoubleType getNull() {
         return DoubleType.NULL;
     }
 }

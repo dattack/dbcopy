@@ -37,14 +37,14 @@ public class DataTransfer {
     private static final Logger LOGGER = LoggerFactory.getLogger(DataTransfer.class);
 
     private static final int DEFAULT_FETCH_SIZE = 10_000;
-    private final int fetchSize;
-    private final DbCopyTaskResult taskResult;
-    private final TransferQueue<AbstractDataType<?>[]> transferQueue;
-    private final Semaphore semaphore;
-    private final ResultSet resultSet;
-    private final RowMetadata rowMetadata;
+    private final transient int fetchSize;
+    private final transient DbCopyTaskResult taskResult;
+    private final transient TransferQueue<AbstractDataType<?>[]> transferQueue;
+    private final transient Semaphore semaphore;
+    private final transient ResultSet resultSet;
+    private final transient RowMetadata rowMetadata;
 
-    DataTransfer(final ResultSet resultSet, final DbCopyTaskResult taskResult, final int fetchSize)
+    /* default */ DataTransfer(final ResultSet resultSet, final DbCopyTaskResult taskResult, final int fetchSize)
             throws SQLException {
         this.resultSet = resultSet;
         this.taskResult = taskResult;
@@ -74,7 +74,7 @@ public class DataTransfer {
 
                 if (semaphore.tryAcquire(10, TimeUnit.MILLISECONDS)) {
                     LOGGER.trace("Semaphore acquired by thread '{}'", Thread.currentThread().getName());
-                    int previousPriority = Thread.currentThread().getPriority();
+                    final int previousPriority = Thread.currentThread().getPriority();
                     Thread.currentThread().setPriority(Thread.MAX_PRIORITY);
                     int counter = 0;
                     do {
@@ -108,10 +108,10 @@ public class DataTransfer {
 
     private RowMetadata createRowMetadata() throws SQLException {
 
-        RowMetadata.RowMetadataBuilder rowMetadataBuilder = new RowMetadata.RowMetadataBuilder();
+        final RowMetadata.RowMetadataBuilder rowMetadataBuilder = new RowMetadata.RowMetadataBuilder();
 
         for (int columnIndex = 1; columnIndex <= resultSet.getMetaData().getColumnCount(); columnIndex++) {
-            ColumnMetadata columnMetadata = new ColumnMetadata.ColumnMetadataBuilder()
+            final ColumnMetadata columnMetadata = new ColumnMetadata.ColumnMetadataBuilder() //NOPMD
                     .withName(resultSet.getMetaData().getColumnName(columnIndex)) //
                     .withIndex(columnIndex) //
                     .withType(resultSet.getMetaData().getColumnType(columnIndex)) //
@@ -127,24 +127,23 @@ public class DataTransfer {
 
     private synchronized AbstractDataType<?>[] publish() throws SQLException {
 
-        if (isResultSetClosedQuietly() || !resultSet.next()) {
-            return null;
+        AbstractDataType<?>[] result = null;
+        if (!isResultSetClosedQuietly() && resultSet.next()) {
+            result = new AbstractDataType[rowMetadata.getColumnCount()];
+            for (final ColumnMetadata columnMetadata : rowMetadata.getColumnsMetadata()) {
+                result[columnMetadata.getIndex() - 1] = columnMetadata.getFunction().get(resultSet);
+            }
         }
-
-        final AbstractDataType<?>[] dataList = new AbstractDataType[rowMetadata.getColumnCount()];
-        for (final ColumnMetadata columnMetadata : rowMetadata.getColumnsMetadata()) {
-            dataList[columnMetadata.getIndex() - 1] = columnMetadata.getFunction().get(resultSet);
-        }
-
-        return dataList;
+        return result;
     }
 
     private boolean isResultSetClosedQuietly() {
+        boolean result = false;
         try {
-            return resultSet.isClosed();
-        } catch (Throwable t) {
+            result = resultSet.isClosed();
+        } catch (final Throwable t) { //NOPMD
             // ignore
         }
-        return false;
+        return result;
     }
 }

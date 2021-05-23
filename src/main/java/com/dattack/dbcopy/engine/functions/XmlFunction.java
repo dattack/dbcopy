@@ -28,22 +28,22 @@ import java.sql.SQLException;
  */
 public class XmlFunction extends AbstractDataFunction<XmlType> {
 
-    public XmlFunction(ColumnMetadata columnMetadata) {
+    public XmlFunction(final ColumnMetadata columnMetadata) {
         super(columnMetadata);
     }
 
     @Override
-    public XmlType doGet(ResultSet rs, int index) throws SQLException {
+    public XmlType doGet(final ResultSet rs, final int index) throws SQLException {
         return new XmlType(rs.getSQLXML(index));
     }
 
     @Override
-    public void accept(FunctionVisitor visitor) throws Exception {
+    public void accept(final FunctionVisitor visitor) throws Exception {
         visitor.visit(this);
     }
 
     @Override
-    XmlType getNull() {
+    protected XmlType getNull() {
         return XmlType.NULL;
     }
 }

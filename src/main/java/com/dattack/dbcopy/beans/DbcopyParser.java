@@ -21,17 +21,19 @@ import org.slf4j.LoggerFactory;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.xml.sax.XMLReader;
-
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Unmarshaller;
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParserFactory;
 import javax.xml.transform.Source;
 import javax.xml.transform.sax.SAXSource;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
 
 /**
  * XML file parser that instantiates the equivalent Bean object.
@@ -39,7 +41,8 @@ import java.io.IOException;
  * @author cvarela
  * @since 0.1
  */
-public final class DbcopyParser {
+@XmlAccessorType(XmlAccessType.FIELD)
+public final class DbcopyParser { //NOPMD
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DbcopyParser.class);
 
@@ -70,8 +73,8 @@ public final class DbcopyParser {
         spf.setNamespaceAware(true);
         spf.setValidating(true);
 
-        try (final FileInputStream fileInputStream = new FileInputStream(file)) {
-            final InputSource input = new InputSource(fileInputStream);
+        try (InputStream inputStream = Files.newInputStream(file.toPath())) {
+            final InputSource input = new InputSource(inputStream);
             final XMLReader xmlreader = spf.newSAXParser().getXMLReader();
             final Source source = new SAXSource(xmlreader, input);
 

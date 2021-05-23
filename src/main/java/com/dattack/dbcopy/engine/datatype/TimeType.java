@@ -27,12 +27,12 @@ public class TimeType extends AbstractDataType<Time> {
 
     public static final TimeType NULL = new TimeType(null);
 
-    public TimeType(Time value) {
+    public TimeType(final Time value) {
         super(value);
     }
 
     @Override
-    public void accept(DataTypeVisitor visitor) throws Exception {
+    public void accept(final DataTypeVisitor visitor) throws Exception {
         visitor.visit(this);
     }
 }

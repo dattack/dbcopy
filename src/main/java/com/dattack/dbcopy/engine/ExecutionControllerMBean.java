@@ -27,15 +27,15 @@ import java.util.concurrent.Future;
 @SuppressWarnings("checkstyle:AbbreviationAsWordInName")
 public interface ExecutionControllerMBean {
 
-    public int getCorePoolSize();
+    int getCorePoolSize();
 
-    public int getMaximumPoolSize();
+    int getMaximumPoolSize();
 
-    public void setCorePoolSize(final int size);
+    void setCorePoolSize(final int size);
 
-    public void setMaximumPoolSize(final int size);
+    void setMaximumPoolSize(final int size);
 
-    public void shutdown();
+    void shutdown();
 
-    public <T> Future<T> submit(final Callable<T> task);
+    <T> Future<T> submit(final Callable<T> task);
 }

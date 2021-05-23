@@ -25,12 +25,12 @@ public class ByteType extends AbstractDataType<Byte> {
 
     public static final ByteType NULL = new ByteType(null);
 
-    public ByteType(Byte value) {
+    public ByteType(final Byte value) {
         super(value);
     }
 
     @Override
-    public void accept(DataTypeVisitor visitor) throws Exception {
+    public void accept(final DataTypeVisitor visitor) throws Exception {
         visitor.visit(this);
     }
 }

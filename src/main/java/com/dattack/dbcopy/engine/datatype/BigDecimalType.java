@@ -27,12 +27,12 @@ public class BigDecimalType extends AbstractDataType<BigDecimal> {
 
     public static final BigDecimalType NULL = new BigDecimalType(null);
 
-    public BigDecimalType(BigDecimal value) {
+    public BigDecimalType(final BigDecimal value) {
         super(value);
     }
 
     @Override
-    public void accept(DataTypeVisitor visitor) throws Exception {
+    public void accept(final DataTypeVisitor visitor) throws Exception {
         visitor.visit(this);
     }
 }

@@ -25,12 +25,12 @@ public class DoubleType extends AbstractDataType<Double> {
 
     public static final DoubleType NULL = new DoubleType(null);
 
-    public DoubleType(Double value) {
+    public DoubleType(final Double value) {
         super(value);
     }
 
     @Override
-    public void accept(DataTypeVisitor visitor) throws Exception {
+    public void accept(final DataTypeVisitor visitor) throws Exception {
         visitor.visit(this);
     }
 }

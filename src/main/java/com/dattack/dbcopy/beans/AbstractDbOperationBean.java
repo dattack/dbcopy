@@ -15,9 +15,11 @@
  */
 package com.dattack.dbcopy.beans;
 
+import java.io.Serializable;
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlValue;
-import java.io.Serializable;
 
 /**
  * Abstract class containing the common properties of all the operations executed by DBCopy.
@@ -25,6 +27,7 @@ import java.io.Serializable;
  * @author cvarela
  * @since 0.1
  */
+@XmlAccessorType(XmlAccessType.FIELD)
 public abstract class AbstractDbOperationBean implements Serializable {
 
     private static final long serialVersionUID = -3160515038190663322L;
@@ -39,7 +42,15 @@ public abstract class AbstractDbOperationBean implements Serializable {
         return datasource;
     }
 
+    public void setDatasource(final String datasource) {
+        this.datasource = datasource;
+    }
+
     public String getSql() {
         return sql;
+    }
+
+    public void setSql(final String sql) {
+        this.sql = sql;
     }
 }

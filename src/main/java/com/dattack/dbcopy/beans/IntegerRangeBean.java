@@ -15,6 +15,8 @@
  */
 package com.dattack.dbcopy.beans;
 
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
 
 /**
@@ -23,6 +25,7 @@ import javax.xml.bind.annotation.XmlAttribute;
  * @author cvarela
  * @since 0.1
  */
+@XmlAccessorType(XmlAccessType.FIELD)
 public class IntegerRangeBean extends AbstractVariableBean {
 
     private static final long serialVersionUID = -1202210289450031802L;
@@ -40,7 +43,7 @@ public class IntegerRangeBean extends AbstractVariableBean {
 
     @Override
     public void accept(final VariableVisitor visitor) {
-        visitor.visite(this);
+        visitor.visit(this);
     }
 
     public long getBlockSize() {
@@ -56,5 +59,17 @@ public class IntegerRangeBean extends AbstractVariableBean {
 
     public long getLowValue() {
         return lowValue;
+    }
+
+    public void setLowValue(final long lowValue) {
+        this.lowValue = lowValue;
+    }
+
+    public void setHighValue(final long highValue) {
+        this.highValue = highValue;
+    }
+
+    public void setBlockSize(final long blockSize) {
+        this.blockSize = blockSize;
     }
 }

@@ -27,12 +27,12 @@ public class DateType extends AbstractDataType<Date> {
 
     public static final DateType NULL = new DateType(null);
 
-    public DateType(Date value) {
+    public DateType(final Date value) {
         super(value);
     }
 
     @Override
-    public void accept(DataTypeVisitor visitor) throws Exception {
+    public void accept(final DataTypeVisitor visitor) throws Exception {
         visitor.visit(this);
     }
 }

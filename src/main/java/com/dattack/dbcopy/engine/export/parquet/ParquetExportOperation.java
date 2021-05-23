@@ -59,15 +59,15 @@ class ParquetExportOperation implements ExportOperation {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ParquetExportOperation.class);
 
-    private final ThreadLocal<Visitor> visitorThreadLocal = new ThreadLocal<>();
+    private final transient ThreadLocal<Visitor> visitorThreadLocal = new ThreadLocal<>();
 
-    private final ExportOperationBean bean;
-    private final DataTransfer dataTransfer;
-    private final DbCopyTaskResult taskResult;
-    private final ParquetWriter<Object> writer;
-    private final Schema schema;
+    private final transient ExportOperationBean bean;
+    private final transient DataTransfer dataTransfer;
+    private final transient DbCopyTaskResult taskResult;
+    private final transient ParquetWriter<Object> writer;
+    private final transient Schema schema;
 
-    ParquetExportOperation(final ExportOperationBean bean, final DataTransfer dataTransfer,
+    /* default */ ParquetExportOperation(final ExportOperationBean bean, final DataTransfer dataTransfer,
                            final DbCopyTaskResult taskResult,
                            final ParquetWriter<Object> writer,
                            final Schema schema) {
@@ -88,7 +88,7 @@ class ParquetExportOperation implements ExportOperation {
             visitorThreadLocal.set(new Visitor());
 
             while (true) {
-                AbstractDataType<?>[] row = dataTransfer.transfer();
+                final AbstractDataType<?>[] row = dataTransfer.transfer();
                 if (row == null) {
                     break;
                 }
@@ -111,11 +111,11 @@ class ParquetExportOperation implements ExportOperation {
         return totalExportedRows;
     }
 
-    private void write(AbstractDataType<?>[] dataList) throws Exception {
+    private void write(final AbstractDataType<?>[] dataList) throws Exception {
 
         visitorThreadLocal.get().setGenericRecord(new GenericData.Record(schema));
 
-        for (ColumnMetadata columnMetadata : dataTransfer.getRowMetadata().getColumnsMetadata()) {
+        for (final ColumnMetadata columnMetadata : dataTransfer.getRowMetadata().getColumnsMetadata()) {
 
             visitorThreadLocal.get().setColumnMetadata(columnMetadata);
 
@@ -132,16 +132,19 @@ class ParquetExportOperation implements ExportOperation {
         }
     }
 
-    private static class Visitor implements DataTypeVisitor {
+    /**
+     * Default {@link DataTypeVisitor} implementation.
+     */
+    private static class Visitor implements DataTypeVisitor { //NOPMD
 
-        private GenericRecord genericRecord;
-        private ColumnMetadata columnMetadata;
+        private transient GenericRecord genericRecord;
+        private transient ColumnMetadata columnMetadata;
 
-        void setColumnMetadata(ColumnMetadata columnMetadata) {
+        /* default */ void setColumnMetadata(final ColumnMetadata columnMetadata) {
             this.columnMetadata = columnMetadata;
         }
 
-        void setGenericRecord(GenericRecord genericRecord) {
+        /* default */ void setGenericRecord(final GenericRecord genericRecord) {
             this.genericRecord = genericRecord;
         }
 
@@ -153,15 +156,15 @@ class ParquetExportOperation implements ExportOperation {
             return genericRecord;
         }
 
-        private void put(Number value) {
+        private void put(final Number value) {
             getGenericRecord().put(getIndex(), value);
         }
 
-        private void put(String value) {
+        private void put(final String value) {
             getGenericRecord().put(getIndex(), value);
         }
 
-        private void put(byte[] value) {
+        private void put(final byte[] value) {
             getGenericRecord().put(getIndex(), value);
         }
 
@@ -170,9 +173,9 @@ class ParquetExportOperation implements ExportOperation {
         }
 
         @Override
-        public void visit(BigDecimalType type) {
+        public void visit(final BigDecimalType type) {
             if (type.isNotNull()) {
-                int scale = type.getValue().scale();
+                final int scale = type.getValue().scale();
                 if (scale == 0) {
                     put(type.getValue().longValue());
                 } else {
@@ -182,36 +185,36 @@ class ParquetExportOperation implements ExportOperation {
         }
 
         @Override
-        public void visit(BlobType type) throws SQLException {
+        public void visit(final BlobType type) throws SQLException {
             if (type.isNotNull()) {
                 put(type.getValue().getBytes(0, (int) type.getValue().length()));
             }
         }
 
         @Override
-        public void visit(BooleanType type) {
+        public void visit(final BooleanType type) {
             genericRecord.put(getIndex(), type.getValue());
         }
 
         @Override
-        public void visit(ByteType type) {
+        public void visit(final ByteType type) {
             put(type.getValue());
         }
 
         @Override
-        public void visit(BytesType type) {
+        public void visit(final BytesType type) {
             put(type.getValue());
         }
 
         @Override
-        public void visit(ClobType type) throws SQLException {
+        public void visit(final ClobType type) throws SQLException {
             if (type.isNotNull()) {
                 put(type.getValue().getSubString(0L, (int) type.getValue().length()));
             }
         }
 
         @Override
-        public void visit(DateType type) {
+        public void visit(final DateType type) {
             // A date logical type annotates an Avro int, where the int stores the number of days from
             // the unix epoch, 1 January 1970 (ISO calendar).
             if (type.isNotNull()) {
@@ -220,54 +223,54 @@ class ParquetExportOperation implements ExportOperation {
         }
 
         @Override
-        public void visit(DoubleType type) {
+        public void visit(final DoubleType type) {
             put(type.getValue());
         }
 
         @Override
-        public void visit(FloatType type) {
+        public void visit(final FloatType type) {
             put(type.getValue());
         }
 
         @Override
-        public void visit(IntegerType type) {
+        public void visit(final IntegerType type) {
             put(type.getValue());
         }
 
         @Override
-        public void visit(LongType type) {
+        public void visit(final LongType type) {
             put(type.getValue());
         }
 
         @Override
-        public void visit(NClobType type) throws SQLException {
+        public void visit(final NClobType type) throws SQLException {
             if (type.isNotNull()) {
                 put(type.getValue().getSubString(0L, (int) type.getValue().length()));
             }
         }
 
         @Override
-        public void visit(NStringType type) {
+        public void visit(final NStringType type) {
             put(type.getValue());
         }
 
         @Override
-        public void visit(NullType type) {
+        public void visit(final NullType type) {
             putNull();
         }
 
         @Override
-        public void visit(ShortType type) {
+        public void visit(final ShortType type) {
             put(type.getValue());
         }
 
         @Override
-        public void visit(StringType type) {
+        public void visit(final StringType type) {
             put(type.getValue());
         }
 
         @Override
-        public void visit(TimeType type) {
+        public void visit(final TimeType type) {
             // A time-millis logical type annotates an Avro int, where the int stores the number of
             // milliseconds after midnight, 00:00:00.000.
             if (type.isNotNull()) {
@@ -276,7 +279,7 @@ class ParquetExportOperation implements ExportOperation {
         }
 
         @Override
-        public void visit(TimestampType type) {
+        public void visit(final TimestampType type) {
             // A timestamp-millis logical type annotates an Avro long, where the long stores the number
             // of milliseconds from the unix epoch, 1 January 1970 00:00:00.000 UTC.
             if (type.isNotNull()) {
@@ -285,7 +288,7 @@ class ParquetExportOperation implements ExportOperation {
         }
 
         @Override
-        public void visit(XmlType type) throws SQLException {
+        public void visit(final XmlType type) throws SQLException {
             if (type.isNotNull()) {
                 put(type.getValue().getString());
             }

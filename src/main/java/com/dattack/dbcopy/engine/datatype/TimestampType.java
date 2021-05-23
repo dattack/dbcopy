@@ -27,12 +27,12 @@ public class TimestampType extends AbstractDataType<Timestamp> {
 
     public static final TimestampType NULL = new TimestampType(null);
 
-    public TimestampType(Timestamp value) {
+    public TimestampType(final Timestamp value) {
         super(value);
     }
 
     @Override
-    public void accept(DataTypeVisitor visitor) throws Exception {
+    public void accept(final DataTypeVisitor visitor) throws Exception {
         visitor.visit(this);
     }
 }

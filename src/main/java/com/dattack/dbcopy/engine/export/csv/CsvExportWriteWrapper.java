@@ -48,19 +48,19 @@ class CsvExportWriteWrapper implements Closeable {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CsvExportWriteWrapper.class);
 
-    private final ExportOperationBean bean;
-    private final AbstractConfiguration configuration;
-    private volatile Path path;
-    private volatile Writer writer;
-    private String header;
-    private final AtomicInteger fileNumber;
-    private final Object lock;
-    private volatile CountingOutputStream cos;
+    private final transient ExportOperationBean bean;
+    private final transient AbstractConfiguration configuration;
+    private volatile transient Path path;
+    private volatile transient Writer writer;
+    private transient String header;
+    private final transient AtomicInteger fileNumber;
+    private final transient Object lock;
+    private volatile transient CountingOutputStream cos;
 
     public CsvExportWriteWrapper(final ExportOperationBean bean, final AbstractConfiguration configuration) {
         this.bean = bean;
         this.configuration = configuration;
-        this.fileNumber = bean.getRotateSize() > 0 ? new AtomicInteger() : null;
+        this.fileNumber = bean.getRotateSize() > 0 ? new AtomicInteger() : null; //NOPMD
         this.lock = new Object();
     }
 
@@ -72,8 +72,8 @@ class CsvExportWriteWrapper implements Closeable {
             fileNumber.incrementAndGet();
         }
 
-        Path path = Paths.get(filename);
-        Path parent = path.getParent();
+        final Path path = Paths.get(filename);
+        final Path parent = path.getParent();
         if (parent != null) {
             Files.createDirectories(parent);
         }
@@ -98,12 +98,12 @@ class CsvExportWriteWrapper implements Closeable {
     }
 
     private static String createPartFilename(final String filename, final int fileNumber) {
-        String baseName = FilenameUtils.getBaseName(filename);
-        String extension = FilenameUtils.getExtension(filename);
+        final String baseName = FilenameUtils.getBaseName(filename);
+        final String extension = FilenameUtils.getExtension(filename);
 
         String partFilename;
 
-        int dotIndex = baseName.indexOf(".");
+        final int dotIndex = baseName.indexOf('.');
         if (dotIndex > 0) {
             partFilename = FilenameUtils.getFullPath(filename) + baseName.substring(0, dotIndex) + "_" + fileNumber //
                     + baseName.substring(dotIndex) + "." + extension;
@@ -129,11 +129,11 @@ class CsvExportWriteWrapper implements Closeable {
         return writer;
     }
 
-    void setHeader(final String header) {
+    /* default */ void setHeader(final String header) {
         this.header = header;
     }
 
-    void write(final String text) throws IOException {
+    /* default */ void write(final String text) throws IOException {
         synchronized (lock) {
             getWriter().write(text);
         }
@@ -148,17 +148,18 @@ class CsvExportWriteWrapper implements Closeable {
         }
     }
 
+    @Override
     public void close() throws IOException {
         if (writer != null) {
             synchronized (lock) {
                 if (writer != null) {
                     writer.close();
-                    writer = null;
+                    writer = null; //NOPMD
 
                     // move part file to other directory
                     if (StringUtils.isNotBlank(bean.getMove2path())) {
-                        Path newDir = Paths.get(bean.getMove2path());
-                        Path target = newDir.resolve(this.path.getFileName());
+                        final Path newDir = Paths.get(bean.getMove2path());
+                        final Path target = newDir.resolve(this.path.getFileName());
                         LOGGER.info("Moving file {} to {}", this.path, target);
                         Files.move(this.path, target, StandardCopyOption.REPLACE_EXISTING);
                     }

@@ -16,7 +16,6 @@
 package com.dattack.dbcopy.engine;
 
 import java.lang.management.ManagementFactory;
-
 import javax.management.InstanceAlreadyExistsException;
 import javax.management.MBeanRegistrationException;
 import javax.management.MBeanServer;
@@ -31,7 +30,11 @@ import javax.management.ObjectName;
  * @since 0.1
  */
 @SuppressWarnings("checkstyle:AbbreviationAsWordInName")
-public class MBeanHelper {
+public final class MBeanHelper {
+
+    private MBeanHelper() {
+        // static class
+    }
 
     public static void registerMBean(final String name, final Object object) {
         try {
@@ -41,9 +44,5 @@ public class MBeanHelper {
                 | MalformedObjectNameException e) {
             e.printStackTrace();
         }
-    }
-
-    private MBeanHelper() {
-        // static class
     }
 }

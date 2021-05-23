@@ -31,9 +31,9 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class ExecutionController implements ExecutionControllerMBean {
 
-    private final AtomicInteger threadCounter = new AtomicInteger();
-    private final String name;
-    private final ThreadPoolExecutor threadPoolExecutor;
+    private final transient AtomicInteger threadCounter = new AtomicInteger();
+    private final transient String name;
+    private final transient ThreadPoolExecutor threadPoolExecutor;
 
     public ExecutionController(final String name, final int corePoolSize, final int maximumPoolSize) {
         this.name = name;

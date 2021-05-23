@@ -16,9 +16,7 @@
 package com.dattack.dbcopy.engine;
 
 import com.dattack.jtoolbox.patterns.Builder;
-
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -30,9 +28,9 @@ import java.util.List;
  */
 public class RowMetadata {
 
-    private List<ColumnMetadata> columnsMetadata;
+    private transient List<ColumnMetadata> columnsMetadata;
 
-    private RowMetadata(List<ColumnMetadata> columnsMetadata) {
+    private RowMetadata(final List<ColumnMetadata> columnsMetadata) {
         this.columnsMetadata = columnsMetadata;
     }
 
@@ -49,15 +47,18 @@ public class RowMetadata {
         return "RowMetadata{columnsMetadata=" + columnsMetadata + '}';
     }
 
+    /**
+     * Builder implementation for {@link RowMetadata}.
+     */
     public static class RowMetadataBuilder implements Builder<RowMetadata> {
 
-        private List<ColumnMetadata> list;
+        private transient List<ColumnMetadata> list;
 
         public RowMetadataBuilder() {
             this.list = new ArrayList<>();
         }
 
-        public RowMetadataBuilder add(ColumnMetadata item) {
+        public RowMetadataBuilder add(final ColumnMetadata item) {
             list.add(item);
             return this;
         }
@@ -70,9 +71,9 @@ public class RowMetadata {
 
         private void checkIndexes() {
             ColumnMetadata[] array = new ColumnMetadata[list.size()];
-            for (ColumnMetadata columnMetadata : list) {
-                int zeroIndex = columnMetadata.getIndex() - 1;
-                ColumnMetadata previous = array[zeroIndex];
+            for (final ColumnMetadata columnMetadata : list) {
+                final int zeroIndex = columnMetadata.getIndex() - 1;
+                final ColumnMetadata previous = array[zeroIndex];
                 if (previous != null) {
                     throw new IllegalArgumentException(String.format("Found a duplicate column index on row metadata "
                             + "[previous: %s, current: %s]", previous, columnMetadata));

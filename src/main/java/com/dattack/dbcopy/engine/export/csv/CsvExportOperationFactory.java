@@ -28,8 +28,10 @@ import com.dattack.jtoolbox.io.IOUtils;
 import org.apache.commons.configuration.AbstractConfiguration;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.exception.NestableRuntimeException;
-import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Properties;
 
 /**
@@ -40,9 +42,9 @@ import java.util.Properties;
  */
 public class CsvExportOperationFactory implements ExportOperationFactory {
 
-    private final ExportOperationBean bean;
-    private final AbstractConfiguration configuration;
-    private CsvExportWriteWrapper writer;
+    private final transient ExportOperationBean bean;
+    private final transient AbstractConfiguration configuration;
+    private transient CsvExportWriteWrapper writer;
 
     public CsvExportOperationFactory(final ExportOperationBean bean, final AbstractConfiguration configuration) {
         this.bean = bean;
@@ -59,8 +61,8 @@ public class CsvExportOperationFactory implements ExportOperationFactory {
 
     private String getHeader(final RowMetadata rowMetadata) throws IOException {
 
-        CSVStringBuilder builder = createCSVStringBuilder();
-        for (ColumnMetadata columnMetadata : rowMetadata.getColumnsMetadata()) {
+        final CSVStringBuilder builder = createCSVStringBuilder();
+        for (final ColumnMetadata columnMetadata : rowMetadata.getColumnsMetadata()) {
             builder.append(columnMetadata.getName());
         }
         builder.eol();
@@ -70,13 +72,13 @@ public class CsvExportOperationFactory implements ExportOperationFactory {
     @SuppressWarnings("checkstyle:AbbreviationAsWordInName")
     private CSVStringBuilder createCSVStringBuilder() throws IOException {
 
-        Properties properties = new Properties();
+        final Properties properties = new Properties();
         if (StringUtils.isNotBlank(bean.getFormatFile())) {
-            try (FileInputStream fis = new FileInputStream(bean.getFormatFile())) {
+            try (InputStream fis = Files.newInputStream(Paths.get(bean.getFormatFile()))) {
                 properties.load(fis);
             }
         }
-        CSVConfiguration configuration = CSVConfiguration.custom(properties).build();
+        final CSVConfiguration configuration = CSVConfiguration.custom(properties).build();
         return new CSVStringBuilder(configuration);
     }
 
@@ -84,7 +86,8 @@ public class CsvExportOperationFactory implements ExportOperationFactory {
     public ExportOperation createTask(final DataTransfer dataTransfer, final DbCopyTaskResult taskResult) {
 
         try {
-            final CsvExportWriteWrapper outputWriter = getWriter(dataTransfer.getRowMetadata());
+            final CsvExportWriteWrapper outputWriter = getWriter(dataTransfer.getRowMetadata()); //NOPMD: resource
+            // can't be closed here
 
             taskResult.addOnEndCommand(() -> {
                     IOUtils.closeQuietly(outputWriter);

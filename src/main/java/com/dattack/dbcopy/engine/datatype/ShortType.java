@@ -25,12 +25,12 @@ public class ShortType extends AbstractDataType<Short> {
 
     public static final ShortType NULL = new ShortType(null);
 
-    public ShortType(Short value) {
+    public ShortType(final Short value) {
         super(value);
     }
 
     @Override
-    public void accept(DataTypeVisitor visitor) throws Exception {
+    public void accept(final DataTypeVisitor visitor) throws Exception {
         visitor.visit(this);
     }
 }

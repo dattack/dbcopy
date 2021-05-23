@@ -25,12 +25,12 @@ public class LongType extends AbstractDataType<Long> {
 
     public static final LongType NULL = new LongType(null);
 
-    public LongType(Long value) {
+    public LongType(final Long value) {
         super(value);
     }
 
     @Override
-    public void accept(DataTypeVisitor visitor) throws Exception {
+    public void accept(final DataTypeVisitor visitor) throws Exception {
         visitor.visit(this);
     }
 }

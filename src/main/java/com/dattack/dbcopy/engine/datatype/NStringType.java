@@ -26,12 +26,12 @@ public class NStringType extends AbstractDataType<String> {
 
     public static final NStringType NULL = new NStringType(null);
 
-    public NStringType(String value) {
+    public NStringType(final String value) {
         super(value);
     }
 
     @Override
-    public void accept(DataTypeVisitor visitor) throws Exception {
+    public void accept(final DataTypeVisitor visitor) throws Exception {
         visitor.visit(this);
     }
 }

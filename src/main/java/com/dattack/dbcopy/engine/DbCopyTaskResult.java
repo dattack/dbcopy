@@ -28,13 +28,13 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public final class DbCopyTaskResult implements DbCopyTaskResultMBean {
 
-    private final String taskName;
-    private long startTime;
-    private long endTime;
-    private final AtomicLong retrievedRows;
-    private final AtomicLong processedRows;
-    private Exception exception;
-    private final List<Command<?>> onEndCommandList;
+    private final transient String taskName;
+    private transient long startTime;
+    private transient long endTime;
+    private final transient AtomicLong retrievedRows;
+    private final transient AtomicLong processedRows;
+    private transient Exception exception;
+    private final transient List<Command<?>> onEndCommandList;
 
     public DbCopyTaskResult(final String taskName) {
         this.taskName = taskName;
@@ -42,7 +42,7 @@ public final class DbCopyTaskResult implements DbCopyTaskResultMBean {
         this.processedRows = new AtomicLong(0);
         this.startTime = 0;
         this.endTime = 0;
-        this.exception = null;
+        //this.exception = null;
         this.onEndCommandList = new ArrayList<>();
     }
 
@@ -50,7 +50,7 @@ public final class DbCopyTaskResult implements DbCopyTaskResultMBean {
         this.processedRows.addAndGet(value);
     }
 
-    public void addOnEndCommand(Command<?> command) {
+    public void addOnEndCommand(final Command<?> command) {
         onEndCommandList.add(command);
     }
 
@@ -93,23 +93,23 @@ public final class DbCopyTaskResult implements DbCopyTaskResultMBean {
     @Override
     public float getProcessedRowsPerSecond() {
 
+        float result = 0;
         final long executionTime = getExecutionTime();
-        if (executionTime <= 0) {
-            return 0;
+        if (executionTime > 0) {
+            result = getTotalProcessedRows() * 1000F / executionTime;
         }
-
-        return getTotalProcessedRows() * 1000F / executionTime;
+        return result;
     }
 
     @Override
     public float getRetrievedRowsPerSecond() {
 
+        float result = 0;
         final long executionTime = getExecutionTime();
-        if (executionTime <= 0) {
-            return 0;
+        if (executionTime > 0) {
+            result = getTotalRetrievedRows() * 1000F / executionTime;
         }
-
-        return getTotalRetrievedRows() * 1000F / executionTime;
+        return result;
     }
 
     @Override

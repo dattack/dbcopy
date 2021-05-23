@@ -25,12 +25,12 @@ public class BooleanType extends AbstractDataType<Boolean> {
 
     public static final BooleanType NULL = new BooleanType(null);
 
-    public BooleanType(Boolean value) {
+    public BooleanType(final Boolean value) {
         super(value);
     }
 
     @Override
-    public void accept(DataTypeVisitor visitor) throws Exception {
+    public void accept(final DataTypeVisitor visitor) throws Exception {
         visitor.visit(this);
     }
 }

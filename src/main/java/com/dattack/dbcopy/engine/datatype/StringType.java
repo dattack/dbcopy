@@ -25,12 +25,12 @@ public class StringType extends AbstractDataType<String> {
 
     public static final StringType NULL = new StringType(null);
 
-    public StringType(String value) {
+    public StringType(final String value) {
         super(value);
     }
 
     @Override
-    public void accept(DataTypeVisitor visitor) throws Exception {
+    public void accept(final DataTypeVisitor visitor) throws Exception {
         visitor.visit(this);
     }
 }

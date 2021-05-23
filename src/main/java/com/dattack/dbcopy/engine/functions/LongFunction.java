@@ -28,22 +28,22 @@ import java.sql.SQLException;
  */
 public class LongFunction extends AbstractDataFunction<LongType> {
 
-    public LongFunction(ColumnMetadata columnMetadata) {
+    public LongFunction(final ColumnMetadata columnMetadata) {
         super(columnMetadata);
     }
 
     @Override
-    public LongType doGet(ResultSet rs, int index) throws SQLException {
+    public LongType doGet(final ResultSet rs, final int index) throws SQLException {
         return new LongType(rs.getLong(index));
     }
 
     @Override
-    public void accept(FunctionVisitor visitor) throws Exception {
+    public void accept(final FunctionVisitor visitor) throws Exception {
         visitor.visit(this);
     }
 
     @Override
-    LongType getNull() {
+    protected LongType getNull() {
         return LongType.NULL;
     }
 }

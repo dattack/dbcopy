@@ -28,12 +28,12 @@ public class NClobType extends AbstractDataType<NClob> {
 
     public static final NClobType NULL = new NClobType(null);
 
-    public NClobType(NClob value) {
+    public NClobType(final NClob value) {
         super(value);
     }
 
     @Override
-    public void accept(DataTypeVisitor visitor) throws Exception {
+    public void accept(final DataTypeVisitor visitor) throws Exception {
         visitor.visit(this);
     }
 }

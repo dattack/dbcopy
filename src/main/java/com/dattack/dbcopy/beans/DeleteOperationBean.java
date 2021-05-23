@@ -15,12 +15,16 @@
  */
 package com.dattack.dbcopy.beans;
 
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
+
 /**
  * Bean representing a deletion operation.
  *
  * @author cvarela
  * @since 0.1
  */
+@XmlAccessorType(XmlAccessType.FIELD)
 public class DeleteOperationBean extends AbstractDbOperationBean {
 
     private static final long serialVersionUID = 21303378360014146L;

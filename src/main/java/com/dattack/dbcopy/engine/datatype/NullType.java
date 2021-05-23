@@ -32,7 +32,7 @@ public class NullType extends AbstractDataType<Void> {
     }
 
     @Override
-    public void accept(DataTypeVisitor visitor) throws Exception {
+    public void accept(final DataTypeVisitor visitor) throws Exception {
         visitor.visit(this);
     }
 }

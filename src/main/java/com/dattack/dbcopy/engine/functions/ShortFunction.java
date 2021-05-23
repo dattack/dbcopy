@@ -28,22 +28,22 @@ import java.sql.SQLException;
  */
 public class ShortFunction extends AbstractDataFunction<ShortType> {
 
-    public ShortFunction(ColumnMetadata columnMetadata) {
+    public ShortFunction(final ColumnMetadata columnMetadata) {
         super(columnMetadata);
     }
 
     @Override
-    public ShortType doGet(ResultSet rs, int index) throws SQLException {
+    public ShortType doGet(final ResultSet rs, final int index) throws SQLException {
         return new ShortType(rs.getShort(index));
     }
 
     @Override
-    public void accept(FunctionVisitor visitor) throws Exception {
+    public void accept(final FunctionVisitor visitor) throws Exception {
         visitor.visit(this);
     }
 
     @Override
-    ShortType getNull() {
+    protected ShortType getNull() {
         return ShortType.NULL;
     }
 }

@@ -70,10 +70,10 @@ import java.util.List;
  */
 public class ParquetExportOperationFactory implements ExportOperationFactory {
 
-    private final ExportOperationBean bean;
-    private final AbstractConfiguration configuration;
-    private Schema schema;
-    private ParquetWriter<Object> writer;
+    private final transient ExportOperationBean bean;
+    private final transient AbstractConfiguration configuration;
+    private transient Schema schema;
+    private transient ParquetWriter<Object> writer;
 
     public ParquetExportOperationFactory(final ExportOperationBean bean, final AbstractConfiguration configuration) {
         this.bean = bean;
@@ -81,10 +81,10 @@ public class ParquetExportOperationFactory implements ExportOperationFactory {
     }
 
     @Override
-    public ExportOperation createTask(DataTransfer dataTransfer, DbCopyTaskResult taskResult) {
+    public ExportOperation createTask(final DataTransfer dataTransfer, final DbCopyTaskResult taskResult) {
 
         try {
-            final ParquetWriter<Object> outputWriter = getWriter();
+            final ParquetWriter<Object> outputWriter = getWriter(); //NOPMD: resource can't be closed here
             final ParquetWriter<Object> writer = getWriter();
 
             taskResult.addOnEndCommand(() -> {
@@ -104,12 +104,12 @@ public class ParquetExportOperationFactory implements ExportOperationFactory {
     private synchronized Schema getSchema(RowMetadata rowMetadata) throws Exception {
 
         if (schema == null) {
-            List<Schema.Field> fieldList = new ArrayList<>();
+            final List<Schema.Field> fieldList = new ArrayList<>();
 
-            Visitor visitor = new Visitor();
-            for (ColumnMetadata columnMetadata : rowMetadata.getColumnsMetadata()) {
+            final Visitor visitor = new Visitor();
+            for (final ColumnMetadata columnMetadata : rowMetadata.getColumnsMetadata()) {
                 columnMetadata.getFunction().accept(visitor);
-                Schema columnSchema = visitor.getSchema();
+                final Schema columnSchema = visitor.getSchema();
                 fieldList.add(new Schema.Field(columnMetadata.getName(), columnSchema, null, null));
             }
 
@@ -160,14 +160,14 @@ public class ParquetExportOperationFactory implements ExportOperationFactory {
 
     private static class Visitor implements FunctionVisitor {
 
-        private Schema schema;
+        private transient Schema schema;
 
         public Schema getSchema() {
             return schema;
         }
 
         @Override
-        public void visit(BigDecimalFunction function) throws SQLException {
+        public void visit(final BigDecimalFunction function) throws SQLException {
             if (function.getColumnMetadata().getScale() == 0) {
                 schema = SchemaBuilder.nullable().longType();
             } else {
@@ -176,95 +176,95 @@ public class ParquetExportOperationFactory implements ExportOperationFactory {
         }
 
         @Override
-        public void visit(BlobFunction function) throws SQLException {
+        public void visit(final BlobFunction function) throws SQLException {
             schema = SchemaBuilder.nullable().bytesType();
         }
 
         @Override
-        public void visit(BooleanFunction function) throws SQLException {
+        public void visit(final BooleanFunction function) throws SQLException {
             schema = SchemaBuilder.nullable().booleanType();
         }
 
         @Override
-        public void visit(ByteFunction function) throws SQLException {
+        public void visit(final ByteFunction function) throws SQLException {
             schema = SchemaBuilder.nullable().intType();
         }
 
         @Override
-        public void visit(BytesFunction function) throws SQLException {
+        public void visit(final BytesFunction function) throws SQLException {
             schema = SchemaBuilder.nullable().bytesType();
         }
 
         @Override
-        public void visit(ClobFunction function) throws SQLException {
+        public void visit(final ClobFunction function) throws SQLException {
             schema = SchemaBuilder.nullable().stringType();
         }
 
         @Override
-        public void visit(DateFunction function) throws SQLException {
+        public void visit(final DateFunction function) throws SQLException {
             schema = SchemaBuilder.nullable().type(LogicalTypes.date() //
                     .addToSchema(Schema.create(Schema.Type.INT)));
         }
 
         @Override
-        public void visit(DoubleFunction function) throws SQLException {
+        public void visit(final DoubleFunction function) throws SQLException {
             schema = SchemaBuilder.nullable().doubleType();
         }
 
         @Override
-        public void visit(FloatFunction function) throws SQLException {
+        public void visit(final FloatFunction function) throws SQLException {
             schema = SchemaBuilder.nullable().floatType();
         }
 
         @Override
-        public void visit(IntegerFunction function) throws SQLException {
+        public void visit(final IntegerFunction function) throws SQLException {
             schema = SchemaBuilder.nullable().intType();
         }
 
         @Override
-        public void visit(LongFunction function) throws SQLException {
+        public void visit(final LongFunction function) throws SQLException {
             schema = SchemaBuilder.nullable().longType();
         }
 
         @Override
-        public void visit(NClobFunction function) throws SQLException {
+        public void visit(final NClobFunction function) throws SQLException {
             schema = SchemaBuilder.nullable().stringType();
         }
 
         @Override
-        public void visit(NStringFunction function) throws SQLException {
+        public void visit(final NStringFunction function) throws SQLException {
             schema = SchemaBuilder.nullable().stringType();
         }
 
         @Override
-        public void visit(NullFunction function) throws SQLException {
+        public void visit(final NullFunction function) throws SQLException {
             schema = SchemaBuilder.nullable().stringType();
         }
 
         @Override
-        public void visit(ShortFunction function) throws SQLException {
+        public void visit(final ShortFunction function) throws SQLException {
             schema = SchemaBuilder.nullable().intType();
         }
 
         @Override
-        public void visit(StringFunction function) throws SQLException {
+        public void visit(final StringFunction function) throws SQLException {
             schema = SchemaBuilder.nullable().stringType();
         }
 
         @Override
-        public void visit(TimeFunction function) throws SQLException {
+        public void visit(final TimeFunction function) throws SQLException {
             schema = SchemaBuilder.nullable().type(LogicalTypes.timeMillis() //
                     .addToSchema(Schema.create(Schema.Type.LONG)));
         }
 
         @Override
-        public void visit(TimestampFunction function) throws SQLException {
+        public void visit(final TimestampFunction function) throws SQLException {
             schema = SchemaBuilder.nullable().type(LogicalTypes.timestampMillis() //
                     .addToSchema(Schema.create(Schema.Type.LONG)));
         }
 
         @Override
-        public void visit(XmlFunction function) throws SQLException {
+        public void visit(final XmlFunction function) throws SQLException {
             schema = SchemaBuilder.nullable().stringType();
         }
     }

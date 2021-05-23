@@ -28,22 +28,22 @@ import java.sql.SQLException;
  */
 public class TimeFunction extends AbstractDataFunction<TimeType> {
 
-    public TimeFunction(ColumnMetadata columnMetadata) {
+    public TimeFunction(final ColumnMetadata columnMetadata) {
         super(columnMetadata);
     }
 
     @Override
-    public TimeType doGet(ResultSet rs, int index) throws SQLException {
+    public TimeType doGet(final ResultSet rs, final int index) throws SQLException {
         return new TimeType(rs.getTime(index));
     }
 
     @Override
-    public void accept(FunctionVisitor visitor) throws Exception {
+    public void accept(final FunctionVisitor visitor) throws Exception {
         visitor.visit(this);
     }
 
     @Override
-    TimeType getNull() {
+    protected TimeType getNull() {
         return TimeType.NULL;
     }
 }

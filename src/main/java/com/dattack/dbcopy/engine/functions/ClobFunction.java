@@ -28,22 +28,22 @@ import java.sql.SQLException;
  */
 public class ClobFunction extends AbstractDataFunction<ClobType> {
 
-    public ClobFunction(ColumnMetadata columnMetadata) {
+    public ClobFunction(final ColumnMetadata columnMetadata) {
         super(columnMetadata);
     }
 
     @Override
-    public ClobType doGet(ResultSet rs, int index) throws SQLException {
+    public ClobType doGet(final ResultSet rs, final int index) throws SQLException {
         return new ClobType(rs.getClob(index));
     }
 
     @Override
-    public void accept(FunctionVisitor visitor) throws Exception {
+    public void accept(final FunctionVisitor visitor) throws Exception {
         visitor.visit(this);
     }
 
     @Override
-    ClobType getNull() {
+    protected ClobType getNull() {
         return ClobType.NULL;
     }
 }

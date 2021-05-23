@@ -28,22 +28,22 @@ import java.sql.SQLException;
  */
 public class StringFunction extends AbstractDataFunction<StringType> {
 
-    public StringFunction(ColumnMetadata columnMetadata) {
+    public StringFunction(final ColumnMetadata columnMetadata) {
         super(columnMetadata);
     }
 
     @Override
-    public StringType doGet(ResultSet rs, int index) throws SQLException {
+    public StringType doGet(final ResultSet rs, final int index) throws SQLException {
         return new StringType(rs.getString(index));
     }
 
     @Override
-    public void accept(FunctionVisitor visitor) throws Exception {
+    public void accept(final FunctionVisitor visitor) throws Exception {
         visitor.visit(this);
     }
 
     @Override
-    StringType getNull() {
+    protected StringType getNull() {
         return StringType.NULL;
     }
 }

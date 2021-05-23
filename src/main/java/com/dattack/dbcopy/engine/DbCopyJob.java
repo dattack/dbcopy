@@ -35,6 +35,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -45,15 +46,15 @@ import java.util.concurrent.Future;
  * @author cvarela
  * @since 0.1
  */
-class DbCopyJob implements Callable<Void> {
+/* default */ class DbCopyJob implements Callable<Void> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DbCopyJob.class);
 
-    private final DbcopyJobBean dbcopyJobBean;
-    private final ExecutionController executionController;
-    private final AbstractConfiguration externalConfiguration;
+    private final transient DbcopyJobBean dbcopyJobBean;
+    private final transient ExecutionController executionController;
+    private final transient AbstractConfiguration externalConfiguration;
 
-    DbCopyJob(final DbcopyJobBean dbcopyJobBean, final AbstractConfiguration configuration) {
+    /* default */ DbCopyJob(final DbcopyJobBean dbcopyJobBean, final AbstractConfiguration configuration) {
         this.dbcopyJobBean = dbcopyJobBean;
         this.externalConfiguration = configuration;
         executionController = new ExecutionController(dbcopyJobBean.getId(), dbcopyJobBean.getThreads(),
@@ -62,53 +63,16 @@ class DbCopyJob implements Callable<Void> {
                 executionController);
     }
 
-    private void show(final DbCopyJobResult jobResult) {
-
-        final StringBuilder sb = new StringBuilder();
-        sb.append("\nJob ID: ").append(jobResult.getJobBean().getId());
-        sb.append("\nSelect statement: ").append(jobResult.getJobBean().getSelectBean().getSql());
-        sb.append("\nNumber of tasks: ").append(jobResult.getTotalTaskCounter());
-        sb.append("\nNumber of finished tasks: ").append(jobResult.getFinishedTaskCounter());
-
-        final SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
-
-        for (final DbCopyTaskResult taskResult : jobResult.getTaskResultList()) {
-            sb.append("\n\tTask name: ").append(taskResult.getTaskName());
-            sb.append("\n\t\tStart time: ").append(sdf.format(new Date(taskResult.getStartTime())));
-            sb.append("\n\t\tEnd time: ").append(sdf.format(new Date(taskResult.getEndTime())));
-            sb.append("\n\t\tExecution time: ").append(taskResult.getExecutionTime()).append(" ms.");
-            sb.append("\n\t\tRetrieved rows: ").append(taskResult.getTotalRetrievedRows());
-            sb.append("\n\t\tProcessed rows: ").append(taskResult.getTotalProcessedRows());
-            sb.append("\n\t\tRetrieved rows/s: ").append(taskResult.getRetrievedRowsPerSecond());
-            sb.append("\n\t\tProcessed rows/s: ").append(taskResult.getProcessedRowsPerSecond());
-            if (taskResult.getException() != null) {
-                sb.append("\n\t\tException: ").append(taskResult.getException().getMessage());
-            }
-
-            if (taskResult.getTotalRetrievedRows() != taskResult.getTotalProcessedRows()) {
-                sb.append("\n\n\t\tJOB ENDED WITH ERRORS: SOME ROWS WERE NOT PROCESSED.");
-                sb.append("\n\t\tPLEASE CHECK THE LOG FILE FOR MORE DETAILS");
-            }
-        }
-
-        try {
-            FileUtils.writeStringToFile(new File(dbcopyJobBean.getId() + ".log"), sb.toString());
-        } catch (IOException e) {
-            LOGGER.warn("Unable to write log file for job '{}'. {}", dbcopyJobBean.getId(), e);
-        }
-
-        LOGGER.info(sb.toString());
+    /* default */ DbcopyJobBean getDbcopyJobBean() {
+        return dbcopyJobBean;
     }
 
-    private static void showFutures(final List<Future<?>> futureList) {
+    /* default */ ExecutionController getExecutionController() {
+        return executionController;
+    }
 
-        for (final Future<?> future : futureList) {
-            try {
-                LOGGER.info("Future result: {}", future.get());
-            } catch (final InterruptedException | ExecutionException e) {
-                LOGGER.warn("Error getting computed result from Future object", e);
-            }
-        }
+    /* default */ AbstractConfiguration getExternalConfiguration() {
+        return externalConfiguration;
     }
 
     @Override
@@ -121,84 +85,7 @@ class DbCopyJob implements Callable<Void> {
         final DbCopyJobResult jobResult = new DbCopyJobResult(dbcopyJobBean);
         MBeanHelper.registerMBean("com.dattack.dbcopy:type=JobResult,name=" + dbcopyJobBean.getId(), jobResult);
 
-        final VariableVisitor rangeVisitor = new VariableVisitor() {
-
-            private BaseConfiguration createBaseConfiguration() {
-                BaseConfiguration baseConfiguration = new BaseConfiguration();
-                baseConfiguration.setDelimiterParsingDisabled(true);
-                baseConfiguration.setProperty("job.id", dbcopyJobBean.getId());
-                return baseConfiguration;
-            }
-
-            private CompositeConfiguration createCompositeConfiguration() {
-                final CompositeConfiguration configuration = new CompositeConfiguration();
-                configuration.addConfiguration(externalConfiguration);
-                configuration.addConfiguration(ConfigurationUtil.createEnvSystemConfiguration());
-                return configuration;
-            }
-
-            @Override
-            public void visite(LiteralListBean bean) {
-
-                Iterator<String> it = bean.getValues().iterator();
-
-                while (it.hasNext()) {
-
-                    StringBuilder taskName = new StringBuilder(dbcopyJobBean.getId());
-
-                    List<String> values = new ArrayList<>();
-                    while (it.hasNext() && values.size() < bean.getBlockSize()) {
-                        String value = it.next();
-                        taskName.append("_").append(value);
-                        values.add(value);
-                    }
-
-                    final BaseConfiguration baseConfiguration = createBaseConfiguration();
-                    baseConfiguration.setProperty(bean.getId() + ".values", values);
-
-                    final CompositeConfiguration configuration = createCompositeConfiguration();
-                    configuration.addConfiguration(baseConfiguration);
-
-                    final DbCopyTask dbcopyTask = new DbCopyTask(dbcopyJobBean, configuration,
-                            jobResult.createTaskResult(taskName.toString()));
-                    futureList.add(executionController.submit(dbcopyTask));
-                }
-            }
-
-            @Override
-            public void visite(final IntegerRangeBean bean) {
-
-                for (long i = bean.getLowValue(); i < bean.getHighValue(); i += bean.getBlockSize()) {
-
-                    final long highValue = Math.min(i + bean.getBlockSize(), bean.getHighValue());
-
-                    final BaseConfiguration baseConfiguration = createBaseConfiguration();
-                    baseConfiguration.setProperty(bean.getId() + ".low", i);
-                    baseConfiguration.setProperty(bean.getId() + ".high", highValue);
-
-                    final CompositeConfiguration configuration = createCompositeConfiguration();
-                    configuration.addConfiguration(baseConfiguration);
-
-                    final String taskName = String.format("%s_%d_%d", dbcopyJobBean.getId(), i, highValue);
-
-                    final DbCopyTask dbcopyTask = new DbCopyTask(dbcopyJobBean, configuration,
-                            jobResult.createTaskResult(taskName));
-                    futureList.add(executionController.submit(dbcopyTask));
-                }
-            }
-
-            @Override
-            public void visite(final NullVariableBean bean) {
-
-                final String taskName = dbcopyJobBean.getId();
-                final CompositeConfiguration configuration = createCompositeConfiguration();
-                configuration.addConfiguration(createBaseConfiguration());
-
-                final DbCopyTask dbcopyTask = new DbCopyTask(dbcopyJobBean, configuration,
-                        jobResult.createTaskResult(taskName));
-                futureList.add(executionController.submit(dbcopyTask));
-            }
-        };
+        final VariableVisitor rangeVisitor = getVariableVisitor(futureList, jobResult);
 
         if (dbcopyJobBean.getVariableList() == null || dbcopyJobBean.getVariableList().isEmpty()) {
             new NullVariableBean().accept(rangeVisitor);
@@ -217,5 +104,139 @@ class DbCopyJob implements Callable<Void> {
                 Thread.currentThread().getName());
 
         return null;
+    }
+
+    private VariableVisitor getVariableVisitor(final List<Future<?>> futureList, final DbCopyJobResult jobResult) {
+
+        return new VariableVisitor() {
+
+            private BaseConfiguration createBaseConfiguration() {
+                final BaseConfiguration baseConfiguration = new BaseConfiguration();
+                baseConfiguration.setDelimiterParsingDisabled(true);
+                baseConfiguration.setProperty("job.id", getDbcopyJobBean().getId());
+                return baseConfiguration;
+            }
+
+            private CompositeConfiguration createCompositeConfiguration() {
+                final CompositeConfiguration configuration = new CompositeConfiguration();
+                configuration.addConfiguration(getExternalConfiguration());
+                configuration.addConfiguration(ConfigurationUtil.createEnvSystemConfiguration());
+                return configuration;
+            }
+
+            @Override
+            public void visit(final LiteralListBean bean) {
+
+                final Iterator<String> iterator = bean.getValues().iterator();
+
+                final StringBuilder taskName = new StringBuilder();
+
+                while (iterator.hasNext()) {
+
+                    taskName.append(getDbcopyJobBean().getId());
+
+                    final List<String> values = new ArrayList<>(); //NOPMD
+                    while (iterator.hasNext() && values.size() < bean.getBlockSize()) {
+                        final String value = iterator.next();
+                        taskName.append('_').append(value);
+                        values.add(value);
+                    }
+
+                    final BaseConfiguration baseConfiguration = createBaseConfiguration();
+                    baseConfiguration.setProperty(bean.getId() + ".values", values);
+
+                    final CompositeConfiguration configuration = createCompositeConfiguration();
+                    configuration.addConfiguration(baseConfiguration);
+
+                    final DbCopyTask dbcopyTask = new DbCopyTask(getDbcopyJobBean(), configuration, //NOPMD
+                            jobResult.createTaskResult(taskName.toString()));
+                    futureList.add(getExecutionController().submit(dbcopyTask));
+                    taskName.setLength(0);
+                }
+            }
+
+            @Override
+            public void visit(final IntegerRangeBean bean) {
+
+                for (long i = bean.getLowValue(); i < bean.getHighValue(); i += bean.getBlockSize()) {
+
+                    final long highValue = Math.min(i + bean.getBlockSize(), bean.getHighValue());
+
+                    final BaseConfiguration baseConfiguration = createBaseConfiguration();
+                    baseConfiguration.setProperty(bean.getId() + ".low", i);
+                    baseConfiguration.setProperty(bean.getId() + ".high", highValue);
+
+                    final CompositeConfiguration configuration = createCompositeConfiguration();
+                    configuration.addConfiguration(baseConfiguration);
+
+                    final String taskName = String.format("%s_%d_%d", getDbcopyJobBean().getId(), i, highValue);
+
+                    final DbCopyTask dbcopyTask = new DbCopyTask(getDbcopyJobBean(), configuration, //NOPMD
+                            jobResult.createTaskResult(taskName));
+                    futureList.add(getExecutionController().submit(dbcopyTask));
+                }
+            }
+
+            @Override
+            public void visit(final NullVariableBean bean) {
+
+                final String taskName = getDbcopyJobBean().getId();
+                final CompositeConfiguration configuration = createCompositeConfiguration();
+                configuration.addConfiguration(createBaseConfiguration());
+
+                final DbCopyTask dbcopyTask = new DbCopyTask(getDbcopyJobBean(), configuration,
+                        jobResult.createTaskResult(taskName));
+                futureList.add(getExecutionController().submit(dbcopyTask));
+            }
+        };
+    }
+
+    private static void showFutures(final List<Future<?>> futureList) {
+
+        for (final Future<?> future : futureList) {
+            try {
+                LOGGER.info("Future result: {}", future.get());
+            } catch (final InterruptedException | ExecutionException e) {
+                LOGGER.warn("Error getting computed result from Future object", e);
+            }
+        }
+    }
+
+    private void show(final DbCopyJobResult jobResult) {
+
+        final StringBuilder buffer = new StringBuilder(400);
+        buffer.append("\nJob ID: ").append(jobResult.getJobBean().getId())
+        .append("\nSelect statement: ").append(jobResult.getJobBean().getSelectBean().getSql())
+        .append("\nNumber of tasks: ").append(jobResult.getTotalTaskCounter())
+        .append("\nNumber of finished tasks: ").append(jobResult.getFinishedTaskCounter());
+
+        final SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ", Locale.getDefault());
+
+        for (final DbCopyTaskResult taskResult : jobResult.getTaskResultList()) {
+            buffer.append("\n\tTask name: ").append(taskResult.getTaskName())
+                    .append("\n\t\tStart time: ").append(sdf.format(new Date(taskResult.getStartTime())))
+                    .append("\n\t\tEnd time: ").append(sdf.format(new Date(taskResult.getEndTime())))
+                    .append("\n\t\tExecution time: ").append(taskResult.getExecutionTime())
+                    .append(" ms.\n\t\tRetrieved rows: ").append(taskResult.getTotalRetrievedRows())
+                    .append("\n\t\tProcessed rows: ").append(taskResult.getTotalProcessedRows())
+                    .append("\n\t\tRetrieved rows/s: ").append(taskResult.getRetrievedRowsPerSecond())
+                    .append("\n\t\tProcessed rows/s: ").append(taskResult.getProcessedRowsPerSecond());
+            if (taskResult.getException() != null) {
+                buffer.append("\n\t\tException: ").append(taskResult.getException().getMessage());
+            }
+
+            if (taskResult.getTotalRetrievedRows() != taskResult.getTotalProcessedRows()) {
+                buffer.append("\n\n\t\tJOB ENDED WITH ERRORS: SOME ROWS WERE NOT PROCESSED." //
+                        + "\n\t\tPLEASE CHECK THE LOG FILE FOR MORE DETAILS");
+            }
+        }
+
+        try {
+            FileUtils.writeStringToFile(new File(dbcopyJobBean.getId() + ".log"), buffer.toString());
+        } catch (IOException e) {
+            LOGGER.warn("Unable to write log file for job '{}'. {}", dbcopyJobBean.getId(), e);
+        }
+
+        LOGGER.info(buffer.toString());
     }
 }

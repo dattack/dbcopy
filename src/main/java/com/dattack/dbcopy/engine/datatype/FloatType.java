@@ -25,12 +25,12 @@ public class FloatType extends AbstractDataType<Float> {
 
     public static final FloatType NULL = new FloatType(null);
 
-    public FloatType(Float value) {
+    public FloatType(final Float value) {
         super(value);
     }
 
     @Override
-    public void accept(DataTypeVisitor visitor) throws Exception {
+    public void accept(final DataTypeVisitor visitor) throws Exception {
         visitor.visit(this);
     }
 }

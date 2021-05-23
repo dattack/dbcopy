@@ -25,12 +25,12 @@ public class IntegerType extends AbstractDataType<Integer> {
 
     public static final IntegerType NULL = new IntegerType(null);
 
-    public IntegerType(Integer value) {
+    public IntegerType(final Integer value) {
         super(value);
     }
 
     @Override
-    public void accept(DataTypeVisitor visitor) throws Exception {
+    public void accept(final DataTypeVisitor visitor) throws Exception {
         visitor.visit(this);
     }
 }

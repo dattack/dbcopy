@@ -17,7 +17,6 @@ package com.dattack.dbcopy.engine.functions;
 
 import com.dattack.dbcopy.engine.ColumnMetadata;
 import com.dattack.dbcopy.engine.datatype.BlobType;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -29,22 +28,22 @@ import java.sql.SQLException;
  */
 public class BlobFunction extends AbstractDataFunction<BlobType> {
 
-    public BlobFunction(ColumnMetadata columnMetadata) {
+    public BlobFunction(final ColumnMetadata columnMetadata) {
         super(columnMetadata);
     }
 
     @Override
-    public BlobType doGet(ResultSet rs, int index) throws SQLException {
-        return new BlobType(rs.getBlob(index));
-    }
-
-    @Override
-    public void accept(FunctionVisitor visitor) throws Exception {
+    public void accept(final FunctionVisitor visitor) throws Exception {
         visitor.visit(this);
     }
 
     @Override
-    BlobType getNull() {
+    public BlobType doGet(final ResultSet rs, final int index) throws SQLException {
+        return new BlobType(rs.getBlob(index));
+    }
+
+    @Override
+    protected BlobType getNull() {
         return BlobType.NULL;
     }
 }

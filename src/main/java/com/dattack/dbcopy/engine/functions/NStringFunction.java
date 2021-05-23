@@ -29,22 +29,22 @@ import java.sql.SQLException;
 @SuppressWarnings("checkstyle:AbbreviationAsWordInName")
 public class NStringFunction extends AbstractDataFunction<NStringType> {
 
-    public NStringFunction(ColumnMetadata columnMetadata) {
+    public NStringFunction(final ColumnMetadata columnMetadata) {
         super(columnMetadata);
     }
 
     @Override
-    public NStringType doGet(ResultSet rs, int index) throws SQLException {
+    public NStringType doGet(final ResultSet rs, final int index) throws SQLException {
         return new NStringType(rs.getNString(index));
     }
 
     @Override
-    public void accept(FunctionVisitor visitor) throws Exception {
+    public void accept(final FunctionVisitor visitor) throws Exception {
         visitor.visit(this);
     }
 
     @Override
-    NStringType getNull() {
+    protected NStringType getNull() {
         return NStringType.NULL;
     }
 }

@@ -18,6 +18,8 @@ package com.dattack.dbcopy.beans;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
 
 /**
@@ -26,6 +28,7 @@ import javax.xml.bind.annotation.XmlAttribute;
  * @author cvarela
  * @since 0.1
  */
+@XmlAccessorType(XmlAccessType.FIELD)
 public class LiteralListBean extends AbstractVariableBean {
 
     private static final long serialVersionUID = 5767020179827950329L;
@@ -39,14 +42,15 @@ public class LiteralListBean extends AbstractVariableBean {
     private int blockSize;
 
     public LiteralListBean() {
+        super();
         this.blockSize = DEFAULT_BLOCK_SIZE;
     }
 
     public List<String> getValues() {
 
-        List<String> list = new ArrayList<>();
-        String[] items = values.split(",");
-        for (String item : items) {
+        final List<String> list = new ArrayList<>();
+        final String[] items = values.split(",");
+        for (final String item : items) {
             list.add(item.trim());
         }
         return list;
@@ -54,7 +58,7 @@ public class LiteralListBean extends AbstractVariableBean {
 
     @Override
     public void accept(final VariableVisitor visitor) {
-        visitor.visite(this);
+        visitor.visit(this);
     }
 
     public int getBlockSize() {
@@ -62,5 +66,13 @@ public class LiteralListBean extends AbstractVariableBean {
             blockSize = DEFAULT_BLOCK_SIZE;
         }
         return blockSize;
+    }
+
+    public void setValues(final String values) {
+        this.values = values;
+    }
+
+    public void setBlockSize(final int blockSize) {
+        this.blockSize = blockSize;
     }
 }

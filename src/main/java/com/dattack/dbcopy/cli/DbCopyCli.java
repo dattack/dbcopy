@@ -100,10 +100,10 @@ public final class DbCopyCli {
                 jobNameSet = new HashSet<>(Arrays.asList(jobNames));
             }
 
-            CompositeConfiguration configuration = new CompositeConfiguration();
+            final CompositeConfiguration configuration = new CompositeConfiguration();
             if (propertiesFiles != null) {
                 for (final String fileName : propertiesFiles) {
-                    configuration.addConfiguration(new PropertiesConfiguration(fileName));
+                    configuration.addConfiguration(new PropertiesConfiguration(fileName)); //NOPMD
                 }
             }
 

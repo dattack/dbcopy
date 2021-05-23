@@ -28,22 +28,22 @@ import java.sql.SQLException;
  */
 public class BigDecimalFunction extends AbstractDataFunction<BigDecimalType> {
 
-    public BigDecimalFunction(ColumnMetadata columnMetadata) {
+    public BigDecimalFunction(final ColumnMetadata columnMetadata) {
         super(columnMetadata);
     }
 
     @Override
-    public BigDecimalType doGet(ResultSet rs, int index) throws SQLException {
+    public BigDecimalType doGet(final ResultSet rs, final int index) throws SQLException {
         return new BigDecimalType(rs.getBigDecimal(index));
     }
 
     @Override
-    BigDecimalType getNull() {
+    protected BigDecimalType getNull() {
         return BigDecimalType.NULL;
     }
 
     @Override
-    public void accept(FunctionVisitor visitor) throws Exception {
+    public void accept(final FunctionVisitor visitor) throws Exception {
         visitor.visit(this);
     }
 }

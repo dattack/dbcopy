@@ -28,22 +28,22 @@ import java.sql.SQLException;
  */
 public class ByteFunction extends AbstractDataFunction<ByteType> {
 
-    public ByteFunction(ColumnMetadata columnMetadata) {
+    public ByteFunction(final ColumnMetadata columnMetadata) {
         super(columnMetadata);
     }
 
     @Override
-    public ByteType doGet(ResultSet rs, int index) throws SQLException {
+    public ByteType doGet(final ResultSet rs, final int index) throws SQLException {
         return new ByteType(rs.getByte(index));
     }
 
     @Override
-    public void accept(FunctionVisitor visitor) throws Exception {
+    public void accept(final FunctionVisitor visitor) throws Exception {
         visitor.visit(this);
     }
 
     @Override
-    ByteType getNull() {
+    protected ByteType getNull() {
         return ByteType.NULL;
     }
 }

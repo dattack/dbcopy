@@ -29,22 +29,22 @@ import java.sql.SQLException;
 @SuppressWarnings("checkstyle:AbbreviationAsWordInName")
 public class NClobFunction extends AbstractDataFunction<NClobType> {
 
-    public NClobFunction(ColumnMetadata columnMetadata) {
+    public NClobFunction(final ColumnMetadata columnMetadata) {
         super(columnMetadata);
     }
 
     @Override
-    public NClobType doGet(ResultSet rs, int index) throws SQLException {
+    public NClobType doGet(final ResultSet rs, final int index) throws SQLException {
         return new NClobType(rs.getNClob(index));
     }
 
     @Override
-    public void accept(FunctionVisitor visitor) throws Exception {
+    public void accept(final FunctionVisitor visitor) throws Exception {
         visitor.visit(this);
     }
 
     @Override
-    NClobType getNull() {
+    protected NClobType getNull() {
         return NClobType.NULL;
     }
 }

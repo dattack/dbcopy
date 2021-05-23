@@ -27,12 +27,12 @@ public class ClobType extends AbstractDataType<Clob> {
 
     public static final ClobType NULL = new ClobType(null);
 
-    public ClobType(Clob value) {
+    public ClobType(final Clob value) {
         super(value);
     }
 
     @Override
-    public void accept(DataTypeVisitor visitor) throws Exception {
+    public void accept(final DataTypeVisitor visitor) throws Exception {
         visitor.visit(this);
     }
 }

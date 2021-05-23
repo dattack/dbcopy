@@ -21,7 +21,7 @@ package com.dattack.dbcopy.engine.datatype;
  * @author cvarela
  * @since 0.3
  */
-public interface DataTypeVisitor {
+public interface DataTypeVisitor { //NOPMD
 
     void visit(BigDecimalType type) throws Exception;
 

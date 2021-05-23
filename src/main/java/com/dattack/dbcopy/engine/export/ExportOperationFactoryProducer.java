@@ -27,7 +27,7 @@ import org.apache.commons.configuration.AbstractConfiguration;
  * @author cvarela
  * @since 0.1
  */
-public class ExportOperationFactoryProducer {
+public final class ExportOperationFactoryProducer { //NOPMD
 
     private ExportOperationFactoryProducer() {
         // static class

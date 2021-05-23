@@ -15,15 +15,13 @@
  */
 package com.dattack.dbcopy.engine.functions;
 
-import java.sql.SQLException;
-
 /**
  * Visitor of the hierarchy of AbstractDataFunction.
  *
  * @author cvarela
  * @since 0.3
  */
-public interface FunctionVisitor {
+public interface FunctionVisitor { //NOPMD
 
     void visit(BigDecimalFunction function) throws Exception;
 

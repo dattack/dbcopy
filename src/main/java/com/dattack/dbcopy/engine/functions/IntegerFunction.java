@@ -28,22 +28,22 @@ import java.sql.SQLException;
  */
 public class IntegerFunction extends AbstractDataFunction<IntegerType> {
 
-    public IntegerFunction(ColumnMetadata columnMetadata) {
+    public IntegerFunction(final ColumnMetadata columnMetadata) {
         super(columnMetadata);
     }
 
     @Override
-    public IntegerType doGet(ResultSet rs, int index) throws SQLException {
+    public IntegerType doGet(final ResultSet rs, final int index) throws SQLException {
         return new IntegerType(rs.getInt(index));
     }
 
     @Override
-    public void accept(FunctionVisitor visitor) throws Exception {
+    public void accept(final FunctionVisitor visitor) throws Exception {
         visitor.visit(this);
     }
 
     @Override
-    IntegerType getNull() {
+    protected IntegerType getNull() {
         return IntegerType.NULL;
     }
 }

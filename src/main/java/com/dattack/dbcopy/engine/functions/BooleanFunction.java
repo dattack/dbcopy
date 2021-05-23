@@ -28,22 +28,22 @@ import java.sql.SQLException;
  */
 public class BooleanFunction extends AbstractDataFunction<BooleanType> {
 
-    public BooleanFunction(ColumnMetadata columnMetadata) {
+    public BooleanFunction(final ColumnMetadata columnMetadata) {
         super(columnMetadata);
     }
 
     @Override
-    public BooleanType doGet(ResultSet rs, int index) throws SQLException {
+    public BooleanType doGet(final ResultSet rs, final int index) throws SQLException {
         return new BooleanType(rs.getBoolean(index));
     }
 
     @Override
-    public void accept(FunctionVisitor visitor) throws Exception {
+    public void accept(final FunctionVisitor visitor) throws Exception {
         visitor.visit(this);
     }
 
     @Override
-    BooleanType getNull() {
+    protected BooleanType getNull() {
         return BooleanType.NULL;
     }
 }

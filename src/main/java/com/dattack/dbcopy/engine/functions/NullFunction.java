@@ -28,22 +28,22 @@ import java.sql.SQLException;
  */
 public class NullFunction extends AbstractDataFunction<NullType> {
 
-    public NullFunction(ColumnMetadata columnMetadata) {
+    public NullFunction(final ColumnMetadata columnMetadata) {
         super(columnMetadata);
     }
 
     @Override
-    public NullType doGet(ResultSet rs, int index) throws SQLException {
+    public NullType doGet(final ResultSet rs, final int index) throws SQLException {
         return NullType.NULL_TYPE;
     }
 
     @Override
-    public void accept(FunctionVisitor visitor) throws Exception {
+    public void accept(final FunctionVisitor visitor) throws Exception {
         visitor.visit(this);
     }
 
     @Override
-    NullType getNull() {
+    protected NullType getNull() {
         return NullType.NULL;
     }
 }

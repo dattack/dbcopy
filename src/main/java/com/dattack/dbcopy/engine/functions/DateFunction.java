@@ -28,22 +28,22 @@ import java.sql.SQLException;
  */
 public class DateFunction extends AbstractDataFunction<DateType> {
 
-    public DateFunction(ColumnMetadata columnMetadata) {
+    public DateFunction(final ColumnMetadata columnMetadata) {
         super(columnMetadata);
     }
 
     @Override
-    public DateType doGet(ResultSet rs, int index) throws SQLException {
+    public DateType doGet(final ResultSet rs, final int index) throws SQLException {
         return new DateType(rs.getDate(index));
     }
 
     @Override
-    public void accept(FunctionVisitor visitor) throws Exception {
+    public void accept(final FunctionVisitor visitor) throws Exception {
         visitor.visit(this);
     }
 
     @Override
-    DateType getNull() {
+    protected DateType getNull() {
         return DateType.NULL;
     }
 }

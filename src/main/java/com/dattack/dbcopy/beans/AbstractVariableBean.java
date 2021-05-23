@@ -16,6 +16,8 @@
 package com.dattack.dbcopy.beans;
 
 import java.io.Serializable;
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
 
 /**
@@ -24,16 +26,21 @@ import javax.xml.bind.annotation.XmlAttribute;
  * @author cvarela
  * @since 0.1
  */
+@XmlAccessorType(XmlAccessType.FIELD)
 public abstract class AbstractVariableBean implements Serializable {
 
     private static final long serialVersionUID = 1431778064140594144L;
 
     @XmlAttribute(name = "id", required = true)
-    private String id;
+    private String id; //NOPMD
 
     public abstract void accept(final VariableVisitor visitor);
 
     public String getId() {
         return id;
+    }
+
+    public void setId(final String id) { //NOPMD
+        this.id = id;
     }
 }

@@ -15,6 +15,8 @@
  */
 package com.dattack.dbcopy.beans;
 
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
 
 /**
@@ -23,6 +25,7 @@ import javax.xml.bind.annotation.XmlAttribute;
  * @author cvarela
  * @since 0.1
  */
+@XmlAccessorType(XmlAccessType.FIELD)
 public class InsertOperationBean extends AbstractDbOperationBean {
 
     private static final long serialVersionUID = -1303451998596082687L;
@@ -49,5 +52,17 @@ public class InsertOperationBean extends AbstractDbOperationBean {
 
     public String getTable() {
         return table;
+    }
+
+    public void setBatchSize(final int batchSize) {
+        this.batchSize = batchSize;
+    }
+
+    public void setParallel(final int parallel) {
+        this.parallel = parallel;
+    }
+
+    public void setTable(final String table) {
+        this.table = table;
     }
 }

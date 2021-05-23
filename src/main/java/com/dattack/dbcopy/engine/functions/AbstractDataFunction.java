@@ -30,7 +30,7 @@ public abstract class AbstractDataFunction<T extends AbstractDataType<?>> {
 
     private final ColumnMetadata columnMetadata;
 
-    public AbstractDataFunction(ColumnMetadata columnMetadata) {
+    public AbstractDataFunction(final ColumnMetadata columnMetadata) {
         this.columnMetadata = columnMetadata;
     }
 
@@ -43,7 +43,7 @@ public abstract class AbstractDataFunction<T extends AbstractDataType<?>> {
      * @return the value of the ResultSet corresponding to the column on which this function is executed.
      * @throws SQLException if a database access error occurs or this method is called on a closed result set.
      */
-    public T get(ResultSet rs) throws SQLException {
+    public T get(final ResultSet rs) throws SQLException {
         T result = doGet(rs, columnMetadata.getIndex());
         if (rs.wasNull()) {
             result = getNull();
@@ -51,14 +51,14 @@ public abstract class AbstractDataFunction<T extends AbstractDataType<?>> {
         return result;
     }
 
-    abstract T doGet(ResultSet rs, int index) throws SQLException;
+    /* default */ abstract T doGet(ResultSet rs, int index) throws SQLException;
 
     /**
      * Returns the representation of the NULL value for this data type.
      *
      * @return the representation of the NULL value for this data type.
      */
-    abstract T getNull();
+    protected abstract T getNull();
 
     public ColumnMetadata getColumnMetadata() {
         return columnMetadata;

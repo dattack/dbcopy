@@ -27,12 +27,12 @@ public class BlobType extends AbstractDataType<Blob> {
 
     public static final BlobType NULL = new BlobType(null);
 
-    public BlobType(Blob value) {
+    public BlobType(final Blob value) {
         super(value);
     }
 
     @Override
-    public void accept(DataTypeVisitor visitor) throws Exception {
+    public void accept(final DataTypeVisitor visitor) throws Exception {
         visitor.visit(this);
     }
 

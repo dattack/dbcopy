@@ -45,7 +45,7 @@ public final class DbCopyEngine {
     private void execute(final DbcopyBean dbcopyBean, final Set<String> jobNames,
                          final AbstractConfiguration configuration) {
 
-        ExecutionController executionController = new ExecutionController("root", dbcopyBean.getParallel(),
+        final ExecutionController executionController = new ExecutionController("root", dbcopyBean.getParallel(),
                 dbcopyBean.getParallel());
         MBeanHelper.registerMBean("com.dattack.dbcopy:type=ThreadPool,name=root",
                 executionController);
@@ -57,7 +57,7 @@ public final class DbCopyEngine {
                 continue;
             }
 
-            final DbCopyJob job = new DbCopyJob(jobBean, configuration);
+            final DbCopyJob job = new DbCopyJob(jobBean, configuration); //NOPMD
             futureList.add(executionController.submit(job));
         }
 
@@ -95,7 +95,7 @@ public final class DbCopyEngine {
             throws DattackParserException {
 
         for (final String filename : filenames) {
-            execute(new File(filename), jobNames, configuration);
+            execute(new File(filename), jobNames, configuration); //NOPMD
         }
     }
 }

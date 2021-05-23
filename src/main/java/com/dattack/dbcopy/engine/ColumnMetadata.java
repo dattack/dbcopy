@@ -53,112 +53,104 @@ public class ColumnMetadata {
     private final int precision;
     private final int scale;
     private final boolean nullable;
-    private AbstractDataFunction<?> function;
+    private final AbstractDataFunction<?> function;
 
-    private ColumnMetadata(ColumnMetadataBuilder builder) {
+    private ColumnMetadata(final ColumnMetadataBuilder builder) {
         this.name = builder.getName();
         this.index = builder.getIndex();
         this.type = builder.getType();
         this.precision = builder.getPrecision();
         this.scale = builder.getScale();
         this.nullable = builder.isNullable();
-        createFunction();
+        this.function = createFunction();
     }
 
-    private void createFunction() {
+    private AbstractDataFunction<?> createFunction() { //NOPMD
 
+        AbstractDataFunction<?> result;
         switch (type) {
 
             case Types.BIGINT:
-                this.function = new LongFunction(this);
+                result = new LongFunction(this);
                 break;
 
             case Types.BINARY:
             case Types.VARBINARY:
             case Types.LONGVARBINARY:
-                // BINARY, VARBINARY, LONGVARBINARY --> byte[]
-                this.function = new BytesFunction(this);
+                result = new BytesFunction(this);
                 break;
-            // Boolean
 
             case Types.BIT:
             case Types.BOOLEAN:
-                // BIT, BOOLEAN --> Boolean
-                function = new BooleanFunction(this);
+                result = new BooleanFunction(this);
                 break;
 
             case Types.BLOB:
-                function = new BlobFunction(this);
+                result = new BlobFunction(this);
                 break;
 
             case Types.CLOB:
-                function = new ClobFunction(this);
+                result = new ClobFunction(this);
                 break;
 
             case Types.DATE:
-                function = new DateFunction(this);
+                result = new DateFunction(this);
                 break;
 
             case Types.DECIMAL:
             case Types.NUMERIC:
-                // DECIMAL, NUMERIC --> BigDecimal
-                function = new BigDecimalFunction(this);
+                result = new BigDecimalFunction(this);
                 break;
 
             case Types.DOUBLE:
             case Types.FLOAT:
-                // DOUBLE, FLOAT --> Double
-                function = new DoubleFunction(this);
+                result = new DoubleFunction(this);
                 break;
 
             case Types.INTEGER:
-                function = new IntegerFunction(this);
+                result = new IntegerFunction(this);
                 break;
 
             case Types.NCLOB:
-                function = new NClobFunction(this);
+                result = new NClobFunction(this);
                 break;
 
             case Types.REAL:
-                // REAL --> Float
-                function = new FloatFunction(this);
+                result = new FloatFunction(this);
                 break;
 
             case Types.SMALLINT:
-                // SMALLINT --> Short
-                function = new ShortFunction(this);
+                result = new ShortFunction(this);
                 break;
 
             case Types.SQLXML:
-                function = new XmlFunction(this);
+                result = new XmlFunction(this);
                 break;
 
             case Types.TIME:
             case Types.TIME_WITH_TIMEZONE:
-                function = new TimeFunction(this);
+                result = new TimeFunction(this);
                 break;
 
             case Types.TIMESTAMP:
             case Types.TIMESTAMP_WITH_TIMEZONE:
-                function = new TimestampFunction(this);
+                result = new TimestampFunction(this);
                 break;
 
             case Types.TINYINT:
-                function = new ByteFunction(this);
+                result = new ByteFunction(this);
                 break;
 
             case Types.NCHAR:
             case Types.LONGNVARCHAR:
             case Types.NVARCHAR:
-                // NCHAR, LONGNVARCHAR, NVARCHAR --> NString
-                function = new NStringFunction(this);
+                result = new NStringFunction(this);
                 break;
 
             case Types.CHAR:
             case Types.LONGVARCHAR:
             case Types.VARCHAR:
-                // CHAR, LONGVARCHAR, VARCHAR --> String
-                function = new StringFunction(this);
+                result = new StringFunction(this);
                 break;
 
             case Types.ARRAY:
@@ -172,9 +164,10 @@ public class ColumnMetadata {
             case Types.ROWID:
             default:
                 // unsupported data type
-                function = new NullFunction(this);
+                result = new NullFunction(this);
                 break;
         }
+        return result;
     }
 
     public int getIndex() {
@@ -218,14 +211,17 @@ public class ColumnMetadata {
                 '}';
     }
 
+    /**
+     * Builder implementation for {@link ColumnMetadata}.
+     */
     public static class ColumnMetadataBuilder implements Builder<ColumnMetadata> {
 
-        private String name;
-        private int index;
-        private int type;
-        private int precision;
-        private int scale;
-        private int nullable;
+        private transient String name;
+        private transient int index;
+        private transient int type;
+        private transient int precision;
+        private transient int scale;
+        private transient int nullable;
 
         private int getIndex() {
             return index;
@@ -251,32 +247,32 @@ public class ColumnMetadata {
             return nullable != ResultSetMetaData.columnNoNulls;
         }
 
-        public ColumnMetadataBuilder withName(String value) {
+        public ColumnMetadataBuilder withName(final String value) {
             this.name = value;
             return this;
         }
 
-        public ColumnMetadataBuilder withIndex(int value) {
+        public ColumnMetadataBuilder withIndex(final int value) {
             this.index = value;
             return this;
         }
 
-        public ColumnMetadataBuilder withType(int value) {
+        public ColumnMetadataBuilder withType(final int value) {
             this.type = value;
             return this;
         }
 
-        public ColumnMetadataBuilder withPrecision(int value) {
+        public ColumnMetadataBuilder withPrecision(final int value) {
             this.precision = value;
             return this;
         }
 
-        public ColumnMetadataBuilder withScale(int value) {
+        public ColumnMetadataBuilder withScale(final int value) {
             this.scale = value;
             return this;
         }
 
-        public ColumnMetadataBuilder withNullable(int value) {
+        public ColumnMetadataBuilder withNullable(final int value) {
             this.nullable = value;
             return this;
         }

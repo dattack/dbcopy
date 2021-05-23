@@ -25,7 +25,7 @@ public abstract class AbstractDataType<T> {
 
     private final T value;
 
-    public AbstractDataType(T value) {
+    public AbstractDataType(final T value) {
         this.value = value;
     }
 
