@@ -32,11 +32,11 @@ public interface DbCopyTaskResultMBean {
 
     float getRetrievedRowsPerSecond();
 
-    long getTotalRetrievedRows();
-
-    long getTotalProcessedRows();
-
     long getStartTime();
 
     String getTaskName();
+
+    long getTotalProcessedRows();
+
+    long getTotalRetrievedRows();
 }

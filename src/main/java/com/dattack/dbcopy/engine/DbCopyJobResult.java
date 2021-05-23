@@ -16,7 +16,6 @@
 package com.dattack.dbcopy.engine;
 
 import com.dattack.dbcopy.beans.DbcopyJobBean;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -78,12 +77,26 @@ public class DbCopyJobResult implements DbCopyJobResultMBean {
         return counter;
     }
 
-    public DbcopyJobBean getJobBean() {
-        return jobBean;
+    @Override
+    public float getProcessedRowsPerSecond() {
+        float rate = 0F;
+        for (final DbCopyTaskResult item : taskResultList) {
+            if (item.getStartTime() > 0 && item.getEndTime() <= 0) {
+                rate += item.getProcessedRowsPerSecond();
+            }
+        }
+        return rate;
     }
 
-    public List<DbCopyTaskResult> getTaskResultList() {
-        return taskResultList;
+    @Override
+    public float getRetrievedRowsPerSecond() {
+        float rate = 0F;
+        for (final DbCopyTaskResult item : taskResultList) {
+            if (item.getStartTime() > 0 && item.getEndTime() <= 0) {
+                rate += item.getRetrievedRowsPerSecond();
+            }
+        }
+        return rate;
     }
 
     @Override
@@ -109,25 +122,11 @@ public class DbCopyJobResult implements DbCopyJobResultMBean {
         return total;
     }
 
-    @Override
-    public float getProcessedRowsPerSecond() {
-        float rate = 0F;
-        for (final DbCopyTaskResult item : taskResultList) {
-            if (item.getStartTime() > 0 && item.getEndTime() <= 0) {
-                rate += item.getProcessedRowsPerSecond();
-            }
-        }
-        return rate;
+    public DbcopyJobBean getJobBean() {
+        return jobBean;
     }
 
-    @Override
-    public float getRetrievedRowsPerSecond() {
-        float rate = 0F;
-        for (final DbCopyTaskResult item : taskResultList) {
-            if (item.getStartTime() > 0 && item.getEndTime() <= 0) {
-                rate += item.getRetrievedRowsPerSecond();
-            }
-        }
-        return rate;
+    public List<DbCopyTaskResult> getTaskResultList() {
+        return taskResultList;
     }
 }

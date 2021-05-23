@@ -64,16 +64,15 @@ import java.util.concurrent.Future;
                 executionController);
     }
 
-    /* default */ DbcopyJobBean getDbcopyJobBean() {
-        return dbcopyJobBean;
-    }
+    private static void showFutures(final List<Future<?>> futureList) {
 
-    /* default */ ExecutionController getExecutionController() {
-        return executionController;
-    }
-
-    /* default */ AbstractConfiguration getExternalConfiguration() {
-        return externalConfiguration;
+        for (final Future<?> future : futureList) {
+            try {
+                LOGGER.info("Future result: {}", future.get());
+            } catch (final InterruptedException | ExecutionException e) {
+                LOGGER.warn("Error getting computed result from Future object", e);
+            }
+        }
     }
 
     @Override
@@ -107,23 +106,21 @@ import java.util.concurrent.Future;
         return null;
     }
 
+    /* default */ DbcopyJobBean getDbcopyJobBean() {
+        return dbcopyJobBean;
+    }
+
+    /* default */ ExecutionController getExecutionController() {
+        return executionController;
+    }
+
+    /* default */ AbstractConfiguration getExternalConfiguration() {
+        return externalConfiguration;
+    }
+
     private VariableVisitor getVariableVisitor(final List<Future<?>> futureList, final DbCopyJobResult jobResult) {
 
         return new VariableVisitor() {
-
-            private BaseConfiguration createBaseConfiguration() {
-                final BaseConfiguration baseConfiguration = new BaseConfiguration();
-                baseConfiguration.setDelimiterParsingDisabled(true);
-                baseConfiguration.setProperty("job.id", getDbcopyJobBean().getId());
-                return baseConfiguration;
-            }
-
-            private CompositeConfiguration createCompositeConfiguration() {
-                final CompositeConfiguration configuration = new CompositeConfiguration();
-                configuration.addConfiguration(getExternalConfiguration());
-                configuration.addConfiguration(ConfigurationUtil.createEnvSystemConfiguration());
-                return configuration;
-            }
 
             @Override
             public void visit(final LiteralListBean bean) {
@@ -189,27 +186,30 @@ import java.util.concurrent.Future;
                         jobResult.createTaskResult(taskName));
                 futureList.add(getExecutionController().submit(dbcopyTask));
             }
-        };
-    }
 
-    private static void showFutures(final List<Future<?>> futureList) {
-
-        for (final Future<?> future : futureList) {
-            try {
-                LOGGER.info("Future result: {}", future.get());
-            } catch (final InterruptedException | ExecutionException e) {
-                LOGGER.warn("Error getting computed result from Future object", e);
+            private BaseConfiguration createBaseConfiguration() {
+                final BaseConfiguration baseConfiguration = new BaseConfiguration();
+                baseConfiguration.setDelimiterParsingDisabled(true);
+                baseConfiguration.setProperty("job.id", getDbcopyJobBean().getId());
+                return baseConfiguration;
             }
-        }
+
+            private CompositeConfiguration createCompositeConfiguration() {
+                final CompositeConfiguration configuration = new CompositeConfiguration();
+                configuration.addConfiguration(getExternalConfiguration());
+                configuration.addConfiguration(ConfigurationUtil.createEnvSystemConfiguration());
+                return configuration;
+            }
+        };
     }
 
     private void show(final DbCopyJobResult jobResult) {
 
         final StringBuilder buffer = new StringBuilder(400);
         buffer.append("\nJob ID: ").append(jobResult.getJobBean().getId())
-        .append("\nSelect statement: ").append(jobResult.getJobBean().getSelectBean().getSql())
-        .append("\nNumber of tasks: ").append(jobResult.getTotalTaskCounter())
-        .append("\nNumber of finished tasks: ").append(jobResult.getFinishedTaskCounter());
+                .append("\nSelect statement: ").append(jobResult.getJobBean().getSelectBean().getSql())
+                .append("\nNumber of tasks: ").append(jobResult.getTotalTaskCounter())
+                .append("\nNumber of finished tasks: ").append(jobResult.getFinishedTaskCounter());
 
         final SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ", Locale.getDefault());
 

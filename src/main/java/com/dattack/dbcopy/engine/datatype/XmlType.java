@@ -18,7 +18,7 @@ package com.dattack.dbcopy.engine.datatype;
 import java.sql.SQLXML;
 
 /**
- * {@link AbstractDataType} implementation for {@link SQLXml} data type.
+ * {@link AbstractDataType} implementation for {@link SQLXML} data type.
  *
  * @author cvarela
  * @since 0.3

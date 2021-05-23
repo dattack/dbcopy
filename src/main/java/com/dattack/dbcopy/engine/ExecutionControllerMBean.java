@@ -29,9 +29,9 @@ public interface ExecutionControllerMBean {
 
     int getCorePoolSize();
 
-    int getMaximumPoolSize();
-
     void setCorePoolSize(final int size);
+
+    int getMaximumPoolSize();
 
     void setMaximumPoolSize(final int size);
 

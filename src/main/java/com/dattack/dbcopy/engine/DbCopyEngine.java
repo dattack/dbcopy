@@ -15,22 +15,20 @@
  */
 package com.dattack.dbcopy.engine;
 
+import com.dattack.dbcopy.beans.DbcopyBean;
+import com.dattack.dbcopy.beans.DbcopyJobBean;
+import com.dattack.dbcopy.beans.DbcopyParser;
+import com.dattack.jtoolbox.exceptions.DattackParserException;
+import com.dattack.jtoolbox.io.FilesystemUtils;
+import org.apache.commons.configuration.AbstractConfiguration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-
-import org.apache.commons.configuration.AbstractConfiguration;
-
-import com.dattack.dbcopy.beans.DbcopyBean;
-import com.dattack.dbcopy.beans.DbcopyJobBean;
-import com.dattack.dbcopy.beans.DbcopyParser;
-import com.dattack.jtoolbox.exceptions.DattackParserException;
-import com.dattack.jtoolbox.io.FilesystemUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Responsible of the execution of one or more jobs.
@@ -41,6 +39,14 @@ import org.slf4j.LoggerFactory;
 public final class DbCopyEngine {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DbCopyEngine.class);
+
+    public void execute(final String[] filenames, final Set<String> jobNames, final AbstractConfiguration configuration)
+            throws DattackParserException {
+
+        for (final String filename : filenames) {
+            execute(new File(filename), jobNames, configuration); //NOPMD
+        }
+    }
 
     private void execute(final DbcopyBean dbcopyBean, final Set<String> jobNames,
                          final AbstractConfiguration configuration) {
@@ -88,14 +94,6 @@ public final class DbCopyEngine {
 
             final DbcopyBean dbcopyBean = DbcopyParser.parse(file);
             execute(dbcopyBean, jobNames, configuration);
-        }
-    }
-
-    public void execute(final String[] filenames, final Set<String> jobNames, final AbstractConfiguration configuration)
-            throws DattackParserException {
-
-        for (final String filename : filenames) {
-            execute(new File(filename), jobNames, configuration); //NOPMD
         }
     }
 }

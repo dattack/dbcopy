@@ -28,10 +28,9 @@ import javax.xml.bind.annotation.XmlAttribute;
 @XmlAccessorType(XmlAccessType.FIELD)
 public class InsertOperationBean extends AbstractDbOperationBean {
 
-    private static final long serialVersionUID = -1303451998596082687L;
-
     private static final int DEFAULT_BATCH_SIZE = 0;
     private static final int DEFAULT_PARALLEL = 1;
+    private static final long serialVersionUID = -1303451998596082687L;
 
     @XmlAttribute(name = "batch-size")
     private int batchSize = DEFAULT_BATCH_SIZE;
@@ -46,20 +45,20 @@ public class InsertOperationBean extends AbstractDbOperationBean {
         return batchSize > DEFAULT_BATCH_SIZE ? batchSize : DEFAULT_BATCH_SIZE;
     }
 
-    public int getParallel() {
-        return parallel > DEFAULT_PARALLEL ? parallel : DEFAULT_PARALLEL;
-    }
-
-    public String getTable() {
-        return table;
-    }
-
     public void setBatchSize(final int batchSize) {
         this.batchSize = batchSize;
     }
 
+    public int getParallel() {
+        return parallel > DEFAULT_PARALLEL ? parallel : DEFAULT_PARALLEL;
+    }
+
     public void setParallel(final int parallel) {
         this.parallel = parallel;
+    }
+
+    public String getTable() {
+        return table;
     }
 
     public void setTable(final String table) {

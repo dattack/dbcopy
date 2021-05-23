@@ -17,7 +17,6 @@ package com.dattack.dbcopy.beans;
 
 import java.io.Serializable;
 import java.util.List;
-
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
@@ -33,27 +32,26 @@ import javax.xml.bind.annotation.XmlElements;
 @XmlAccessorType(XmlAccessType.FIELD)
 public class DbcopyJobBean implements Serializable {
 
-    private static final long serialVersionUID = 3640559668991529501L;
-
     private static final int DEFAULT_THREADS = 1;
-
-    @XmlAttribute(name = "id", required = true)
-    private String id;
-
-    @XmlAttribute(name = "threads")
-    private int threads = DEFAULT_THREADS;
-
-    @XmlElement(name = "select", type = SelectOperationBean.class, required = true)
-    private SelectOperationBean selectBean;
-
-    @XmlElement(name = "insert", type = InsertOperationBean.class, required = true)
-    private InsertOperationBean insertBean;
+    private static final long serialVersionUID = 3640559668991529501L;
 
     @XmlElement(name = "delete", type = DeleteOperationBean.class)
     private DeleteOperationBean deleteBean;
 
     @XmlElement(name = "export", type = ExportOperationBean.class)
     private ExportOperationBean exportBean;
+
+    @XmlAttribute(name = "id", required = true)
+    private String id;
+
+    @XmlElement(name = "insert", type = InsertOperationBean.class, required = true)
+    private InsertOperationBean insertBean;
+
+    @XmlElement(name = "select", type = SelectOperationBean.class, required = true)
+    private SelectOperationBean selectBean;
+
+    @XmlAttribute(name = "threads")
+    private int threads = DEFAULT_THREADS;
 
     @XmlElements({ //
             @XmlElement(name = "integer-range", type = IntegerRangeBean.class), //
@@ -65,52 +63,52 @@ public class DbcopyJobBean implements Serializable {
         return deleteBean;
     }
 
+    public void setDeleteBean(final DeleteOperationBean deleteBean) {
+        this.deleteBean = deleteBean;
+    }
+
     public ExportOperationBean getExportBean() {
         return exportBean;
+    }
+
+    public void setExportBean(final ExportOperationBean exportBean) {
+        this.exportBean = exportBean;
     }
 
     public String getId() {
         return id;
     }
 
-    public InsertOperationBean getInsertBean() {
-        return insertBean;
-    }
-
-    public List<AbstractVariableBean> getVariableList() {
-        return variableList;
-    }
-
-    public SelectOperationBean getSelectBean() {
-        return selectBean;
-    }
-
-    public int getThreads() {
-        return threads > DEFAULT_THREADS ? threads : DEFAULT_THREADS;
-    }
-
     public void setId(final String id) {
         this.id = id;
     }
 
-    public void setThreads(final int threads) {
-        this.threads = threads;
-    }
-
-    public void setSelectBean(final SelectOperationBean selectBean) {
-        this.selectBean = selectBean;
+    public InsertOperationBean getInsertBean() {
+        return insertBean;
     }
 
     public void setInsertBean(final InsertOperationBean insertBean) {
         this.insertBean = insertBean;
     }
 
-    public void setDeleteBean(final DeleteOperationBean deleteBean) {
-        this.deleteBean = deleteBean;
+    public SelectOperationBean getSelectBean() {
+        return selectBean;
     }
 
-    public void setExportBean(final ExportOperationBean exportBean) {
-        this.exportBean = exportBean;
+    public void setSelectBean(final SelectOperationBean selectBean) {
+        this.selectBean = selectBean;
+    }
+
+    public int getThreads() {
+        return threads > DEFAULT_THREADS ? threads : DEFAULT_THREADS;
+    }
+
+    public void setThreads(final int threads) {
+        this.threads = threads;
+    }
+
+    public List<AbstractVariableBean> getVariableList() {
+        return variableList;
     }
 
     public void setVariableList(final List<AbstractVariableBean> variableList) {

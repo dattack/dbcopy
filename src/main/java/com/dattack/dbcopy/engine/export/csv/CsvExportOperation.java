@@ -75,34 +75,12 @@ public class CsvExportOperation implements ExportOperation {
     private final transient CsvExportWriteWrapper writer;
 
     /* default */ CsvExportOperation(final ExportOperationBean bean, final DataTransfer dataTransfer,
-                       final DbCopyTaskResult taskResult,
-                       final CsvExportWriteWrapper writer) {
+                                     final DbCopyTaskResult taskResult,
+                                     final CsvExportWriteWrapper writer) {
         this.bean = bean;
         this.dataTransfer = dataTransfer;
         this.taskResult = taskResult;
         this.writer = writer;
-    }
-
-    private String getHeader(final CSVStringBuilder builder) {
-
-        for (final ColumnMetadata columnMetadata : dataTransfer.getRowMetadata().getColumnsMetadata()) {
-            builder.append(columnMetadata.getName());
-        }
-        builder.eol();
-        return builder.toString();
-    }
-
-    @SuppressWarnings("checkstyle:AbbreviationAsWordInName")
-    private CSVStringBuilder createCSVStringBuilder() throws IOException {
-
-        final Properties properties = new Properties();
-        if (StringUtils.isNotBlank(bean.getFormatFile())) {
-            try (InputStream fis = Files.newInputStream(Paths.get(bean.getFormatFile()))) {
-                properties.load(fis);
-            }
-        }
-        final CSVConfiguration configuration = CSVConfiguration.custom(properties).build();
-        return new CSVStringBuilder(configuration);
     }
 
     @Override
@@ -140,6 +118,27 @@ public class CsvExportOperation implements ExportOperation {
         return totalExportedRows;
     }
 
+    @SuppressWarnings("checkstyle:AbbreviationAsWordInName")
+    private CSVStringBuilder createCSVStringBuilder() throws IOException {
+
+        final Properties properties = new Properties();
+        if (StringUtils.isNotBlank(bean.getFormatFile())) {
+            try (InputStream fis = Files.newInputStream(Paths.get(bean.getFormatFile()))) {
+                properties.load(fis);
+            }
+        }
+        final CSVConfiguration configuration = CSVConfiguration.custom(properties).build();
+        return new CSVStringBuilder(configuration);
+    }
+
+    private String getHeader(final CSVStringBuilder builder) {
+
+        for (final ColumnMetadata columnMetadata : dataTransfer.getRowMetadata().getColumnsMetadata()) {
+            builder.append(columnMetadata.getName());
+        }
+        builder.eol();
+        return builder.toString();
+    }
 
     private void populate(final Visitor visitor, final CSVStringBuilder csvStringBuilder,
                           final AbstractDataType<?>[] dataList) throws Exception {

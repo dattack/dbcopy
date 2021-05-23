@@ -28,9 +28,8 @@ import javax.xml.bind.annotation.XmlAttribute;
 @XmlAccessorType(XmlAccessType.FIELD)
 public class SelectOperationBean extends AbstractDbOperationBean {
 
-    private static final long serialVersionUID = -8426358006541063367L;
-
     private static final int DEFAULT_FETCH_SIZE = 0;
+    private static final long serialVersionUID = -8426358006541063367L;
 
     @XmlAttribute(name = "fetch-size")
     private int fetchSize = DEFAULT_FETCH_SIZE;

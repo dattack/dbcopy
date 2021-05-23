@@ -31,17 +31,17 @@ public abstract class AbstractDataType<T> {
         this.value = value;
     }
 
+    public abstract void accept(DataTypeVisitor visitor) throws Exception;
+
     public T getValue() {
         return value;
-    }
-
-    public boolean isNull() {
-        return Objects.isNull(value);
     }
 
     public boolean isNotNull() {
         return !isNull();
     }
 
-    public abstract void accept(DataTypeVisitor visitor) throws Exception;
+    public boolean isNull() {
+        return Objects.isNull(value);
+    }
 }

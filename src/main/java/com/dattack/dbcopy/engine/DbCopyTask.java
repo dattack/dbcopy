@@ -20,12 +20,11 @@ import com.dattack.dbcopy.engine.export.ExportOperationFactory;
 import com.dattack.dbcopy.engine.export.ExportOperationFactoryProducer;
 import com.dattack.jtoolbox.commons.configuration.ConfigurationUtil;
 import com.dattack.jtoolbox.jdbc.JNDIDataSource;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.apache.commons.configuration.AbstractConfiguration;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import javax.sql.DataSource;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -42,6 +41,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
+import javax.sql.DataSource;
 
 /**
  * Represents a task that is part of an executed job.
@@ -97,6 +97,20 @@ class DbCopyTask implements Callable<DbCopyTaskResult> {
         return taskResult;
     }
 
+    private DataSource getDataSource() {
+        return new JNDIDataSource(
+                ConfigurationUtil.interpolate(dbcopyJobBean.getSelectBean().getDatasource(), configuration));
+    }
+
+    @SuppressFBWarnings("OBL_UNSATISFIED_OBLIGATION_EXCEPTION_EDGE")
+    private Statement createStatement(final Connection connection) throws SQLException {
+        final Statement stmt = connection.createStatement();
+        if (dbcopyJobBean.getSelectBean().getFetchSize() > 0) {
+            stmt.setFetchSize(dbcopyJobBean.getSelectBean().getFetchSize());
+        }
+        return stmt;
+    }
+
     private String compileSql() throws URISyntaxException, IOException {
 
         String sql = StringUtils.trimToEmpty(dbcopyJobBean.getSelectBean().getSql());
@@ -107,19 +121,6 @@ class DbCopyTask implements Callable<DbCopyTaskResult> {
         final String compiledSql = ConfigurationUtil.interpolate(sql, configuration);
         LOGGER.info("Executing SQL: {}", compiledSql);
         return compiledSql;
-    }
-
-    private DataSource getDataSource() {
-        return new JNDIDataSource(
-                ConfigurationUtil.interpolate(dbcopyJobBean.getSelectBean().getDatasource(), configuration));
-    }
-
-    private Statement createStatement(final Connection connection) throws SQLException {
-        final Statement stmt = connection.createStatement();
-        if (dbcopyJobBean.getSelectBean().getFetchSize() > 0) {
-            stmt.setFetchSize(dbcopyJobBean.getSelectBean().getFetchSize());
-        }
-        return stmt;
     }
 
     private List<Future<?>> createInsertFutures(final DataTransfer dataTransfer) {
@@ -157,7 +158,8 @@ class DbCopyTask implements Callable<DbCopyTaskResult> {
             MBeanHelper.registerMBean("com.dattack.dbcopy:type=ThreadPool,name=Export-" + dbcopyJobBean.getId()
                     + "-" + SEQUENCE.getAndIncrement(), executionController);
 
-            final ExportOperationFactory factory = ExportOperationFactoryProducer.getFactory(dbcopyJobBean.getExportBean(),
+            final ExportOperationFactory factory =
+                    ExportOperationFactoryProducer.getFactory(dbcopyJobBean.getExportBean(),
                     configuration);
 
             for (int i = 0; i < dbcopyJobBean.getExportBean().getParallel(); i++) {

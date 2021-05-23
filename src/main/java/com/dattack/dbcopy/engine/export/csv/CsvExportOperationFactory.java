@@ -52,22 +52,23 @@ public class CsvExportOperationFactory implements ExportOperationFactory {
         this.configuration = configuration;
     }
 
-    private synchronized CsvExportWriteWrapper getWriter(final RowMetadata rowMetadata) throws IOException {
-        if (Objects.isNull(writer)) {
-            writer = new CsvExportWriteWrapper(bean, configuration);
-            writer.setHeader(getHeader(rowMetadata));
-        }
-        return writer;
-    }
+    @Override
+    public ExportOperation createTask(final DataTransfer dataTransfer, final DbCopyTaskResult taskResult) {
 
-    private String getHeader(final RowMetadata rowMetadata) throws IOException {
+        try {
+            final CsvExportWriteWrapper outputWriter = getWriter(dataTransfer.getRowMetadata()); //NOPMD: resource
+            // can't be closed here
 
-        final CSVStringBuilder builder = createCSVStringBuilder();
-        for (final ColumnMetadata columnMetadata : rowMetadata.getColumnsMetadata()) {
-            builder.append(columnMetadata.getName());
+            taskResult.addOnEndCommand(() -> {
+                IOUtils.closeQuietly(outputWriter);
+                return null;
+            });
+
+            return new CsvExportOperation(bean, dataTransfer, taskResult, outputWriter);
+
+        } catch (IOException e) {
+            throw new NestableRuntimeException(e);
         }
-        builder.eol();
-        return builder.toString();
     }
 
     @SuppressWarnings("checkstyle:AbbreviationAsWordInName")
@@ -83,23 +84,21 @@ public class CsvExportOperationFactory implements ExportOperationFactory {
         return new CSVStringBuilder(configuration);
     }
 
-    @Override
-    public ExportOperation createTask(final DataTransfer dataTransfer, final DbCopyTaskResult taskResult) {
+    private String getHeader(final RowMetadata rowMetadata) throws IOException {
 
-        try {
-            final CsvExportWriteWrapper outputWriter = getWriter(dataTransfer.getRowMetadata()); //NOPMD: resource
-            // can't be closed here
-
-            taskResult.addOnEndCommand(() -> {
-                    IOUtils.closeQuietly(outputWriter);
-                    return null;
-                }
-            );
-
-            return new CsvExportOperation(bean, dataTransfer, taskResult, outputWriter);
-
-        } catch (IOException e) {
-            throw new NestableRuntimeException(e);
+        final CSVStringBuilder builder = createCSVStringBuilder();
+        for (final ColumnMetadata columnMetadata : rowMetadata.getColumnsMetadata()) {
+            builder.append(columnMetadata.getName());
         }
+        builder.eol();
+        return builder.toString();
+    }
+
+    private synchronized CsvExportWriteWrapper getWriter(final RowMetadata rowMetadata) throws IOException {
+        if (Objects.isNull(writer)) {
+            writer = new CsvExportWriteWrapper(bean, configuration);
+            writer.setHeader(getHeader(rowMetadata));
+        }
+        return writer;
     }
 }

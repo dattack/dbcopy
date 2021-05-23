@@ -15,9 +15,8 @@
  */
 package com.dattack.dbcopy.cli;
 
-import java.util.Arrays;
-import java.util.HashSet;
-
+import com.dattack.dbcopy.engine.DbCopyEngine;
+import com.dattack.jtoolbox.exceptions.DattackParserException;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -28,9 +27,8 @@ import org.apache.commons.cli.ParseException;
 import org.apache.commons.configuration.CompositeConfiguration;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
-
-import com.dattack.dbcopy.engine.DbCopyEngine;
-import com.dattack.jtoolbox.exceptions.DattackParserException;
+import java.util.Arrays;
+import java.util.HashSet;
 
 /**
  * DbCopy CLI tool.
@@ -41,48 +39,20 @@ import com.dattack.jtoolbox.exceptions.DattackParserException;
 public final class DbCopyCli {
 
     private static final String FILE_OPTION = "f";
-    private static final String LONG_FILE_OPTION = "file";
     private static final String JOB_NAME_OPTION = "j";
+    private static final String LONG_FILE_OPTION = "file";
     private static final String LONG_JOB_NAME_OPTION = "job";
-    private static final String PROPERTIES_OPTION = "p";
     private static final String LONG_PROPERTIES_OPTION = "properties";
+    private static final String PROPERTIES_OPTION = "p";
 
-    private static Options createOptions() {
-
-        final Options options = new Options();
-
-        options.addOption(Option.builder(FILE_OPTION) //
-                .required(true) //
-                .longOpt(LONG_FILE_OPTION) //
-                .hasArg(true) //
-                .argName("DBCOPY_FILE") //
-                .desc("the path to the file containing the DBCopy configuration") //
-                .build());
-
-        options.addOption(Option.builder(JOB_NAME_OPTION) //
-                .required(false) //
-                .longOpt(LONG_JOB_NAME_OPTION) //
-                .hasArg(true) //
-                .argName("JOB_NAME") //
-                .desc("the name of the job to execute") //
-                .build());
-
-        options.addOption(Option.builder(PROPERTIES_OPTION) //
-                .required(false) //
-                .longOpt(LONG_PROPERTIES_OPTION) //
-                .hasArg(true) //
-                .argName("PROPERTIES_FILE") //
-                .desc("the path to the file containing execution configuration properties") //
-                .build());
-
-        return options;
+    private DbCopyCli() {
+        // Main class
     }
 
     /**
      * The <code>main</code> method.
      *
-     * @param args
-     *            the program arguments
+     * @param args the program arguments
      */
     public static void main(final String[] args) {
 
@@ -117,6 +87,37 @@ public final class DbCopyCli {
         }
     }
 
+    private static Options createOptions() {
+
+        final Options options = new Options();
+
+        options.addOption(Option.builder(FILE_OPTION) //
+                .required(true) //
+                .longOpt(LONG_FILE_OPTION) //
+                .hasArg(true) //
+                .argName("DBCOPY_FILE") //
+                .desc("the path to the file containing the DBCopy configuration") //
+                .build());
+
+        options.addOption(Option.builder(JOB_NAME_OPTION) //
+                .required(false) //
+                .longOpt(LONG_JOB_NAME_OPTION) //
+                .hasArg(true) //
+                .argName("JOB_NAME") //
+                .desc("the name of the job to execute") //
+                .build());
+
+        options.addOption(Option.builder(PROPERTIES_OPTION) //
+                .required(false) //
+                .longOpt(LONG_PROPERTIES_OPTION) //
+                .hasArg(true) //
+                .argName("PROPERTIES_FILE") //
+                .desc("the path to the file containing execution configuration properties") //
+                .build());
+
+        return options;
+    }
+
     private static void showUsage(final Options options) {
         final HelpFormatter formatter = new HelpFormatter();
         final int descPadding = 5;
@@ -126,9 +127,5 @@ public final class DbCopyCli {
         final String header = "\n";
         final String footer = "\nPlease report issues at https://github.com/dattack/dbcopy/issues";
         formatter.printHelp("dbcopy ", header, options, footer, true);
-    }
-
-    private DbCopyCli() {
-        // Main class
     }
 }

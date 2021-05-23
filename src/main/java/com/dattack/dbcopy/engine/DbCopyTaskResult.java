@@ -28,13 +28,13 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public final class DbCopyTaskResult implements DbCopyTaskResultMBean {
 
-    private final transient String taskName;
-    private transient long startTime;
-    private transient long endTime;
-    private final transient AtomicLong retrievedRows;
-    private final transient AtomicLong processedRows;
-    private transient Exception exception;
     private final transient List<Command<?>> onEndCommandList;
+    private final transient AtomicLong processedRows;
+    private final transient AtomicLong retrievedRows;
+    private final transient String taskName;
+    private transient long endTime;
+    private transient Exception exception;
+    private transient long startTime;
 
     public DbCopyTaskResult(final String taskName) {
         this.taskName = taskName;
@@ -46,12 +46,12 @@ public final class DbCopyTaskResult implements DbCopyTaskResultMBean {
         this.onEndCommandList = new ArrayList<>();
     }
 
-    public void addProcessedRows(final int value) {
-        this.processedRows.addAndGet(value);
-    }
-
     public void addOnEndCommand(final Command<?> command) {
         onEndCommandList.add(command);
+    }
+
+    public void addProcessedRows(final int value) {
+        this.processedRows.addAndGet(value);
     }
 
     public void end() {
@@ -71,23 +71,6 @@ public final class DbCopyTaskResult implements DbCopyTaskResultMBean {
 
     public void setException(final Exception exception) {
         this.exception = exception;
-    }
-
-    public long getExecutionTime() {
-        long result = 0;
-        if (startTime > 0) {
-            if (endTime <= 0) {
-                result = System.currentTimeMillis() - startTime;
-            } else {
-                result = endTime - startTime;
-            }
-        }
-        return result;
-    }
-
-    @Override
-    public long getTotalProcessedRows() {
-        return processedRows.longValue();
     }
 
     @Override
@@ -113,11 +96,6 @@ public final class DbCopyTaskResult implements DbCopyTaskResultMBean {
     }
 
     @Override
-    public long getTotalRetrievedRows() {
-        return retrievedRows.longValue();
-    }
-
-    @Override
     public long getStartTime() {
         return startTime;
     }
@@ -125,6 +103,28 @@ public final class DbCopyTaskResult implements DbCopyTaskResultMBean {
     @Override
     public String getTaskName() {
         return taskName;
+    }
+
+    @Override
+    public long getTotalProcessedRows() {
+        return processedRows.longValue();
+    }
+
+    @Override
+    public long getTotalRetrievedRows() {
+        return retrievedRows.longValue();
+    }
+
+    public long getExecutionTime() {
+        long result = 0;
+        if (startTime > 0) {
+            if (endTime <= 0) {
+                result = System.currentTimeMillis() - startTime;
+            } else {
+                result = endTime - startTime;
+            }
+        }
+        return result;
     }
 
     public void incrementRetrievedRows() {

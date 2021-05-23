@@ -31,8 +31,8 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class ExecutionController implements ExecutionControllerMBean {
 
-    private final transient AtomicInteger threadCounter = new AtomicInteger();
     private final transient String name;
+    private final transient AtomicInteger threadCounter = new AtomicInteger();
     private final transient ThreadPoolExecutor threadPoolExecutor;
 
     public ExecutionController(final String name, final int corePoolSize, final int maximumPoolSize) {
@@ -41,9 +41,18 @@ public class ExecutionController implements ExecutionControllerMBean {
                 new LinkedBlockingQueue<>(), getThreadFactory());
     }
 
+    private ThreadFactory getThreadFactory() {
+        return target -> new Thread(target, String.format("%s-%d", name, threadCounter.getAndIncrement()));
+    }
+
     @Override
     public int getCorePoolSize() {
         return threadPoolExecutor.getCorePoolSize();
+    }
+
+    @Override
+    public int getMaximumPoolSize() {
+        return threadPoolExecutor.getMaximumPoolSize();
     }
 
     @Override
@@ -54,19 +63,10 @@ public class ExecutionController implements ExecutionControllerMBean {
     }
 
     @Override
-    public int getMaximumPoolSize() {
-        return threadPoolExecutor.getMaximumPoolSize();
-    }
-
-    @Override
     public void setMaximumPoolSize(final int size) {
         if (size >= threadPoolExecutor.getCorePoolSize()) {
             threadPoolExecutor.setMaximumPoolSize(size);
         }
-    }
-
-    private ThreadFactory getThreadFactory() {
-        return target -> new Thread(target, String.format("%s-%d", name, threadCounter.getAndIncrement()));
     }
 
     @Override

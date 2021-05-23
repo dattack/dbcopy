@@ -28,18 +28,17 @@ import javax.xml.bind.annotation.XmlAttribute;
 @XmlAccessorType(XmlAccessType.FIELD)
 public class IntegerRangeBean extends AbstractVariableBean {
 
+    private static final long DEFAULT_BLOCK_SIZE = 1;
     private static final long serialVersionUID = -1202210289450031802L;
 
-    private static final long DEFAULT_BLOCK_SIZE = 1;
-
-    @XmlAttribute(name = "low-value", required = true)
-    private long lowValue;
+    @XmlAttribute(name = "block-size")
+    private long blockSize = DEFAULT_BLOCK_SIZE;
 
     @XmlAttribute(name = "high-value", required = true)
     private long highValue;
 
-    @XmlAttribute(name = "block-size")
-    private long blockSize = DEFAULT_BLOCK_SIZE;
+    @XmlAttribute(name = "low-value", required = true)
+    private long lowValue;
 
     @Override
     public void accept(final VariableVisitor visitor) {
@@ -53,8 +52,16 @@ public class IntegerRangeBean extends AbstractVariableBean {
         return blockSize;
     }
 
+    public void setBlockSize(final long blockSize) {
+        this.blockSize = blockSize;
+    }
+
     public long getHighValue() {
         return highValue;
+    }
+
+    public void setHighValue(final long highValue) {
+        this.highValue = highValue;
     }
 
     public long getLowValue() {
@@ -63,13 +70,5 @@ public class IntegerRangeBean extends AbstractVariableBean {
 
     public void setLowValue(final long lowValue) {
         this.lowValue = lowValue;
-    }
-
-    public void setHighValue(final long highValue) {
-        this.highValue = highValue;
-    }
-
-    public void setBlockSize(final long blockSize) {
-        this.blockSize = blockSize;
     }
 }

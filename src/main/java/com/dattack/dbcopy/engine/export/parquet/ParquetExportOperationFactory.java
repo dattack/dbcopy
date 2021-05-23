@@ -92,10 +92,9 @@ public class ParquetExportOperationFactory implements ExportOperationFactory {
             final ParquetWriter<Object> outputWriter = getWriter(dataTransfer); //NOPMD: resource can't be closed here
 
             taskResult.addOnEndCommand(() -> {
-                    IOUtils.closeQuietly(outputWriter);
-                    return null;
-                }
-            );
+                IOUtils.closeQuietly(outputWriter);
+                return null;
+            });
 
             return new ParquetExportOperation(bean, dataTransfer, taskResult, outputWriter,
                     getSchema(dataTransfer.getRowMetadata()));
@@ -105,24 +104,24 @@ public class ParquetExportOperationFactory implements ExportOperationFactory {
         }
     }
 
-    private synchronized ParquetWriter<Object> getWriter(final DataTransfer dataTransfer) //
-            throws IOException, FunctionException {
+    private CompressionCodecName getCompression() {
 
-        if (Objects.isNull(writer)) {
-
-            final String filename = ConfigurationUtil.interpolate(bean.getPath(), configuration);
-            final Path hdfsPath = new Path(filename);
-
-            final Configuration conf = new Configuration();
-            final OutputFile outputFile = HadoopOutputFile.fromPath(hdfsPath, conf);
-            writer = AvroParquetWriter.builder(outputFile)
-                    .withSchema(getSchema(dataTransfer.getRowMetadata())) //
-                    .withCompressionCodec(getCompression()) //
-                    .withPageSize(bean.getPageSize()) //
-                    .withWriteMode(ParquetFileWriter.Mode.OVERWRITE) //
-                    .build();
+        CompressionCodecName compression;
+        switch (bean.getCompression()) {
+            case LZO:
+                compression = CompressionCodecName.LZO;
+                break;
+            case GZIP:
+                compression = CompressionCodecName.GZIP;
+                break;
+            case SNAPPY:
+                compression = CompressionCodecName.SNAPPY;
+                break;
+            case UNCOMPRESSED:
+            default:
+                compression = CompressionCodecName.UNCOMPRESSED;
         }
-        return writer;
+        return compression;
     }
 
     private synchronized Schema getSchema(final RowMetadata rowMetadata) throws FunctionException {
@@ -145,24 +144,24 @@ public class ParquetExportOperationFactory implements ExportOperationFactory {
         return schema;
     }
 
-    private CompressionCodecName getCompression() {
+    private synchronized ParquetWriter<Object> getWriter(final DataTransfer dataTransfer) //
+            throws IOException, FunctionException {
 
-        CompressionCodecName compression;
-        switch (bean.getCompression()) {
-            case LZO:
-                compression = CompressionCodecName.LZO;
-                break;
-            case GZIP:
-                compression = CompressionCodecName.GZIP;
-                break;
-            case SNAPPY:
-                compression = CompressionCodecName.SNAPPY;
-                break;
-            case UNCOMPRESSED:
-            default:
-                compression = CompressionCodecName.UNCOMPRESSED;
+        if (Objects.isNull(writer)) {
+
+            final String filename = ConfigurationUtil.interpolate(bean.getPath(), configuration);
+            final Path hdfsPath = new Path(filename);
+
+            final Configuration conf = new Configuration();
+            final OutputFile outputFile = HadoopOutputFile.fromPath(hdfsPath, conf);
+            writer = AvroParquetWriter.builder(outputFile)
+                    .withSchema(getSchema(dataTransfer.getRowMetadata())) //
+                    .withCompressionCodec(getCompression()) //
+                    .withPageSize(bean.getPageSize()) //
+                    .withWriteMode(ParquetFileWriter.Mode.OVERWRITE) //
+                    .build();
         }
-        return compression;
+        return writer;
     }
 
     /**

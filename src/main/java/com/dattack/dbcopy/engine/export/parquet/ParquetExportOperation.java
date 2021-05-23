@@ -59,19 +59,17 @@ import java.util.Objects;
 class ParquetExportOperation implements ExportOperation {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ParquetExportOperation.class);
-
-    private final transient ThreadLocal<Visitor> visitorThreadLocal = new ThreadLocal<>();
-
     private final transient ExportOperationBean bean;
     private final transient DataTransfer dataTransfer;
-    private final transient DbCopyTaskResult taskResult;
-    private final transient ParquetWriter<Object> writer;
     private final transient Schema schema;
+    private final transient DbCopyTaskResult taskResult;
+    private final transient ThreadLocal<Visitor> visitorThreadLocal = new ThreadLocal<>();
+    private final transient ParquetWriter<Object> writer;
 
     /* default */ ParquetExportOperation(final ExportOperationBean bean, final DataTransfer dataTransfer,
-                           final DbCopyTaskResult taskResult,
-                           final ParquetWriter<Object> writer,
-                           final Schema schema) {
+                                         final DbCopyTaskResult taskResult,
+                                         final ParquetWriter<Object> writer,
+                                         final Schema schema) {
         this.bean = bean;
         this.dataTransfer = dataTransfer;
         this.taskResult = taskResult;
@@ -138,40 +136,8 @@ class ParquetExportOperation implements ExportOperation {
      */
     private static class Visitor implements DataTypeVisitor { //NOPMD
 
-        private transient GenericRecord genericRecord;
         private transient ColumnMetadata columnMetadata;
-
-        /* default */ void setColumnMetadata(final ColumnMetadata columnMetadata) {
-            this.columnMetadata = columnMetadata;
-        }
-
-        /* default */ void setGenericRecord(final GenericRecord genericRecord) {
-            this.genericRecord = genericRecord;
-        }
-
-        private int getIndex() {
-            return columnMetadata.getIndex() - 1;
-        }
-
-        private GenericRecord getGenericRecord() {
-            return genericRecord;
-        }
-
-        private void put(final Number value) {
-            getGenericRecord().put(getIndex(), value);
-        }
-
-        private void put(final String value) {
-            getGenericRecord().put(getIndex(), value);
-        }
-
-        private void put(final byte[] value) {
-            getGenericRecord().put(getIndex(), value);
-        }
-
-        private void putNull() {
-            getGenericRecord().put(getIndex(), null);
-        }
+        private transient GenericRecord genericRecord;
 
         @Override
         public void visit(final BigDecimalType type) {
@@ -293,6 +259,38 @@ class ParquetExportOperation implements ExportOperation {
             if (type.isNotNull()) {
                 put(type.getValue().getString());
             }
+        }
+
+        /* default */ void setColumnMetadata(final ColumnMetadata columnMetadata) {
+            this.columnMetadata = columnMetadata;
+        }
+
+        private GenericRecord getGenericRecord() {
+            return genericRecord;
+        }
+
+        /* default */ void setGenericRecord(final GenericRecord genericRecord) {
+            this.genericRecord = genericRecord;
+        }
+
+        private int getIndex() {
+            return columnMetadata.getIndex() - 1;
+        }
+
+        private void put(final Number value) {
+            getGenericRecord().put(getIndex(), value);
+        }
+
+        private void put(final byte[] value) {
+            getGenericRecord().put(getIndex(), value);
+        }
+
+        private void put(final String value) {
+            getGenericRecord().put(getIndex(), value);
+        }
+
+        private void putNull() {
+            getGenericRecord().put(getIndex(), null);
         }
     }
 }

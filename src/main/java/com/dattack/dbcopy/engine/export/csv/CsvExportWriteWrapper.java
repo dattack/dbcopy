@@ -51,51 +51,18 @@ class CsvExportWriteWrapper implements Closeable {
 
     private final transient ExportOperationBean bean;
     private final transient AbstractConfiguration configuration;
-    private volatile transient Path path;
-    private volatile transient Writer writer;
-    private transient String header;
     private final transient AtomicInteger fileNumber;
     private final transient Object lock;
-    private volatile transient CountingOutputStream cos;
+    private transient volatile CountingOutputStream cos;
+    private transient String header;
+    private transient volatile Path path;
+    private transient volatile Writer writer;
 
     public CsvExportWriteWrapper(final ExportOperationBean bean, final AbstractConfiguration configuration) {
         this.bean = bean;
         this.configuration = configuration;
         this.fileNumber = bean.getRotateSize() > 0 ? new AtomicInteger() : null; //NOPMD
         this.lock = new Object();
-    }
-
-    private void init() throws IOException {
-
-        String filename = ConfigurationUtil.interpolate(bean.getPath(), configuration);
-        if (fileNumber != null) {
-            filename = createPartFilename(filename, fileNumber.get());
-            fileNumber.incrementAndGet();
-        }
-
-        final Path path = Paths.get(filename);
-        final Path parent = path.getParent();
-        if (parent != null) {
-            Files.createDirectories(parent);
-        }
-        OutputStream outputStream =  Files.newOutputStream(path,
-                StandardOpenOption.CREATE, //
-                StandardOpenOption.WRITE, //
-                StandardOpenOption.TRUNCATE_EXISTING);
-
-        cos = new CountingOutputStream(outputStream);
-        outputStream = cos;
-        if (bean.isGzip()) {
-            outputStream = new GZIPOutputStream(outputStream);
-        }
-
-        this.path = path;
-        if (bean.getBufferSize() > 0) {
-            this.writer = new BufferedWriter(new OutputStreamWriter(outputStream, StandardCharsets.UTF_8),
-                    bean.getBufferSize());
-        } else {
-            this.writer = new BufferedWriter(new OutputStreamWriter(outputStream, StandardCharsets.UTF_8));
-        }
     }
 
     private static String createPartFilename(final String filename, final int fileNumber) {
@@ -113,40 +80,6 @@ class CsvExportWriteWrapper implements Closeable {
         }
 
         return partFilename;
-    }
-
-    private Writer getWriter() throws IOException {
-        if (Objects.isNull(writer)) {
-            synchronized (lock) {
-                if (Objects.isNull(writer)) {
-                    init();
-                    // write header
-                    if (StringUtils.isNotBlank(header)) {
-                        writer.write(header);
-                    }
-                }
-            }
-        }
-        return writer;
-    }
-
-    /* default */ void setHeader(final String header) {
-        this.header = header;
-    }
-
-    /* default */ void write(final String text) throws IOException {
-        synchronized (lock) {
-            getWriter().write(text);
-        }
-        if (fileNumber != null) {
-            synchronized (lock) {
-                if (cos != null && cos.getByteCount() > bean.getRotateSize()) {
-                    LOGGER.debug("Rotate file: {}, bytes: {}, limit: {}", path,  cos.getByteCount(),
-                            bean.getRotateSize());
-                    close();
-                }
-            }
-        }
     }
 
     @Override
@@ -172,5 +105,72 @@ class CsvExportWriteWrapper implements Closeable {
     @Override
     public String toString() {
         return "ExportWriteWrapper{path=" + path + '}';
+    }
+
+    /* default */ void setHeader(final String header) {
+        this.header = header;
+    }
+
+    /* default */ void write(final String text) throws IOException {
+        synchronized (lock) {
+            getWriter().write(text);
+        }
+        if (fileNumber != null) {
+            synchronized (lock) {
+                if (cos != null && cos.getByteCount() > bean.getRotateSize()) {
+                    LOGGER.debug("Rotate file: {}, bytes: {}, limit: {}", path, cos.getByteCount(),
+                            bean.getRotateSize());
+                    close();
+                }
+            }
+        }
+    }
+
+    private Writer getWriter() throws IOException {
+        if (Objects.isNull(writer)) {
+            synchronized (lock) {
+                if (Objects.isNull(writer)) {
+                    init();
+                    // write header
+                    if (StringUtils.isNotBlank(header)) {
+                        writer.write(header);
+                    }
+                }
+            }
+        }
+        return writer;
+    }
+
+    private void init() throws IOException {
+
+        String filename = ConfigurationUtil.interpolate(bean.getPath(), configuration);
+        if (fileNumber != null) {
+            filename = createPartFilename(filename, fileNumber.get());
+            fileNumber.incrementAndGet();
+        }
+
+        final Path path = Paths.get(filename);
+        final Path parent = path.getParent();
+        if (parent != null) {
+            Files.createDirectories(parent);
+        }
+        OutputStream outputStream = Files.newOutputStream(path,
+                StandardOpenOption.CREATE, //
+                StandardOpenOption.WRITE, //
+                StandardOpenOption.TRUNCATE_EXISTING);
+
+        cos = new CountingOutputStream(outputStream);
+        outputStream = cos;
+        if (bean.isGzip()) {
+            outputStream = new GZIPOutputStream(outputStream);
+        }
+
+        this.path = path;
+        if (bean.getBufferSize() > 0) {
+            this.writer = new BufferedWriter(new OutputStreamWriter(outputStream, StandardCharsets.UTF_8),
+                    bean.getBufferSize());
+        } else {
+            this.writer = new BufferedWriter(new OutputStreamWriter(outputStream, StandardCharsets.UTF_8));
+        }
     }
 }

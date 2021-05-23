@@ -19,7 +19,6 @@ import com.dattack.dbcopy.engine.datatype.AbstractDataType;
 import com.dattack.dbcopy.engine.functions.FunctionException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Objects;
@@ -36,15 +35,14 @@ import java.util.concurrent.TransferQueue;
  */
 public class DataTransfer {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(DataTransfer.class);
-
     private static final int DEFAULT_FETCH_SIZE = 10_000;
+    private static final Logger LOGGER = LoggerFactory.getLogger(DataTransfer.class);
     private final transient int fetchSize;
-    private final transient DbCopyTaskResult taskResult;
-    private final transient TransferQueue<AbstractDataType<?>[]> transferQueue;
-    private final transient Semaphore semaphore;
     private final transient ResultSet resultSet;
     private final transient RowMetadata rowMetadata;
+    private final transient Semaphore semaphore;
+    private final transient DbCopyTaskResult taskResult;
+    private final transient TransferQueue<AbstractDataType<?>[]> transferQueue;
 
     /* default */ DataTransfer(final ResultSet resultSet, final DbCopyTaskResult taskResult, final int fetchSize)
             throws SQLException {
@@ -56,11 +54,34 @@ public class DataTransfer {
         this.rowMetadata = createRowMetadata();
     }
 
+    private RowMetadata createRowMetadata() throws SQLException {
+
+        final RowMetadata.RowMetadataBuilder rowMetadataBuilder = RowMetadata.custom();
+
+        for (int columnIndex = 1; columnIndex <= resultSet.getMetaData().getColumnCount(); columnIndex++) {
+            final ColumnMetadata columnMetadata = ColumnMetadata.custom() //NOPMD
+                    .withName(resultSet.getMetaData().getColumnName(columnIndex)) //
+                    .withIndex(columnIndex) //
+                    .withType(resultSet.getMetaData().getColumnType(columnIndex)) //
+                    .withPrecision(resultSet.getMetaData().getPrecision(columnIndex)) //
+                    .withScale(resultSet.getMetaData().getScale(columnIndex)) //
+                    .withNullable(resultSet.getMetaData().isNullable(columnIndex)) //
+                    .build();
+
+            rowMetadataBuilder.add(columnMetadata);
+        }
+        return rowMetadataBuilder.build();
+    }
+
+    public RowMetadata getRowMetadata() {
+        return rowMetadata;
+    }
+
     /**
      * Returns the next row of data or null if there is no more data.
      *
      * @return the next row of data or null if there is no more data.
-     * @throws SQLException if a database access error occurs or this method is called on a closed result set.
+     * @throws SQLException         if a database access error occurs or this method is called on a closed result set.
      * @throws InterruptedException if the current thread is interrupted
      */
     @SuppressWarnings("checkstyle:VariableDeclarationUsageDistance")
@@ -101,30 +122,6 @@ public class DataTransfer {
         } while (Objects.isNull(row) && moreData);
 
         return row;
-    }
-
-
-    public RowMetadata getRowMetadata() {
-        return rowMetadata;
-    }
-
-    private RowMetadata createRowMetadata() throws SQLException {
-
-        final RowMetadata.RowMetadataBuilder rowMetadataBuilder = RowMetadata.custom();
-
-        for (int columnIndex = 1; columnIndex <= resultSet.getMetaData().getColumnCount(); columnIndex++) {
-            final ColumnMetadata columnMetadata = ColumnMetadata.custom() //NOPMD
-                    .withName(resultSet.getMetaData().getColumnName(columnIndex)) //
-                    .withIndex(columnIndex) //
-                    .withType(resultSet.getMetaData().getColumnType(columnIndex)) //
-                    .withPrecision(resultSet.getMetaData().getPrecision(columnIndex)) //
-                    .withScale(resultSet.getMetaData().getScale(columnIndex)) //
-                    .withNullable(resultSet.getMetaData().isNullable(columnIndex)) //
-                    .build();
-
-            rowMetadataBuilder.add(columnMetadata);
-        }
-        return rowMetadataBuilder.build();
     }
 
     private synchronized AbstractDataType<?>[] publish() throws SQLException, FunctionException {
