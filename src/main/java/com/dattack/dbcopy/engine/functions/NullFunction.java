@@ -33,13 +33,13 @@ public class NullFunction extends AbstractDataFunction<NullType> {
     }
 
     @Override
-    public NullType doGet(final ResultSet rs, final int index) throws SQLException {
-        return NullType.NULL_TYPE;
+    public void accept(final FunctionVisitor visitor) throws FunctionException {
+        visitor.visit(this);
     }
 
     @Override
-    public void accept(final FunctionVisitor visitor) throws Exception {
-        visitor.visit(this);
+    protected NullType doGet(final ResultSet rs, final int index) throws SQLException {
+        return NullType.NULL_TYPE;
     }
 
     @Override

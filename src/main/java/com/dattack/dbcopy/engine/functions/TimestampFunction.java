@@ -33,13 +33,13 @@ public class TimestampFunction extends AbstractDataFunction<TimestampType> {
     }
 
     @Override
-    public TimestampType doGet(final ResultSet rs, final int index) throws SQLException {
-        return new TimestampType(rs.getTimestamp(index));
+    public void accept(final FunctionVisitor visitor) throws FunctionException {
+        visitor.visit(this);
     }
 
     @Override
-    public void accept(final FunctionVisitor visitor) throws Exception {
-        visitor.visit(this);
+    protected TimestampType doGet(final ResultSet rs, final int index) throws SQLException {
+        return new TimestampType(rs.getTimestamp(index));
     }
 
     @Override

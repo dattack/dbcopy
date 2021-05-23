@@ -33,13 +33,13 @@ public class ShortFunction extends AbstractDataFunction<ShortType> {
     }
 
     @Override
-    public ShortType doGet(final ResultSet rs, final int index) throws SQLException {
-        return new ShortType(rs.getShort(index));
+    public void accept(final FunctionVisitor visitor) throws FunctionException {
+        visitor.visit(this);
     }
 
     @Override
-    public void accept(final FunctionVisitor visitor) throws Exception {
-        visitor.visit(this);
+    protected ShortType doGet(final ResultSet rs, final int index) throws SQLException {
+        return new ShortType(rs.getShort(index));
     }
 
     @Override

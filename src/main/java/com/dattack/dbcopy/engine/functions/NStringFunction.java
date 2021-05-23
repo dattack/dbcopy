@@ -34,13 +34,13 @@ public class NStringFunction extends AbstractDataFunction<NStringType> {
     }
 
     @Override
-    public NStringType doGet(final ResultSet rs, final int index) throws SQLException {
-        return new NStringType(rs.getNString(index));
+    public void accept(final FunctionVisitor visitor) throws FunctionException {
+        visitor.visit(this);
     }
 
     @Override
-    public void accept(final FunctionVisitor visitor) throws Exception {
-        visitor.visit(this);
+    protected NStringType doGet(final ResultSet rs, final int index) throws SQLException {
+        return new NStringType(rs.getNString(index));
     }
 
     @Override

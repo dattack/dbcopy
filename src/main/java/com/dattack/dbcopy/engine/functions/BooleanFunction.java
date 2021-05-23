@@ -33,13 +33,13 @@ public class BooleanFunction extends AbstractDataFunction<BooleanType> {
     }
 
     @Override
-    public BooleanType doGet(final ResultSet rs, final int index) throws SQLException {
-        return new BooleanType(rs.getBoolean(index));
+    public void accept(final FunctionVisitor visitor) throws FunctionException {
+        visitor.visit(this);
     }
 
     @Override
-    public void accept(final FunctionVisitor visitor) throws Exception {
-        visitor.visit(this);
+    protected BooleanType doGet(final ResultSet rs, final int index) throws SQLException {
+        return new BooleanType(rs.getBoolean(index));
     }
 
     @Override

@@ -33,13 +33,13 @@ public class TimeFunction extends AbstractDataFunction<TimeType> {
     }
 
     @Override
-    public TimeType doGet(final ResultSet rs, final int index) throws SQLException {
-        return new TimeType(rs.getTime(index));
+    public void accept(final FunctionVisitor visitor) throws FunctionException {
+        visitor.visit(this);
     }
 
     @Override
-    public void accept(final FunctionVisitor visitor) throws Exception {
-        visitor.visit(this);
+    protected TimeType doGet(final ResultSet rs, final int index) throws SQLException {
+        return new TimeType(rs.getTime(index));
     }
 
     @Override

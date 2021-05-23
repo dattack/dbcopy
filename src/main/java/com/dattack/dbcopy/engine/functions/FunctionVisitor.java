@@ -23,41 +23,41 @@ package com.dattack.dbcopy.engine.functions;
  */
 public interface FunctionVisitor { //NOPMD
 
-    void visit(BigDecimalFunction function) throws Exception;
+    void visit(BigDecimalFunction function) throws FunctionException;
 
-    void visit(BlobFunction function) throws Exception;
+    void visit(BlobFunction function) throws FunctionException;
 
-    void visit(BooleanFunction function) throws Exception;
+    void visit(BooleanFunction function) throws FunctionException;
 
-    void visit(ByteFunction function) throws Exception;
+    void visit(ByteFunction function) throws FunctionException;
 
-    void visit(BytesFunction function) throws Exception;
+    void visit(BytesFunction function) throws FunctionException;
 
-    void visit(ClobFunction function) throws Exception;
+    void visit(ClobFunction function) throws FunctionException;
 
-    void visit(DateFunction function) throws Exception;
+    void visit(DateFunction function) throws FunctionException;
 
-    void visit(DoubleFunction function) throws Exception;
+    void visit(DoubleFunction function) throws FunctionException;
 
-    void visit(FloatFunction function) throws Exception;
+    void visit(FloatFunction function) throws FunctionException;
 
-    void visit(IntegerFunction function) throws Exception;
+    void visit(IntegerFunction function) throws FunctionException;
 
-    void visit(LongFunction function) throws Exception;
+    void visit(LongFunction function) throws FunctionException;
 
-    void visit(NClobFunction function) throws Exception;
+    void visit(NClobFunction function) throws FunctionException;
 
-    void visit(NStringFunction function) throws Exception;
+    void visit(NStringFunction function) throws FunctionException;
 
-    void visit(NullFunction function) throws Exception;
+    void visit(NullFunction function) throws FunctionException;
 
-    void visit(ShortFunction function) throws Exception;
+    void visit(ShortFunction function) throws FunctionException;
 
-    void visit(StringFunction function) throws Exception;
+    void visit(StringFunction function) throws FunctionException;
 
-    void visit(TimeFunction function) throws Exception;
+    void visit(TimeFunction function) throws FunctionException;
 
-    void visit(TimestampFunction function) throws Exception;
+    void visit(TimestampFunction function) throws FunctionException;
 
-    void visit(XmlFunction function) throws Exception;
+    void visit(XmlFunction function) throws FunctionException;
 }

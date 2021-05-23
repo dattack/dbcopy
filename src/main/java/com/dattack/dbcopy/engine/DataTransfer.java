@@ -16,6 +16,7 @@
 package com.dattack.dbcopy.engine;
 
 import com.dattack.dbcopy.engine.datatype.AbstractDataType;
+import com.dattack.dbcopy.engine.functions.FunctionException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,7 +63,7 @@ public class DataTransfer {
      * @throws InterruptedException if the current thread is interrupted
      */
     @SuppressWarnings("checkstyle:VariableDeclarationUsageDistance")
-    public AbstractDataType<?>[] transfer() throws SQLException, InterruptedException {
+    public AbstractDataType<?>[] transfer() throws SQLException, InterruptedException, FunctionException {
 
         AbstractDataType<?>[] row;
 
@@ -125,7 +126,7 @@ public class DataTransfer {
         return rowMetadataBuilder.build();
     }
 
-    private synchronized AbstractDataType<?>[] publish() throws SQLException {
+    private synchronized AbstractDataType<?>[] publish() throws SQLException, FunctionException {
 
         AbstractDataType<?>[] result = null;
         if (!isResultSetClosedQuietly() && resultSet.next()) {

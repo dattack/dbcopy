@@ -33,13 +33,13 @@ public class IntegerFunction extends AbstractDataFunction<IntegerType> {
     }
 
     @Override
-    public IntegerType doGet(final ResultSet rs, final int index) throws SQLException {
-        return new IntegerType(rs.getInt(index));
+    public void accept(final FunctionVisitor visitor) throws FunctionException {
+        visitor.visit(this);
     }
 
     @Override
-    public void accept(final FunctionVisitor visitor) throws Exception {
-        visitor.visit(this);
+    protected IntegerType doGet(final ResultSet rs, final int index) throws SQLException {
+        return new IntegerType(rs.getInt(index));
     }
 
     @Override

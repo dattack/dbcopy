@@ -34,13 +34,13 @@ public class NClobFunction extends AbstractDataFunction<NClobType> {
     }
 
     @Override
-    public NClobType doGet(final ResultSet rs, final int index) throws SQLException {
-        return new NClobType(rs.getNClob(index));
+    public void accept(final FunctionVisitor visitor) throws FunctionException {
+        visitor.visit(this);
     }
 
     @Override
-    public void accept(final FunctionVisitor visitor) throws Exception {
-        visitor.visit(this);
+    protected NClobType doGet(final ResultSet rs, final int index) throws SQLException {
+        return new NClobType(rs.getNClob(index));
     }
 
     @Override

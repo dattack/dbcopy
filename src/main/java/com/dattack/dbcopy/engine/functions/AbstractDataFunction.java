@@ -34,24 +34,28 @@ public abstract class AbstractDataFunction<T extends AbstractDataType<?>> {
         this.columnMetadata = columnMetadata;
     }
 
-    public abstract void accept(FunctionVisitor visitor) throws Exception;
+    public abstract void accept(FunctionVisitor visitor) throws FunctionException;
 
     /**
      * Returns the value of the ResultSet corresponding to the column on which this function is executed.
      *
      * @param rs the ResultSet object
      * @return the value of the ResultSet corresponding to the column on which this function is executed.
-     * @throws SQLException if a database access error occurs or this method is called on a closed result set.
+     * @throws FunctionException if an error occurs when evaluating this function.
      */
-    public T get(final ResultSet rs) throws SQLException {
-        T result = doGet(rs, columnMetadata.getIndex());
-        if (rs.wasNull()) {
-            result = getNull();
+    public T get(final ResultSet rs) throws FunctionException {
+        try {
+            T result = doGet(rs, columnMetadata.getIndex());
+            if (rs.wasNull()) {
+                result = getNull();
+            }
+            return result;
+        } catch (final SQLException e) {
+            throw new FunctionException("Error evaluating function", e);
         }
-        return result;
     }
 
-    /* default */ abstract T doGet(ResultSet rs, int index) throws SQLException;
+    protected abstract T doGet(ResultSet rs, int index) throws SQLException;
 
     /**
      * Returns the representation of the NULL value for this data type.

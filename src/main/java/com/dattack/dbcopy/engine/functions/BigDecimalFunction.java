@@ -33,17 +33,17 @@ public class BigDecimalFunction extends AbstractDataFunction<BigDecimalType> {
     }
 
     @Override
-    public BigDecimalType doGet(final ResultSet rs, final int index) throws SQLException {
+    public void accept(final FunctionVisitor visitor) throws FunctionException {
+        visitor.visit(this);
+    }
+
+    @Override
+    protected BigDecimalType doGet(final ResultSet rs, final int index) throws SQLException {
         return new BigDecimalType(rs.getBigDecimal(index));
     }
 
     @Override
     protected BigDecimalType getNull() {
         return BigDecimalType.NULL;
-    }
-
-    @Override
-    public void accept(final FunctionVisitor visitor) throws Exception {
-        visitor.visit(this);
     }
 }

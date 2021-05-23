@@ -33,13 +33,13 @@ public class FloatFunction extends AbstractDataFunction<FloatType> {
     }
 
     @Override
-    public FloatType doGet(final ResultSet rs, final int index) throws SQLException {
-        return new FloatType(rs.getFloat(index));
+    public void accept(final FunctionVisitor visitor) throws FunctionException {
+        visitor.visit(this);
     }
 
     @Override
-    public void accept(final FunctionVisitor visitor) throws Exception {
-        visitor.visit(this);
+    protected FloatType doGet(final ResultSet rs, final int index) throws SQLException {
+        return new FloatType(rs.getFloat(index));
     }
 
     @Override

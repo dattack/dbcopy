@@ -33,13 +33,13 @@ public class ClobFunction extends AbstractDataFunction<ClobType> {
     }
 
     @Override
-    public ClobType doGet(final ResultSet rs, final int index) throws SQLException {
-        return new ClobType(rs.getClob(index));
+    public void accept(final FunctionVisitor visitor) throws FunctionException {
+        visitor.visit(this);
     }
 
     @Override
-    public void accept(final FunctionVisitor visitor) throws Exception {
-        visitor.visit(this);
+    protected ClobType doGet(final ResultSet rs, final int index) throws SQLException {
+        return new ClobType(rs.getClob(index));
     }
 
     @Override

@@ -31,6 +31,7 @@ import com.dattack.dbcopy.engine.functions.ClobFunction;
 import com.dattack.dbcopy.engine.functions.DateFunction;
 import com.dattack.dbcopy.engine.functions.DoubleFunction;
 import com.dattack.dbcopy.engine.functions.FloatFunction;
+import com.dattack.dbcopy.engine.functions.FunctionException;
 import com.dattack.dbcopy.engine.functions.FunctionVisitor;
 import com.dattack.dbcopy.engine.functions.IntegerFunction;
 import com.dattack.dbcopy.engine.functions.LongFunction;
@@ -57,8 +58,9 @@ import org.apache.parquet.hadoop.ParquetWriter;
 import org.apache.parquet.hadoop.metadata.CompressionCodecName;
 import org.apache.parquet.hadoop.util.HadoopOutputFile;
 import org.apache.parquet.io.OutputFile;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.io.IOException;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -69,6 +71,8 @@ import java.util.List;
  * @since 0.3
  */
 public class ParquetExportOperationFactory implements ExportOperationFactory {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(ParquetExportOperationFactory.class);
 
     private final transient ExportOperationBean bean;
     private final transient AbstractConfiguration configuration;
@@ -84,13 +88,12 @@ public class ParquetExportOperationFactory implements ExportOperationFactory {
     public ExportOperation createTask(final DataTransfer dataTransfer, final DbCopyTaskResult taskResult) {
 
         try {
-            final ParquetWriter<Object> outputWriter = getWriter(); //NOPMD: resource can't be closed here
-            final ParquetWriter<Object> writer = getWriter();
+            final ParquetWriter<Object> outputWriter = getWriter(dataTransfer); //NOPMD: resource can't be closed here
 
             taskResult.addOnEndCommand(() -> {
-                        IOUtils.closeQuietly(outputWriter);
-                        return null;
-                    }
+                    IOUtils.closeQuietly(outputWriter);
+                    return null;
+                }
             );
 
             return new ParquetExportOperation(bean, dataTransfer, taskResult, outputWriter,
@@ -101,7 +104,27 @@ public class ParquetExportOperationFactory implements ExportOperationFactory {
         }
     }
 
-    private synchronized Schema getSchema(RowMetadata rowMetadata) throws Exception {
+    private synchronized ParquetWriter<Object> getWriter(final DataTransfer dataTransfer) //
+            throws IOException, FunctionException {
+
+        if (writer == null) {
+
+            final String filename = ConfigurationUtil.interpolate(bean.getPath(), configuration);
+            final Path hdfsPath = new Path(filename);
+
+            final Configuration conf = new Configuration();
+            final OutputFile outputFile = HadoopOutputFile.fromPath(hdfsPath, conf);
+            writer = AvroParquetWriter.builder(outputFile)
+                    .withSchema(getSchema(dataTransfer.getRowMetadata())) //
+                    .withCompressionCodec(getCompression()) //
+                    .withPageSize(bean.getPageSize()) //
+                    .withWriteMode(ParquetFileWriter.Mode.OVERWRITE) //
+                    .build();
+        }
+        return writer;
+    }
+
+    private synchronized Schema getSchema(final RowMetadata rowMetadata) throws FunctionException {
 
         if (schema == null) {
             final List<Schema.Field> fieldList = new ArrayList<>();
@@ -116,7 +139,7 @@ public class ParquetExportOperationFactory implements ExportOperationFactory {
             schema = Schema.createRecord("row", "row doc", "com.dattack.ns", false);
             schema.setFields(fieldList);
 
-            System.out.println("Schema: " + schema);
+            LOGGER.debug("Avro-schema: " + schema);
         }
         return schema;
     }
@@ -141,24 +164,10 @@ public class ParquetExportOperationFactory implements ExportOperationFactory {
         return compression;
     }
 
-    private synchronized ParquetWriter<Object> getWriter() throws IOException {
-
-        if (writer == null) {
-
-            String filename = ConfigurationUtil.interpolate(bean.getPath(), configuration);
-            Path hdfsPath = new Path(filename);
-
-            writer = AvroParquetWriter.builder(hdfsPath)
-                    .withSchema(schema) //
-                    .withCompressionCodec(getCompression()) //
-                    .withPageSize(bean.getPageSize()) //
-                    .withWriteMode(ParquetFileWriter.Mode.OVERWRITE) //
-                    .build();
-        }
-        return writer;
-    }
-
-    private static class Visitor implements FunctionVisitor {
+    /**
+     * {@link FunctionVisitor} implementation used to populate a new {@link Schema}.
+     */
+    private static class Visitor implements FunctionVisitor { //NOPMD
 
         private transient Schema schema;
 
@@ -167,7 +176,7 @@ public class ParquetExportOperationFactory implements ExportOperationFactory {
         }
 
         @Override
-        public void visit(final BigDecimalFunction function) throws SQLException {
+        public void visit(final BigDecimalFunction function) throws FunctionException {
             if (function.getColumnMetadata().getScale() == 0) {
                 schema = SchemaBuilder.nullable().longType();
             } else {
@@ -176,95 +185,95 @@ public class ParquetExportOperationFactory implements ExportOperationFactory {
         }
 
         @Override
-        public void visit(final BlobFunction function) throws SQLException {
+        public void visit(final BlobFunction function) throws FunctionException {
             schema = SchemaBuilder.nullable().bytesType();
         }
 
         @Override
-        public void visit(final BooleanFunction function) throws SQLException {
+        public void visit(final BooleanFunction function) throws FunctionException {
             schema = SchemaBuilder.nullable().booleanType();
         }
 
         @Override
-        public void visit(final ByteFunction function) throws SQLException {
+        public void visit(final ByteFunction function) throws FunctionException {
             schema = SchemaBuilder.nullable().intType();
         }
 
         @Override
-        public void visit(final BytesFunction function) throws SQLException {
+        public void visit(final BytesFunction function) throws FunctionException {
             schema = SchemaBuilder.nullable().bytesType();
         }
 
         @Override
-        public void visit(final ClobFunction function) throws SQLException {
+        public void visit(final ClobFunction function) throws FunctionException {
             schema = SchemaBuilder.nullable().stringType();
         }
 
         @Override
-        public void visit(final DateFunction function) throws SQLException {
+        public void visit(final DateFunction function) throws FunctionException {
             schema = SchemaBuilder.nullable().type(LogicalTypes.date() //
                     .addToSchema(Schema.create(Schema.Type.INT)));
         }
 
         @Override
-        public void visit(final DoubleFunction function) throws SQLException {
+        public void visit(final DoubleFunction function) throws FunctionException {
             schema = SchemaBuilder.nullable().doubleType();
         }
 
         @Override
-        public void visit(final FloatFunction function) throws SQLException {
+        public void visit(final FloatFunction function) throws FunctionException {
             schema = SchemaBuilder.nullable().floatType();
         }
 
         @Override
-        public void visit(final IntegerFunction function) throws SQLException {
+        public void visit(final IntegerFunction function) throws FunctionException {
             schema = SchemaBuilder.nullable().intType();
         }
 
         @Override
-        public void visit(final LongFunction function) throws SQLException {
+        public void visit(final LongFunction function) throws FunctionException {
             schema = SchemaBuilder.nullable().longType();
         }
 
         @Override
-        public void visit(final NClobFunction function) throws SQLException {
+        public void visit(final NClobFunction function) throws FunctionException {
             schema = SchemaBuilder.nullable().stringType();
         }
 
         @Override
-        public void visit(final NStringFunction function) throws SQLException {
+        public void visit(final NStringFunction function) throws FunctionException {
             schema = SchemaBuilder.nullable().stringType();
         }
 
         @Override
-        public void visit(final NullFunction function) throws SQLException {
+        public void visit(final NullFunction function) throws FunctionException {
             schema = SchemaBuilder.nullable().stringType();
         }
 
         @Override
-        public void visit(final ShortFunction function) throws SQLException {
+        public void visit(final ShortFunction function) throws FunctionException {
             schema = SchemaBuilder.nullable().intType();
         }
 
         @Override
-        public void visit(final StringFunction function) throws SQLException {
+        public void visit(final StringFunction function) throws FunctionException {
             schema = SchemaBuilder.nullable().stringType();
         }
 
         @Override
-        public void visit(final TimeFunction function) throws SQLException {
+        public void visit(final TimeFunction function) throws FunctionException {
             schema = SchemaBuilder.nullable().type(LogicalTypes.timeMillis() //
                     .addToSchema(Schema.create(Schema.Type.LONG)));
         }
 
         @Override
-        public void visit(final TimestampFunction function) throws SQLException {
+        public void visit(final TimestampFunction function) throws FunctionException {
             schema = SchemaBuilder.nullable().type(LogicalTypes.timestampMillis() //
                     .addToSchema(Schema.create(Schema.Type.LONG)));
         }
 
         @Override
-        public void visit(final XmlFunction function) throws SQLException {
+        public void visit(final XmlFunction function) throws FunctionException {
             schema = SchemaBuilder.nullable().stringType();
         }
     }

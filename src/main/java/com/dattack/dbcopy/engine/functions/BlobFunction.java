@@ -33,12 +33,12 @@ public class BlobFunction extends AbstractDataFunction<BlobType> {
     }
 
     @Override
-    public void accept(final FunctionVisitor visitor) throws Exception {
+    public void accept(final FunctionVisitor visitor) throws FunctionException {
         visitor.visit(this);
     }
 
     @Override
-    public BlobType doGet(final ResultSet rs, final int index) throws SQLException {
+    protected BlobType doGet(final ResultSet rs, final int index) throws SQLException {
         return new BlobType(rs.getBlob(index));
     }
 

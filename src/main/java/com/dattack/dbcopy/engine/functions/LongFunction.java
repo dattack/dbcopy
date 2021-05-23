@@ -33,13 +33,13 @@ public class LongFunction extends AbstractDataFunction<LongType> {
     }
 
     @Override
-    public LongType doGet(final ResultSet rs, final int index) throws SQLException {
-        return new LongType(rs.getLong(index));
+    public void accept(final FunctionVisitor visitor) throws FunctionException {
+        visitor.visit(this);
     }
 
     @Override
-    public void accept(final FunctionVisitor visitor) throws Exception {
-        visitor.visit(this);
+    protected LongType doGet(final ResultSet rs, final int index) throws SQLException {
+        return new LongType(rs.getLong(index));
     }
 
     @Override
