@@ -48,6 +48,7 @@ import org.apache.parquet.hadoop.ParquetWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.sql.SQLException;
+import java.util.Objects;
 
 /**
  * Data export operation in Parquet format.
@@ -89,7 +90,7 @@ class ParquetExportOperation implements ExportOperation {
 
             while (true) {
                 final AbstractDataType<?>[] row = dataTransfer.transfer();
-                if (row == null) {
+                if (Objects.isNull(row)) {
                     break;
                 }
                 write(row);
@@ -120,7 +121,7 @@ class ParquetExportOperation implements ExportOperation {
             visitorThreadLocal.get().setColumnMetadata(columnMetadata);
 
             final AbstractDataType<?> value = dataList[columnMetadata.getIndex() - 1];
-            if (value == null) {
+            if (Objects.isNull(value)) {
                 visitorThreadLocal.get().getGenericRecord().put(visitorThreadLocal.get().getIndex(), null);
             } else {
                 value.accept(visitorThreadLocal.get());

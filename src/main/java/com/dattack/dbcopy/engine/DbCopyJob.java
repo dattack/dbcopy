@@ -36,6 +36,7 @@ import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -87,7 +88,7 @@ import java.util.concurrent.Future;
 
         final VariableVisitor rangeVisitor = getVariableVisitor(futureList, jobResult);
 
-        if (dbcopyJobBean.getVariableList() == null || dbcopyJobBean.getVariableList().isEmpty()) {
+        if (Objects.isNull(dbcopyJobBean.getVariableList()) || dbcopyJobBean.getVariableList().isEmpty()) {
             new NullVariableBean().accept(rangeVisitor);
         } else {
             for (final AbstractVariableBean item : dbcopyJobBean.getVariableList()) {

@@ -63,6 +63,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * factory responsible for instantiating {@link ParquetExportOperation} objects.
@@ -107,7 +108,7 @@ public class ParquetExportOperationFactory implements ExportOperationFactory {
     private synchronized ParquetWriter<Object> getWriter(final DataTransfer dataTransfer) //
             throws IOException, FunctionException {
 
-        if (writer == null) {
+        if (Objects.isNull(writer)) {
 
             final String filename = ConfigurationUtil.interpolate(bean.getPath(), configuration);
             final Path hdfsPath = new Path(filename);
@@ -126,7 +127,7 @@ public class ParquetExportOperationFactory implements ExportOperationFactory {
 
     private synchronized Schema getSchema(final RowMetadata rowMetadata) throws FunctionException {
 
-        if (schema == null) {
+        if (Objects.isNull(schema)) {
             final List<Schema.Field> fieldList = new ArrayList<>();
 
             final Visitor visitor = new Visitor();

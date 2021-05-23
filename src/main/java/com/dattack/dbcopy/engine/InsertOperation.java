@@ -59,6 +59,7 @@ import java.sql.SQLXML;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.Callable;
 
 /**
@@ -139,7 +140,7 @@ class InsertOperation implements Callable<Integer> {
     }
 
     private synchronized Connection getConnection() throws SQLException {
-        if (connection == null) {
+        if (Objects.isNull(connection)) {
             connection = new JNDIDataSource(ConfigurationUtil.interpolate(bean.getDatasource(), configuration))
                     .getConnection();
             if (bean.getBatchSize() > 0) {
@@ -165,7 +166,7 @@ class InsertOperation implements Callable<Integer> {
     }
 
     /* default */ NamedParameterPreparedStatement getPreparedStatement() throws SQLException {
-        if (preparedStatement == null) {
+        if (Objects.isNull(preparedStatement)) {
             String sql;
             if (StringUtils.isNotBlank(bean.getSql())) {
                 sql = bean.getSql();
@@ -205,7 +206,7 @@ class InsertOperation implements Callable<Integer> {
 
         while (true) {
             final AbstractDataType<?>[] row = dataTransfer.transfer();
-            if (row == null) {
+            if (Objects.isNull(row)) {
                 break;
             }
 
@@ -223,7 +224,7 @@ class InsertOperation implements Callable<Integer> {
 
     private List<ColumnMetadata> getColumns(final NamedParameterPreparedStatement preparedStatement) {
 
-        if (columnsMetadata2Process == null) {
+        if (Objects.isNull(columnsMetadata2Process)) {
             columnsMetadata2Process = new ArrayList<>(dataTransfer.getRowMetadata().getColumnCount());
 
             for (final ColumnMetadata columnMetadata : dataTransfer.getRowMetadata().getColumnsMetadata()) {
@@ -376,7 +377,7 @@ class InsertOperation implements Callable<Integer> {
 
         private void set(final ColumnMetadata columnMetadata, final AbstractDataType<?> value) throws Exception {
             this.columnMetadata = columnMetadata;
-            if (value == null || value.isNull()) {
+            if (Objects.isNull(value) || value.isNull()) {
                 getPreparedStatement().setNull(columnMetadata.getName(), columnMetadata.getType());
             } else {
                 value.accept(this);

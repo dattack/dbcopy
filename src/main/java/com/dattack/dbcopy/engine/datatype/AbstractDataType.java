@@ -15,6 +15,8 @@
  */
 package com.dattack.dbcopy.engine.datatype;
 
+import java.util.Objects;
+
 /**
  * Hierarchy of internal data types.
  *
@@ -34,7 +36,7 @@ public abstract class AbstractDataType<T> {
     }
 
     public boolean isNull() {
-        return value == null;
+        return Objects.isNull(value);
     }
 
     public boolean isNotNull() {

@@ -35,6 +35,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.zip.GZIPOutputStream;
 
@@ -115,9 +116,9 @@ class CsvExportWriteWrapper implements Closeable {
     }
 
     private Writer getWriter() throws IOException {
-        if (writer == null) {
+        if (Objects.isNull(writer)) {
             synchronized (lock) {
-                if (writer == null) {
+                if (Objects.isNull(writer)) {
                     init();
                     // write header
                     if (StringUtils.isNotBlank(header)) {

@@ -25,6 +25,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
+import java.util.Objects;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Unmarshaller;
@@ -36,7 +37,7 @@ import javax.xml.transform.Source;
 import javax.xml.transform.sax.SAXSource;
 
 /**
- * XML file parser that instantiates the equivalent Bean object.
+ * XML file parser that instantiates the equivalent DbcopyBean object.
  *
  * @author cvarela
  * @since 0.1
@@ -59,7 +60,7 @@ public final class DbcopyParser { //NOPMD
      */
     public static DbcopyBean parse(final File file) throws DattackParserException {
 
-        if (file == null) {
+        if (Objects.isNull(file)) {
             throw new IllegalArgumentException("The 'dbcopy' configuration file can't be null. " //
                     + "Check your configuration");
         }

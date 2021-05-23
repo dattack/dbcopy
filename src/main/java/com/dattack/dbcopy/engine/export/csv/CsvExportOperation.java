@@ -56,6 +56,7 @@ import java.nio.file.Paths;
 import java.sql.Clob;
 import java.sql.SQLException;
 import java.sql.SQLXML;
+import java.util.Objects;
 import java.util.Properties;
 
 /**
@@ -117,7 +118,7 @@ public class CsvExportOperation implements ExportOperation {
             final Visitor visitor = new Visitor(csvStringBuilder);
             while (true) {
                 final AbstractDataType<?>[] row = dataTransfer.transfer();
-                if (row == null) {
+                if (Objects.isNull(row)) {
                     break;
                 }
                 populate(visitor, csvStringBuilder, row);
@@ -145,7 +146,7 @@ public class CsvExportOperation implements ExportOperation {
 
         for (final ColumnMetadata columnMetadata : dataTransfer.getRowMetadata().getColumnsMetadata()) {
             final AbstractDataType<?> value = dataList[columnMetadata.getIndex() - 1];
-            if (value == null || value.isNull()) {
+            if (Objects.isNull(value) || value.isNull()) {
                 csvStringBuilder.append((String) null);
             } else {
                 value.accept(visitor);

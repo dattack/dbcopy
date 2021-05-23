@@ -32,6 +32,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.Objects;
 import java.util.Properties;
 
 /**
@@ -52,7 +53,7 @@ public class CsvExportOperationFactory implements ExportOperationFactory {
     }
 
     private synchronized CsvExportWriteWrapper getWriter(final RowMetadata rowMetadata) throws IOException {
-        if (writer == null) {
+        if (Objects.isNull(writer)) {
             writer = new CsvExportWriteWrapper(bean, configuration);
             writer.setHeader(getHeader(rowMetadata));
         }

@@ -22,6 +22,7 @@ import org.slf4j.LoggerFactory;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Objects;
 import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -71,7 +72,7 @@ public class DataTransfer {
         do {
             row = transferQueue.poll();
 
-            if (row == null) {
+            if (Objects.isNull(row)) {
 
                 if (semaphore.tryAcquire(10, TimeUnit.MILLISECONDS)) {
                     LOGGER.trace("Semaphore acquired by thread '{}'", Thread.currentThread().getName());
@@ -81,7 +82,7 @@ public class DataTransfer {
                     do {
                         row = publish();
 
-                        if (row == null) {
+                        if (Objects.isNull(row)) {
                             moreData = false;
                             break;
                         }
@@ -97,7 +98,7 @@ public class DataTransfer {
                 row = transferQueue.poll();
             }
 
-        } while (row == null && moreData);
+        } while (Objects.isNull(row) && moreData);
 
         return row;
     }
