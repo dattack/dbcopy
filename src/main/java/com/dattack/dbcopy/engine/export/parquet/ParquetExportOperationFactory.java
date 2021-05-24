@@ -124,7 +124,7 @@ public class ParquetExportOperationFactory implements ExportOperationFactory {
         return compression;
     }
 
-    private synchronized Schema getSchema(final RowMetadata rowMetadata) throws FunctionException {
+    private Schema getSchema(final RowMetadata rowMetadata) throws FunctionException {
 
         if (Objects.isNull(schema)) {
             final List<Schema.Field> fieldList = new ArrayList<>();
@@ -150,7 +150,8 @@ public class ParquetExportOperationFactory implements ExportOperationFactory {
         if (Objects.isNull(writer)) {
 
             final String filename = ConfigurationUtil.interpolate(bean.getPath(), configuration);
-            final Path hdfsPath = new Path(filename);
+            final Path hdfsPath = new Path(Objects.requireNonNull(filename, "Unable to write parquet file due "
+                    + "to filename is null"));
 
             final Configuration conf = new Configuration();
             final OutputFile outputFile = HadoopOutputFile.fromPath(hdfsPath, conf);

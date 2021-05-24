@@ -38,7 +38,6 @@ import com.dattack.dbcopy.engine.datatype.TimeType;
 import com.dattack.dbcopy.engine.datatype.TimestampType;
 import com.dattack.dbcopy.engine.datatype.XmlType;
 import com.dattack.jtoolbox.commons.configuration.ConfigurationUtil;
-import com.dattack.jtoolbox.io.IOUtils;
 import com.dattack.jtoolbox.jdbc.JDBCUtils;
 import com.dattack.jtoolbox.jdbc.JNDIDataSource;
 import com.dattack.jtoolbox.jdbc.NamedParameterPreparedStatement;
@@ -258,10 +257,9 @@ class InsertOperation implements Callable<Integer> {
         @Override
         public void visit(final BlobType type) throws SQLException {
 
-            OutputStream output = null; //NOPMD
-            try (InputStream input = type.getValue().getBinaryStream()) {
-                final Blob targetBlob = getPreparedStatement().getConnection().createBlob();
-                output = targetBlob.setBinaryStream(1);
+            final Blob targetBlob = getPreparedStatement().getConnection().createBlob();
+            try (OutputStream output = targetBlob.setBinaryStream(1);
+                 InputStream input = type.getValue().getBinaryStream()) {
 
                 final byte[] buffer = new byte[1024]; // TODO: configurable size
                 int len;
@@ -272,8 +270,6 @@ class InsertOperation implements Callable<Integer> {
                 getPreparedStatement().setBlob(columnMetadata.getName(), targetBlob);
             } catch (IOException e) {
                 throw new SQLException("Unable to create Clob object: " + e.getMessage(), e);
-            } finally {
-                IOUtils.closeQuietly(output);
             }
         }
 
@@ -295,16 +291,12 @@ class InsertOperation implements Callable<Integer> {
         @Override
         public void visit(final ClobType type) throws SQLException {
 
-            Writer clobWriter = null; //NOPMD
-            try {
-                final Clob targetClob = getPreparedStatement().getConnection().createClob();
-                clobWriter = targetClob.setCharacterStream(1);
+            final Clob targetClob = getPreparedStatement().getConnection().createClob();
+            try (Writer clobWriter = targetClob.setCharacterStream(1)) {
                 clobWriter.write(type.getValue().getSubString(0L, (int) type.getValue().length()));
                 getPreparedStatement().setClob(columnMetadata.getName(), targetClob);
             } catch (IOException e) {
                 throw new SQLException("Unable to create Clob object: " + e.getMessage(), e);
-            } finally {
-                IOUtils.closeQuietly(clobWriter);
             }
         }
 
