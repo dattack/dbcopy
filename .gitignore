@@ -58,7 +58,6 @@ Thumbs.db
 .classpath
 .eclipse-pmd
 .externalToolBuilders
-.idea
 *.iml
 .pmd
 .project
