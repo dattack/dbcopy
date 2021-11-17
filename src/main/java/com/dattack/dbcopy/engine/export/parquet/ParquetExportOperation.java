@@ -154,7 +154,7 @@ class ParquetExportOperation implements ExportOperation {
         @Override
         public void visit(final BlobType type) throws SQLException {
             if (type.isNotNull()) {
-                put(type.getValue().getBytes(0, (int) type.getValue().length()));
+                put(type.getValue().getBytes(1L, (int) type.getValue().length()));
             }
         }
 
@@ -176,7 +176,7 @@ class ParquetExportOperation implements ExportOperation {
         @Override
         public void visit(final ClobType type) throws SQLException {
             if (type.isNotNull()) {
-                put(type.getValue().getSubString(0L, (int) type.getValue().length()));
+                put(type.getValue().getSubString(1L, (int) type.getValue().length()));
             }
         }
 

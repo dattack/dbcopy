@@ -179,7 +179,7 @@ public class CsvExportOperation implements ExportOperation {
         @Override
         public void visit(final BlobType value) {
             try {
-                appendEncodedBytes(value.getValue().getBytes(0, (int) value.getValue().length()));
+                appendEncodedBytes(value.getValue().getBytes(1L, (int) value.getValue().length()));
             } catch (SQLException e) {
                 throw new DattackNestableRuntimeException(e);
             }
@@ -204,7 +204,7 @@ public class CsvExportOperation implements ExportOperation {
         public void visit(final ClobType value) {
             try {
                 final Clob clob = value.getValue();
-                csvStringBuilder.append(clob.getSubString(0L, (int) clob.length()));
+                csvStringBuilder.append(clob.getSubString(1L, (int) clob.length()));
             } catch (SQLException e) {
                 throw new DattackNestableRuntimeException(e);
             }
