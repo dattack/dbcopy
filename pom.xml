@@ -4,7 +4,7 @@
     <parent>
         <groupId>com.dattack</groupId>
         <artifactId>parent</artifactId>
-        <version>5-SNAPSHOT</version>
+        <version>6</version>
     </parent>
     <artifactId>dbcopy</artifactId>
     <version>0.3_parquet-SNAPSHOT</version>
