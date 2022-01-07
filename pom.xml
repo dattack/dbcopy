@@ -63,7 +63,7 @@
         <compiler.source.version>1.7</compiler.source.version>
         <compiler.target.version>1.7</compiler.target.version>
         <data-formats.version>0.1</data-formats.version>
-        <h2.version>1.4.195</h2.version>
+        <h2.version>2.0.206</h2.version>
         <junit.version>4.12</junit.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <slf4j.version>1.7.25</slf4j.version>
