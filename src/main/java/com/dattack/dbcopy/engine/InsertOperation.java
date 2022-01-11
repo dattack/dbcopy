@@ -53,6 +53,7 @@ import java.sql.BatchUpdateException;
 import java.sql.Blob;
 import java.sql.Clob;
 import java.sql.Connection;
+import java.sql.NClob;
 import java.sql.SQLException;
 import java.sql.SQLXML;
 import java.sql.Statement;
@@ -327,7 +328,14 @@ class InsertOperation implements Callable<Integer> {
 
         @Override
         public void visit(final NClobType type) throws SQLException {
-            getPreparedStatement().setNClob(columnMetadata.getName(), type.getValue());
+
+            final NClob targetClob = getPreparedStatement().getConnection().createNClob();
+            try (Writer clobWriter = targetClob.setCharacterStream(1)) {
+                clobWriter.write(type.getValue().getSubString(1L, (int) type.getValue().length()));
+                getPreparedStatement().setClob(columnMetadata.getName(), targetClob);
+            } catch (IOException e) {
+                throw new SQLException("Unable to create Clob object: " + e.getMessage(), e);
+            }
         }
 
         @Override

@@ -212,7 +212,7 @@ class ParquetExportOperation implements ExportOperation {
         @Override
         public void visit(final NClobType type) throws SQLException {
             if (type.isNotNull()) {
-                put(type.getValue().getSubString(0L, (int) type.getValue().length()));
+                put(type.getValue().getSubString(1L, (int) type.getValue().length()));
             }
         }
 

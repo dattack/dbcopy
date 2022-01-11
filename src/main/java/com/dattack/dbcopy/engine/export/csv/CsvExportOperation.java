@@ -238,7 +238,7 @@ public class CsvExportOperation implements ExportOperation {
         @Override
         public void visit(final NClobType value) {
             try {
-                csvStringBuilder.append(value.getValue().getSubString(0, (int) value.getValue().length()));
+                csvStringBuilder.append(value.getValue().getSubString(1L, (int) value.getValue().length()));
             } catch (SQLException e) {
                 throw new DattackNestableRuntimeException(e);
             }
