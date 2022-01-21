@@ -42,6 +42,7 @@ import com.dattack.jtoolbox.jdbc.JDBCUtils;
 import com.dattack.jtoolbox.jdbc.JNDIDataSource;
 import com.dattack.jtoolbox.jdbc.NamedParameterPreparedStatement;
 import org.apache.commons.configuration.AbstractConfiguration;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,7 +52,6 @@ import java.io.OutputStream;
 import java.io.Writer;
 import java.sql.BatchUpdateException;
 import java.sql.Blob;
-import java.sql.Clob;
 import java.sql.Connection;
 import java.sql.NClob;
 import java.sql.SQLException;
@@ -91,25 +91,35 @@ class InsertOperation implements Callable<Integer> {
     }
 
     @Override
-    public Integer call() throws Exception {
+    public Integer call() {
 
         final Visitor visitor = new Visitor();
         int totalInsertedRows = 0;
 
         while (true) {
-            final AbstractDataType<?>[] row = dataTransfer.transfer();
-            if (Objects.isNull(row)) {
-                break;
-            }
+            try {
+                final AbstractDataType<?>[] row = dataTransfer.transfer();
+                if (Objects.isNull(row)) {
+                    break;
+                }
 
-            for (final ColumnMetadata columnMetadata : getColumns(getPreparedStatement())) {
-                visitor.set(columnMetadata, row[columnMetadata.getIndex() - 1]);
-            }
+                for (final ColumnMetadata columnMetadata : getColumns(getPreparedStatement())) {
+                    visitor.set(columnMetadata, row[columnMetadata.getIndex() - 1]);
+                }
 
-            totalInsertedRows += execute();
+                totalInsertedRows += execute();
+            } catch (Exception e) {
+                LOGGER.error("ERROR: ", e);
+                taskResult.setException(e);
+            }
         }
 
-        totalInsertedRows += flush();
+        try {
+            totalInsertedRows += flush();
+        } catch (Exception e) {
+            LOGGER.error("ERROR: ", e);
+            taskResult.setException(e);
+        }
 
         return totalInsertedRows;
     }
@@ -122,7 +132,6 @@ class InsertOperation implements Callable<Integer> {
         }
 
         taskResult.addProcessedRows(insertedRows);
-
         JDBCUtils.closeQuietly(preparedStatement);
         JDBCUtils.closeQuietly(getConnection());
 
@@ -214,9 +223,11 @@ class InsertOperation implements Callable<Integer> {
         } catch (final BatchUpdateException e) {
             LOGGER.warn("Batch operation failed: {} (SQLSTATE: {}, Error code: {}, Executed statements: {})",
                     e.getMessage(), e.getSQLState(), e.getErrorCode(), e.getUpdateCounts().length);
+            throw e;
+        } finally {
+            getConnection().commit();
         }
 
-        getConnection().commit();
         return insertedRows;
     }
 
