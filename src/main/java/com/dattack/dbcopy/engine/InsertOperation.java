@@ -311,11 +311,9 @@ class InsertOperation implements Callable<Integer> {
 
         @Override
         public void visit(final ClobType type) throws SQLException {
-
-            final Clob targetClob = getPreparedStatement().getConnection().createClob();
-            try (Writer clobWriter = targetClob.setCharacterStream(1)) {
-                clobWriter.write(type.getValue().getSubString(1L, (int) type.getValue().length()));
-                getPreparedStatement().setClob(columnMetadata.getName(), targetClob);
+            try {
+                String txt = IOUtils.toString(type.getValue().getCharacterStream());
+                getPreparedStatement().setClob(columnMetadata.getName(), txt);
             } catch (IOException e) {
                 throw new SQLException("Unable to create Clob object: " + e.getMessage(), e);
             }
