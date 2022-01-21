@@ -41,6 +41,8 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
+import static java.lang.String.format;
+
 /**
  * Executes a copy-job instance.
  *
@@ -217,11 +219,12 @@ import java.util.concurrent.Future;
             buffer.append("\n\tTask name: ").append(taskResult.getTaskName())
                     .append("\n\t\tStart time: ").append(sdf.format(new Date(taskResult.getStartTime())))
                     .append("\n\t\tEnd time: ").append(sdf.format(new Date(taskResult.getEndTime())))
-                    .append("\n\t\tExecution time: ").append(taskResult.getExecutionTime())
-                    .append(" ms.\n\t\tRetrieved rows: ").append(taskResult.getTotalRetrievedRows())
-                    .append("\n\t\tProcessed rows: ").append(taskResult.getTotalProcessedRows())
-                    .append("\n\t\tRetrieved rows/s: ").append(taskResult.getRetrievedRowsPerSecond())
-                    .append("\n\t\tProcessed rows/s: ").append(taskResult.getProcessedRowsPerSecond());
+                    .append("\n\t\tExecution time: ").append(String.format("%,d", taskResult.getExecutionTime()))
+                    .append(" ms.\n\t\tRetrieved rows: ").append(format("%,d", taskResult.getTotalRetrievedRows())) //
+                    .append("\n\t\tProcessed rows: ").append(format("%,d", taskResult.getTotalProcessedRows())) //
+                    .append("\n\t\tRetrieved rows/s: ").append(format("%,f", taskResult.getRetrievedRowsPerSecond())) //
+                    .append("\n\t\tProcessed rows/s: ").append(format("%,f", taskResult.getProcessedRowsPerSecond()));
+
             if (taskResult.getException() != null) {
                 buffer.append("\n\t\tException: ").append(taskResult.getException().getMessage());
             }
