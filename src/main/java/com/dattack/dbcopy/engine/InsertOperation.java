@@ -130,7 +130,7 @@ class InsertOperation implements Callable<Integer> {
     }
 
     /* default */ NamedParameterPreparedStatement getPreparedStatement() throws SQLException {
-        if (Objects.isNull(preparedStatement)) {
+        if (preparedStatement == null || preparedStatement.isClosed()) {
             String sql;
             if (StringUtils.isNotBlank(bean.getSql())) {
                 sql = bean.getSql();
@@ -229,7 +229,7 @@ class InsertOperation implements Callable<Integer> {
     }
 
     private synchronized Connection getConnection() throws SQLException {
-        if (Objects.isNull(connection)) {
+        if (connection == null || connection.isClosed()) {
             connection = new JNDIDataSource(ConfigurationUtil.interpolate(bean.getDatasource(), configuration))
                     .getConnection();
             if (bean.getBatchSize() > 0) {
