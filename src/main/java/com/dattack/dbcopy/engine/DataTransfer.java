@@ -24,8 +24,8 @@ import java.sql.SQLException;
 import java.util.Objects;
 import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TransferQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Responsible for the control of the data transfer of a ResultSet.
@@ -43,6 +43,8 @@ public class DataTransfer {
     private final transient Semaphore semaphore;
     private final transient DbCopyTaskResult taskResult;
     private final transient TransferQueue<AbstractDataType<?>[]> transferQueue;
+    private final AtomicInteger queueSize;
+    private boolean exhausted = false;
 
     /* default */ DataTransfer(final ResultSet resultSet, final DbCopyTaskResult taskResult, final int fetchSize)
             throws SQLException {
@@ -52,6 +54,7 @@ public class DataTransfer {
         this.transferQueue = new LinkedTransferQueue<>();
         this.semaphore = new Semaphore(1);
         this.rowMetadata = createRowMetadata();
+        this.queueSize = new AtomicInteger();
         MBeanHelper.registerMBean("com.dattack.dbcopy:type=TransferQueue,name=" + taskResult.getTaskName(),
                 new TransferQueueWrapper(transferQueue));
     }
@@ -91,42 +94,70 @@ public class DataTransfer {
 
         AbstractDataType<?>[] row;
 
-        boolean moreData = true;
         do {
             row = transferQueue.poll();
 
-            if (Objects.isNull(row)) {
-
-                if (semaphore.tryAcquire(10, TimeUnit.MILLISECONDS)) {
-                    LOGGER.trace("Semaphore acquired by thread '{}'", Thread.currentThread().getName());
-                    final int previousPriority = Thread.currentThread().getPriority();
-                    Thread.currentThread().setPriority(Thread.MAX_PRIORITY);
-                    int counter = 0;
-                    do {
-                        row = publish();
-
-                        if (Objects.isNull(row)) {
-                            moreData = false;
-                            break;
-                        }
-                        transferQueue.put(row);
-                        taskResult.incrementRetrievedRows();
-
-                    } while (counter++ < fetchSize);
-                    semaphore.release();
-                    LOGGER.trace("Semaphore released by thread '{}'. Fetched rows {}",
-                            Thread.currentThread().getName(), counter);
-                    Thread.currentThread().setPriority(previousPriority);
+            if (row == null) {
+                if (transferNextChunk(true) == 0) {
+                    break;
                 }
-                row = transferQueue.poll();
+            } else if (queueSize.get() < fetchSize * 0.5) {
+                transferNextChunk(false);
             }
 
-        } while (Objects.isNull(row) && moreData);
+        } while (Objects.isNull(row));
 
+        queueSize.decrementAndGet();
         return row;
     }
 
-    private synchronized AbstractDataType<?>[] publish() throws SQLException, FunctionException {
+    private int transferNextChunk(boolean wait) throws InterruptedException, SQLException, FunctionException {
+        int counter = -1;
+        if (semaphore.tryAcquire()) {
+            counter = 0;
+            LOGGER.trace("Semaphore acquired by thread '{}'", Thread.currentThread().getName());
+            final int previousPriority = Thread.currentThread().getPriority();
+            Thread.currentThread().setPriority(Thread.MAX_PRIORITY);
+            int limit = fetchSize - transferQueue.size();
+            do {
+                AbstractDataType<?>[] publishedRow = publishNextRow();
+
+                if (Objects.isNull(publishedRow)) {
+                    if (counter <= 0) {
+                        exhausted = true;
+                    }
+                    break;
+                }
+
+                transferQueue.put(publishedRow);
+                taskResult.incrementRetrievedRows();
+                queueSize.incrementAndGet();
+
+                synchronized (this) {
+                    notifyAll();
+                }
+
+            } while (counter++ < limit);
+            semaphore.release();
+            LOGGER.trace("Semaphore released by thread '{}'. Fetched rows {}",
+                    Thread.currentThread().getName(), counter);
+            synchronized (this) {
+                notifyAll();
+            }
+            Thread.currentThread().setPriority(previousPriority);
+        } else {
+            if (wait) {
+                synchronized (this) {
+                    if (!exhausted) {
+                        wait(5_000);
+                    }
+                }
+            }
+        }
+        return counter;
+    }
+
+    private synchronized AbstractDataType<?>[] publishNextRow() throws SQLException, FunctionException {
 
         AbstractDataType<?>[] result = null;
         if (!isResultSetClosedQuietly() && resultSet.next()) {
