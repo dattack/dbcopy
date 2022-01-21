@@ -152,8 +152,17 @@ class InsertOperation implements Callable<Integer> {
         rowNumber++;
         int insertedRows = 0;
         if (rowNumber % bean.getBatchSize() == 0) {
+            long startTime = 0;
+            if (LOGGER.isDebugEnabled()) {
+                startTime = System.currentTimeMillis();
+            }
             insertedRows = executeBatch();
-            LOGGER.debug("Inserted rows: {} (Current block: {})", insertedRows, rowNumber);
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("{} rows inserted in {} ms. (total rows: {})",
+                        String.format("%,d", insertedRows),
+                        String.format("%,d", System.currentTimeMillis() - startTime),
+                        String.format("%,d", rowNumber));
+            }
         }
         return insertedRows;
     }
