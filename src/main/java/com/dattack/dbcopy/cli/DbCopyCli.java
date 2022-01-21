@@ -33,8 +33,6 @@ import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import java.io.File;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -99,7 +97,7 @@ public final class DbCopyCli {
     }
 
     private static void list(final String[] filenames, final Set<String> taskNames) throws DattackParserException {
-        for (final String file: filenames) {
+        for (final String file : filenames) {
             System.out.format("%n- %s%n", file);
             final DbcopyBean dbcopyBean = DbcopyParser.parse(new File(file));
             for (final DbcopyJobBean dbcopyJobBean : dbcopyBean.getJobList()) {
@@ -148,7 +146,8 @@ public final class DbCopyCli {
         }
     }
 
-    private static AbstractConfiguration getConfiguration(final String[] propertiesFiles) throws ConfigurationException {
+    private static AbstractConfiguration getConfiguration(final String[] propertiesFiles)
+            throws ConfigurationException {
         final CompositeConfiguration configuration = new CompositeConfiguration();
         if (Objects.nonNull(propertiesFiles)) {
             for (final String fileName : propertiesFiles) {
