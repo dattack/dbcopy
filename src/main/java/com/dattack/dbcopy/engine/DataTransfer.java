@@ -52,6 +52,8 @@ public class DataTransfer {
         this.transferQueue = new LinkedTransferQueue<>();
         this.semaphore = new Semaphore(1);
         this.rowMetadata = createRowMetadata();
+        MBeanHelper.registerMBean("com.dattack.dbcopy:type=TransferQueue,name=" + taskResult.getTaskName(),
+                new TransferQueueWrapper(transferQueue));
     }
 
     private RowMetadata createRowMetadata() throws SQLException {
