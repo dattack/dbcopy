@@ -44,11 +44,13 @@ import com.dattack.jtoolbox.jdbc.NamedParameterPreparedStatement;
 import org.apache.commons.configuration.AbstractConfiguration;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.exception.NestableRuntimeException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.Reader;
 import java.io.Writer;
 import java.sql.BatchUpdateException;
 import java.sql.Blob;
@@ -311,9 +313,8 @@ class InsertOperation implements Callable<Integer> {
 
         @Override
         public void visit(final ClobType type) throws SQLException {
-            try {
-                String txt = IOUtils.toString(type.getValue().getCharacterStream());
-                getPreparedStatement().setClob(columnMetadata.getName(), txt);
+            try (Reader reader = type.getValue().getCharacterStream()) {
+                getPreparedStatement().setClob(columnMetadata.getName(), IOUtils.toString(reader));
             } catch (IOException e) {
                 throw new SQLException("Unable to create Clob object: " + e.getMessage(), e);
             }

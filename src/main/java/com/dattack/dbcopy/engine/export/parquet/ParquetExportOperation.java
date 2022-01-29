@@ -44,9 +44,14 @@ import com.dattack.dbcopy.engine.export.ExportOperation;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericRecord;
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang.exception.NestableRuntimeException;
 import org.apache.parquet.hadoop.ParquetWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.io.Reader;
 import java.sql.SQLException;
 import java.util.Objects;
 
@@ -176,7 +181,11 @@ class ParquetExportOperation implements ExportOperation {
         @Override
         public void visit(final ClobType type) throws SQLException {
             if (type.isNotNull()) {
-                put(type.getValue().getSubString(1L, (int) type.getValue().length()));
+                try (Reader reader = type.getValue().getCharacterStream()) {
+                    put(IOUtils.toString(reader));
+                } catch (IOException e) {
+                    throw new NestableRuntimeException(e);
+                }
             }
         }
 

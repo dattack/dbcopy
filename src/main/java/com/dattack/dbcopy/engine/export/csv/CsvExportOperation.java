@@ -44,16 +44,19 @@ import com.dattack.dbcopy.engine.export.ExportOperation;
 import com.dattack.formats.csv.CSVConfiguration;
 import com.dattack.formats.csv.CSVStringBuilder;
 import com.dattack.jtoolbox.exceptions.DattackNestableRuntimeException;
+import com.dattack.jtoolbox.exceptions.DattackParserException;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.exception.NestableRuntimeException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.Reader;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.sql.Clob;
 import java.sql.SQLException;
 import java.sql.SQLXML;
 import java.util.Objects;
@@ -202,11 +205,10 @@ public class CsvExportOperation implements ExportOperation {
 
         @Override
         public void visit(final ClobType value) {
-            try {
-                final Clob clob = value.getValue();
-                csvStringBuilder.append(clob.getSubString(1L, (int) clob.length()));
-            } catch (SQLException e) {
-                throw new DattackNestableRuntimeException(e);
+            try (Reader reader = value.getValue().getCharacterStream()) {
+                csvStringBuilder.append(IOUtils.toString(reader));
+            } catch (SQLException | IOException e) {
+                throw new NestableRuntimeException(e);
             }
         }
 
