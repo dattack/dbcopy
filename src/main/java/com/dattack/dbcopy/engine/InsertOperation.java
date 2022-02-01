@@ -41,10 +41,10 @@ import com.dattack.jtoolbox.commons.configuration.ConfigurationUtil;
 import com.dattack.jtoolbox.jdbc.JDBCUtils;
 import com.dattack.jtoolbox.jdbc.JNDIDataSource;
 import com.dattack.jtoolbox.jdbc.NamedParameterPreparedStatement;
+import com.dattack.jtoolbox.util.MultiStopWatch;
 import org.apache.commons.configuration.AbstractConfiguration;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
-import org.apache.commons.lang.exception.NestableRuntimeException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.IOException;
@@ -82,6 +82,7 @@ class InsertOperation implements Callable<Integer> {
     private transient Connection connection;
     private transient NamedParameterPreparedStatement preparedStatement;
     private transient int rowNumber;
+    private final MultiStopWatch stopWatch;
 
     public InsertOperation(final InsertOperationBean bean, final DataTransfer dataTransfer,
                            final AbstractConfiguration configuration, final DbCopyTaskResult taskResult) {
@@ -90,6 +91,7 @@ class InsertOperation implements Callable<Integer> {
         this.configuration = configuration;
         this.taskResult = taskResult;
         this.rowNumber = 0;
+        this.stopWatch = new MultiStopWatch();
     }
 
     @Override
@@ -100,16 +102,22 @@ class InsertOperation implements Callable<Integer> {
 
         while (true) {
             try {
+                stopWatch.start("transfer");
                 final AbstractDataType<?>[] row = dataTransfer.transfer();
+                stopWatch.stop("transfer");
+
                 if (Objects.isNull(row)) {
                     break;
                 }
 
+                stopWatch.start("populate");
                 for (final ColumnMetadata columnMetadata : getColumns(getPreparedStatement())) {
                     visitor.set(columnMetadata, row[columnMetadata.getIndex() - 1]);
                 }
+                stopWatch.stop("populate");
 
                 totalInsertedRows += execute();
+
             } catch (Exception e) {
                 LOGGER.error("ERROR: ", e);
                 taskResult.setException(e);
@@ -151,7 +159,7 @@ class InsertOperation implements Callable<Integer> {
                 throw new SQLException("Missing insert statement or table name");
             }
 
-            LOGGER.info(sql);
+            LOGGER.trace(sql);
             preparedStatement = NamedParameterPreparedStatement.build(getConnection(),
                     ConfigurationUtil.interpolate(sql, configuration));
         }
@@ -163,17 +171,17 @@ class InsertOperation implements Callable<Integer> {
         rowNumber++;
         int insertedRows = 0;
         if (rowNumber % bean.getBatchSize() == 0) {
-            long startTime = 0;
-            if (LOGGER.isDebugEnabled()) {
-                startTime = System.currentTimeMillis();
-            }
+            stopWatch.start("remote");
             insertedRows = executeBatch();
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("{} rows inserted in {} ms. (total rows: {})",
+            stopWatch.stop("remote");
+            if (LOGGER.isInfoEnabled()) {
+                LOGGER.info("{}-{}: {} rows (total: {}) inserted in {}",
+                        taskResult.getTaskName(), Thread.currentThread().getName(),
                         String.format("%,d", insertedRows),
-                        String.format("%,d", System.currentTimeMillis() - startTime),
-                        String.format("%,d", rowNumber));
+                        String.format("%,d", rowNumber),
+                        String.format("%s", stopWatch));
             }
+            stopWatch.reset();
         }
         return insertedRows;
     }
