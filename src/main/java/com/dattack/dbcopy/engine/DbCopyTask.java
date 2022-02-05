@@ -40,7 +40,6 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicInteger;
 import javax.sql.DataSource;
 
 /**
@@ -52,7 +51,6 @@ import javax.sql.DataSource;
 class DbCopyTask implements Callable<DbCopyTaskResult> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DbCopyTask.class);
-    private static final AtomicInteger SEQUENCE = new AtomicInteger();
 
     private final transient AbstractConfiguration configuration;
     private final transient DbcopyJobBean dbcopyJobBean;
@@ -82,10 +80,15 @@ class DbCopyTask implements Callable<DbCopyTaskResult> {
                             dbcopyJobBean.getSelectBean().getFetchSize());
 
             final List<Future<?>> futureList = new ArrayList<>();
-            futureList.addAll(createInsertFutures(dataTransfer));
-            futureList.addAll(createExportFutures(dataTransfer));
+            
+            try(ExecutionController insertController = createInsertController(); //
+                ExecutionController exportController = createExportController()) {
 
-            showFutures(futureList);
+                futureList.addAll(createInsertFutures(dataTransfer, insertController));
+                futureList.addAll(createExportFutures(dataTransfer, exportController));
+
+                showFutures(futureList);
+            }
             LOGGER.info("DBCopy task finished {}", taskResult.getTaskName());
 
         } catch (final SQLException | URISyntaxException | IOException e) {
@@ -95,6 +98,26 @@ class DbCopyTask implements Callable<DbCopyTaskResult> {
 
         taskResult.end();
         return taskResult;
+    }
+
+    private ExecutionController createInsertController() {
+
+        ExecutionController controller = null;
+        if (dbcopyJobBean.getInsertBean() != null) {
+            controller = new ExecutionController(taskResult.getTaskName() + "-Insert",
+                    dbcopyJobBean.getInsertBean().getParallel());
+        }
+        return controller;
+    }
+
+    private ExecutionController createExportController() {
+
+        ExecutionController controller = null;
+        if (dbcopyJobBean.getExportBean() != null) {
+            controller = new ExecutionController(taskResult.getTaskName() + "-Export",
+                    dbcopyJobBean.getExportBean().getParallel());
+        }
+        return controller;
     }
 
     private DataSource getDataSource() {
@@ -123,50 +146,38 @@ class DbCopyTask implements Callable<DbCopyTaskResult> {
         return compiledSql;
     }
 
-    private List<Future<?>> createInsertFutures(final DataTransfer dataTransfer) {
+    private List<Future<?>> createInsertFutures(final DataTransfer dataTransfer, ExecutionController controller) {
 
         final List<Future<?>> futureList = new ArrayList<>();
 
-        if (dbcopyJobBean.getInsertBean() != null) {
-
-            final int poolSize = dbcopyJobBean.getInsertBean().getParallel();
-            final ExecutionController executionController = new ExecutionController("Insert-" + dbcopyJobBean.getId(),
-                    poolSize, poolSize);
-            MBeanHelper.registerMBean("com.dattack.dbcopy:type=ThreadPool,name=Insert-" + dbcopyJobBean.getId()
-                    + "-" + SEQUENCE.getAndIncrement(), executionController);
+        if (controller != null) {
 
             for (int i = 0; i < dbcopyJobBean.getInsertBean().getParallel(); i++) {
-                futureList.add(executionController.submit(new InsertOperation(dbcopyJobBean.getInsertBean(), //NOPMD
+                futureList.add(controller.submit(new InsertOperation(dbcopyJobBean.getInsertBean(), //NOPMD
                         dataTransfer, configuration, taskResult)));
             }
 
-            executionController.shutdown();
+            controller.shutdown();
         }
 
         return futureList;
     }
 
-    private List<Future<?>> createExportFutures(final DataTransfer dataTransfer) {
+    private List<Future<?>> createExportFutures(final DataTransfer dataTransfer, ExecutionController controller) {
 
         final List<Future<?>> futureList = new ArrayList<>();
 
-        if (dbcopyJobBean.getExportBean() != null) {
-
-            final int poolSize = dbcopyJobBean.getExportBean().getParallel();
-            final ExecutionController executionController = new ExecutionController("Export-" + dbcopyJobBean.getId(),
-                    poolSize, poolSize);
-            MBeanHelper.registerMBean("com.dattack.dbcopy:type=ThreadPool,name=Export-" + dbcopyJobBean.getId()
-                    + "-" + SEQUENCE.getAndIncrement(), executionController);
+        if (controller != null) {
 
             final ExportOperationFactory factory =
                     ExportOperationFactoryProducer.getFactory(dbcopyJobBean.getExportBean(),
                     configuration);
 
             for (int i = 0; i < dbcopyJobBean.getExportBean().getParallel(); i++) {
-                futureList.add(executionController.submit(factory.createTask(dataTransfer, taskResult)));
+                futureList.add(controller.submit(factory.createTask(dataTransfer, taskResult)));
             }
 
-            executionController.shutdown();
+            controller.shutdown();
         }
 
         return futureList;

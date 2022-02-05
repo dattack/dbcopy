@@ -44,6 +44,7 @@ public final class DbCopyTaskResult implements DbCopyTaskResultMBean {
         this.endTime = 0;
         //this.exception = null;
         this.onEndCommandList = new ArrayList<>();
+        MBeanHelper.registerMBean("TaskResult", taskName, this);
     }
 
     public void addOnEndCommand(final Command<?> command) {

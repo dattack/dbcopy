@@ -15,12 +15,17 @@
  */
 package com.dattack.dbcopy.engine;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.lang.management.ManagementFactory;
 import javax.management.InstanceAlreadyExistsException;
+import javax.management.InstanceNotFoundException;
 import javax.management.MBeanRegistrationException;
 import javax.management.MBeanServer;
 import javax.management.MalformedObjectNameException;
 import javax.management.NotCompliantMBeanException;
+import javax.management.ObjectInstance;
 import javax.management.ObjectName;
 
 /**
@@ -32,17 +37,51 @@ import javax.management.ObjectName;
 @SuppressWarnings("checkstyle:AbbreviationAsWordInName")
 public final class MBeanHelper {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(MBeanHelper.class);
+
     private MBeanHelper() {
         // static class
     }
 
-    public static void registerMBean(final String name, final Object object) {
+    public static ObjectName createObjectName(final String type, final String name) {
+        ObjectName objectName = null;
+        try {
+            objectName = new ObjectName("com.dattack.dbcopy:type=" + type + ",name=" + name);
+        } catch (MalformedObjectNameException e) {
+            LOGGER.warn(e.getMessage(), e);
+        }
+        return objectName;
+    }
+
+    public static ObjectInstance registerMBean(final String type, final String name, final Object object) {
+        return registerMBean(createObjectName(type, name), object);
+    }
+
+    public static ObjectInstance registerMBean(final ObjectName name, final Object object) {
+
+        if (name == null || object == null) {
+            LOGGER.warn("Unable to register MBean (name: {}, class: {})", name, //
+                    object == null ? "null" : object.getClass());
+            return null;
+        }
+
+        LOGGER.info("Registering MBean (name: {}, class: {})", name, object.getClass());
+        ObjectInstance objectInstance = null;
         try {
             final MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
-            mbs.registerMBean(object, new ObjectName(name));
-        } catch (InstanceAlreadyExistsException | MBeanRegistrationException | NotCompliantMBeanException
-                | MalformedObjectNameException e) {
-            e.printStackTrace();
+            objectInstance = mbs.registerMBean(object, name);
+        } catch (InstanceAlreadyExistsException | MBeanRegistrationException | NotCompliantMBeanException e) {
+            LOGGER.warn(e.getMessage(), e);
+        }
+        return objectInstance;
+    }
+
+    public static void unregisterMBean(final ObjectName name) {
+        try {
+            final MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
+            mbs.unregisterMBean(name);
+        } catch (MBeanRegistrationException | InstanceNotFoundException e) {
+            LOGGER.warn(e.getMessage(), e);
         }
     }
 }

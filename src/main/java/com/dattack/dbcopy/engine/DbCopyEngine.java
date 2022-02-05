@@ -23,6 +23,7 @@ import com.dattack.jtoolbox.io.FilesystemUtils;
 import org.apache.commons.configuration.AbstractConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
@@ -31,7 +32,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
 /**
- * Responsible of the execution of one or more jobs.
+ * Responsible for the execution of one or more jobs.
  *
  * @author cvarela
  * @since 0.1
@@ -51,29 +52,27 @@ public final class DbCopyEngine {
     private void execute(final DbcopyBean dbcopyBean, final Set<String> jobNames,
                          final AbstractConfiguration configuration) {
 
-        final ExecutionController executionController = new ExecutionController("root", dbcopyBean.getParallel(),
-                dbcopyBean.getParallel());
-        MBeanHelper.registerMBean("com.dattack.dbcopy:type=ThreadPool,name=root",
-                executionController);
+        try (ExecutionController controller = new ExecutionController("root", dbcopyBean.getParallel())) {
 
-        final List<Future<?>> futureList = new ArrayList<>();
-        for (final DbcopyJobBean jobBean : dbcopyBean.getJobList()) {
+            final List<Future<?>> futureList = new ArrayList<>();
+            for (final DbcopyJobBean jobBean : dbcopyBean.getJobList()) {
 
-            if (jobNames != null && !jobNames.isEmpty() && !jobNames.contains(jobBean.getId())) {
-                continue;
+                if (jobNames != null && !jobNames.isEmpty() && !jobNames.contains(jobBean.getId())) {
+                    continue;
+                }
+
+                final DbCopyJob job = new DbCopyJob(jobBean, configuration); //NOPMD
+                futureList.add(controller.submit(job));
             }
 
-            final DbCopyJob job = new DbCopyJob(jobBean, configuration); //NOPMD
-            futureList.add(executionController.submit(job));
-        }
+            controller.shutdown();
 
-        executionController.shutdown();
-
-        for (final Future<?> future : futureList) {
-            try {
-                LOGGER.info("Future result: {}", future.get());
-            } catch (final InterruptedException | ExecutionException e) {
-                LOGGER.warn("Error getting computed result from Future object", e);
+            for (final Future<?> future : futureList) {
+                try {
+                    LOGGER.info("Future result: {}", future.get());
+                } catch (final InterruptedException | ExecutionException e) {
+                    LOGGER.warn("Error getting computed result from Future object", e);
+                }
             }
         }
     }

@@ -28,6 +28,7 @@ import org.apache.commons.configuration.CompositeConfiguration;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
@@ -54,16 +55,11 @@ import static java.lang.String.format;
     private static final Logger LOGGER = LoggerFactory.getLogger(DbCopyJob.class);
 
     private final transient DbcopyJobBean dbcopyJobBean;
-    private final transient ExecutionController executionController;
     private final transient AbstractConfiguration externalConfiguration;
 
     /* default */ DbCopyJob(final DbcopyJobBean dbcopyJobBean, final AbstractConfiguration configuration) {
         this.dbcopyJobBean = dbcopyJobBean;
         this.externalConfiguration = configuration;
-        executionController = new ExecutionController(dbcopyJobBean.getId(), dbcopyJobBean.getThreads(),
-                dbcopyJobBean.getThreads());
-        MBeanHelper.registerMBean("com.dattack.dbcopy:type=ThreadPool,name=" + dbcopyJobBean.getId(),
-                executionController);
     }
 
     private static void showFutures(final List<Future<?>> futureList) {
@@ -82,28 +78,30 @@ import static java.lang.String.format;
 
         LOGGER.info("Running job '{}' at thread '{}'", dbcopyJobBean.getId(), Thread.currentThread().getName());
 
-        final List<Future<?>> futureList = new ArrayList<>();
+        try (ExecutionController controller = new ExecutionController(dbcopyJobBean.getId(),
+                dbcopyJobBean.getThreads())) {
 
-        final DbCopyJobResult jobResult = new DbCopyJobResult(dbcopyJobBean);
-        MBeanHelper.registerMBean("com.dattack.dbcopy:type=JobResult,name=" + dbcopyJobBean.getId(), jobResult);
+            final List<Future<?>> futureList = new ArrayList<>();
 
-        final VariableVisitor rangeVisitor = getVariableVisitor(futureList, jobResult);
+            final DbCopyJobResult jobResult = new DbCopyJobResult(dbcopyJobBean);
 
-        if (Objects.isNull(dbcopyJobBean.getVariableList()) || dbcopyJobBean.getVariableList().isEmpty()) {
-            new NullVariableBean().accept(rangeVisitor);
-        } else {
-            for (final AbstractVariableBean item : dbcopyJobBean.getVariableList()) {
-                item.accept(rangeVisitor);
+            final VariableVisitor variableVisitor = getVariableVisitor(futureList, jobResult, controller);
+
+            if (Objects.isNull(dbcopyJobBean.getVariableList()) || dbcopyJobBean.getVariableList().isEmpty()) {
+                new NullVariableBean().accept(variableVisitor);
+            } else {
+                for (final AbstractVariableBean item : dbcopyJobBean.getVariableList()) {
+                    item.accept(variableVisitor);
+                }
             }
+
+            controller.shutdown();
+            showFutures(futureList);
+
+            show(jobResult);
         }
 
-        executionController.shutdown();
-        showFutures(futureList);
-
-        show(jobResult);
-
-        LOGGER.info("Job finished (job-name: '{}', thread: '{}')", dbcopyJobBean.getId(),
-                Thread.currentThread().getName());
+        LOGGER.info("Job finished (job-name: '{}', thread: '{}')", dbcopyJobBean.getId(), Thread.currentThread().getName());
 
         return null;
     }
@@ -112,15 +110,11 @@ import static java.lang.String.format;
         return dbcopyJobBean;
     }
 
-    /* default */ ExecutionController getExecutionController() {
-        return executionController;
-    }
-
     /* default */ AbstractConfiguration getExternalConfiguration() {
         return externalConfiguration;
     }
 
-    private VariableVisitor getVariableVisitor(final List<Future<?>> futureList, final DbCopyJobResult jobResult) {
+    private VariableVisitor getVariableVisitor(final List<Future<?>> futureList, final DbCopyJobResult jobResult, final ExecutionController executionController) {
 
         return new VariableVisitor() {
 
@@ -150,7 +144,7 @@ import static java.lang.String.format;
 
                     final DbCopyTask dbcopyTask = new DbCopyTask(getDbcopyJobBean(), configuration, //NOPMD
                             jobResult.createTaskResult(taskName.toString()));
-                    futureList.add(getExecutionController().submit(dbcopyTask));
+                    futureList.add(executionController.submit(dbcopyTask));
                     taskName.setLength(0);
                 }
             }
@@ -173,20 +167,19 @@ import static java.lang.String.format;
 
                     final DbCopyTask dbcopyTask = new DbCopyTask(getDbcopyJobBean(), configuration, //NOPMD
                             jobResult.createTaskResult(taskName));
-                    futureList.add(getExecutionController().submit(dbcopyTask));
+                    futureList.add(executionController.submit(dbcopyTask));
                 }
             }
 
             @Override
             public void visit(final NullVariableBean bean) {
 
-                final String taskName = getDbcopyJobBean().getId();
+                final String taskName = getDbcopyJobBean().getId() + "_Task";
                 final CompositeConfiguration configuration = createCompositeConfiguration();
                 configuration.addConfiguration(createBaseConfiguration());
 
-                final DbCopyTask dbcopyTask = new DbCopyTask(getDbcopyJobBean(), configuration,
-                        jobResult.createTaskResult(taskName));
-                futureList.add(getExecutionController().submit(dbcopyTask));
+                final DbCopyTask dbcopyTask = new DbCopyTask(getDbcopyJobBean(), configuration, jobResult.createTaskResult(taskName));
+                futureList.add(executionController.submit(dbcopyTask));
             }
 
             private BaseConfiguration createBaseConfiguration() {

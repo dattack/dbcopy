@@ -33,14 +33,12 @@ public class DbCopyJobResult implements DbCopyJobResultMBean {
     public DbCopyJobResult(final DbcopyJobBean jobBean) {
         this.jobBean = jobBean;
         this.taskResultList = new ArrayList<>();
+        MBeanHelper.registerMBean("JobResult", jobBean.getId(), this);
     }
 
     public DbCopyTaskResult createTaskResult(final String taskName) {
-
-        final String fullTaskName = String.format("%s@%s", jobBean.getId(), taskName);
-        final DbCopyTaskResult taskResult = new DbCopyTaskResult(fullTaskName);
+        final DbCopyTaskResult taskResult = new DbCopyTaskResult(taskName);
         this.taskResultList.add(taskResult);
-        MBeanHelper.registerMBean("com.dattack.dbcopy:type=TaskResult,name=" + fullTaskName, taskResult);
         return taskResult;
     }
 
