@@ -87,6 +87,7 @@ public class DataTransfer {
      * @return the next row of data or null if there is no more data.
      * @throws SQLException         if a database access error occurs or this method is called on a closed result set.
      * @throws InterruptedException if the current thread is interrupted
+     * @throws FunctionException    if an error occurs when evaluating a function that provides data from source.
      */
     @SuppressWarnings("checkstyle:VariableDeclarationUsageDistance")
     public AbstractDataType<?>[] transfer() throws SQLException, InterruptedException, FunctionException {
