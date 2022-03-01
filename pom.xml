@@ -79,13 +79,11 @@
             <artifactId>data-formats</artifactId>
             <version>${data-formats.version}</version>
         </dependency>
-<!--
         <dependency>
             <groupId>com.dattack</groupId>
             <artifactId>jtoolbox-core</artifactId>
             <version>${jtoolbox-core.version}</version>
         </dependency>
-    -->
         <dependency>
             <groupId>com.dattack</groupId>
             <artifactId>standalone-jndi</artifactId>
