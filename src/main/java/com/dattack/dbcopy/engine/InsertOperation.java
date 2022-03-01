@@ -40,13 +40,16 @@ import com.dattack.dbcopy.engine.datatype.XmlType;
 import com.dattack.jtoolbox.commons.configuration.ConfigurationUtil;
 import com.dattack.jtoolbox.jdbc.JDBCUtils;
 import com.dattack.jtoolbox.jdbc.JNDIDataSource;
-import com.dattack.jtoolbox.jdbc.NamedParameterPreparedStatement;
+import com.dattack.jtoolbox.jdbc.internal.NamedPreparedStatement;
+import com.dattack.jtoolbox.jdbc.internal.ProxyConnection;
+import com.dattack.jtoolbox.jdbc.internal.ProxyConnectionFactory;
 import com.dattack.jtoolbox.util.MultiStopWatch;
 import org.apache.commons.configuration.AbstractConfiguration;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -78,14 +81,14 @@ class InsertOperation implements Callable<Integer> {
     private final transient AbstractConfiguration configuration;
     private final transient DataTransfer dataTransfer;
     private final transient DbCopyTaskResult taskResult;
-    private transient volatile List<ColumnMetadata> columnsMetadata2Process;
-    private transient Connection connection;
-    private transient NamedParameterPreparedStatement preparedStatement;
-    private transient int rowNumber;
     private final MultiStopWatch stopWatch;
+    private transient volatile List<ColumnMetadata> columnsMetadata2Process;
+    private transient ProxyConnection connection;
+    private transient NamedPreparedStatement preparedStatement;
+    private transient int rowNumber;
 
     public InsertOperation(final InsertOperationBean bean, final DataTransfer dataTransfer,
-                           final AbstractConfiguration configuration, final DbCopyTaskResult taskResult) {
+            final AbstractConfiguration configuration, final DbCopyTaskResult taskResult) {
         this.bean = bean;
         this.dataTransfer = dataTransfer;
         this.configuration = configuration;
@@ -146,127 +149,6 @@ class InsertOperation implements Callable<Integer> {
         JDBCUtils.closeQuietly(getConnection());
 
         return insertedRows;
-    }
-
-    /* default */ NamedParameterPreparedStatement getPreparedStatement() throws SQLException {
-        if (preparedStatement == null || preparedStatement.isClosed()) {
-            String sql;
-            if (StringUtils.isNotBlank(bean.getSql())) {
-                sql = bean.getSql();
-            } else if (StringUtils.isNotBlank(bean.getTable())) {
-                sql = createAutomapSql();
-            } else {
-                throw new SQLException("Missing insert statement or table name");
-            }
-
-            LOGGER.trace(sql);
-            preparedStatement = NamedParameterPreparedStatement.build(getConnection(),
-                    ConfigurationUtil.interpolate(sql, configuration));
-        }
-        return preparedStatement;
-    }
-
-    private int addBatch() throws SQLException {
-        getPreparedStatement().addBatch();
-        rowNumber++;
-        int insertedRows = 0;
-        if (rowNumber % bean.getBatchSize() == 0) {
-            stopWatch.start("remote");
-            insertedRows = executeBatch();
-            stopWatch.stop("remote");
-            if (LOGGER.isInfoEnabled()) {
-                LOGGER.info("{}-{}: {} rows (total: {}) inserted in {}",
-                        taskResult.getTaskName(), Thread.currentThread().getName(),
-                        String.format("%,d", insertedRows),
-                        String.format("%,d", rowNumber),
-                        String.format("%s", stopWatch));
-            }
-            stopWatch.reset();
-        }
-        return insertedRows;
-    }
-
-    private String createAutomapSql() {
-        final StringBuilder columns = new StringBuilder();
-        final StringBuilder refs = new StringBuilder();
-
-        String concat = "";
-
-        for (final ColumnMetadata columnMetadata : dataTransfer.getRowMetadata().getColumnsMetadata()) {
-            columns.append(concat).append(columnMetadata.getName());
-            refs.append(concat).append(':').append(columnMetadata.getName());
-            concat = ",";
-        }
-
-        return String.format("INSERT INTO %s(%s) VALUES (%s)", bean.getTable(), columns, refs);
-    }
-
-    private int execute() throws SQLException {
-
-        int insertedRows;
-
-        if (bean.getBatchSize() > 0) {
-            insertedRows = addBatch();
-        } else {
-            insertedRows = getPreparedStatement().executeUpdate();
-        }
-
-        taskResult.addProcessedRows(insertedRows);
-
-        return insertedRows;
-    }
-
-    private int executeBatch() throws SQLException {
-
-        int insertedRows = 0;
-        try {
-            final int[] batchResult = getPreparedStatement().executeBatch();
-
-            for (final int result : batchResult) {
-                if (result > 0) {
-                    insertedRows += result;
-                } else if (result == Statement.SUCCESS_NO_INFO) {
-                    insertedRows++;
-                }
-            }
-
-        } catch (final BatchUpdateException e) {
-            LOGGER.warn("Batch operation failed: {} (SQLSTATE: {}, Error code: {}, Executed statements: {})",
-                    e.getMessage(), e.getSQLState(), e.getErrorCode(), e.getUpdateCounts().length);
-            throw e;
-        } finally {
-            getConnection().commit();
-        }
-
-        return insertedRows;
-    }
-
-    private List<ColumnMetadata> getColumns(final NamedParameterPreparedStatement preparedStatement) {
-
-        if (Objects.isNull(columnsMetadata2Process)) {
-            columnsMetadata2Process = new ArrayList<>(dataTransfer.getRowMetadata().getColumnCount());
-
-            for (final ColumnMetadata columnMetadata : dataTransfer.getRowMetadata().getColumnsMetadata()) {
-                if (preparedStatement.hasNamedParameter(columnMetadata.getName())) {
-                    columnsMetadata2Process.add(columnMetadata);
-                } else {
-                    LOGGER.warn("Column {} not used", columnMetadata.getName());
-                }
-            }
-        }
-
-        return columnsMetadata2Process;
-    }
-
-    private synchronized Connection getConnection() throws SQLException {
-        if (connection == null || connection.isClosed()) {
-            connection = new JNDIDataSource(ConfigurationUtil.interpolate(bean.getDatasource(), configuration))
-                    .getConnection();
-            if (bean.getBatchSize() > 0) {
-                connection.setAutoCommit(false);
-            }
-        }
-        return connection;
     }
 
     /**
@@ -410,5 +292,127 @@ class InsertOperation implements Callable<Integer> {
                 value.accept(this);
             }
         }
+    }
+
+    /* default */ NamedPreparedStatement getPreparedStatement() throws SQLException {
+        if (preparedStatement == null || preparedStatement.isClosed()) {
+            String sql;
+            if (StringUtils.isNotBlank(bean.getSql())) {
+                sql = bean.getSql();
+            } else if (StringUtils.isNotBlank(bean.getTable())) {
+                sql = createAutomapSql();
+            } else {
+                throw new SQLException("Missing insert statement or table name");
+            }
+
+            LOGGER.trace(sql);
+            preparedStatement =
+                    getConnection().prepareNamedStatement(ConfigurationUtil.interpolate(sql, configuration));
+        }
+        return preparedStatement;
+    }
+
+    private int addBatch() throws SQLException {
+        getPreparedStatement().addBatch();
+        rowNumber++;
+        int insertedRows = 0;
+        if (rowNumber % bean.getBatchSize() == 0) {
+            stopWatch.start("remote");
+            insertedRows = executeBatch();
+            stopWatch.stop("remote");
+            if (LOGGER.isInfoEnabled()) {
+                LOGGER.info("{}-{}: {} rows (total: {}) inserted in {}", taskResult.getTaskName(),
+                            Thread.currentThread().getName(), String.format("%,d", insertedRows),
+                            String.format("%,d", rowNumber), String.format("%s", stopWatch));
+            }
+            stopWatch.reset();
+        }
+        return insertedRows;
+    }
+
+    private String createAutomapSql() {
+        final StringBuilder columns = new StringBuilder();
+        final StringBuilder refs = new StringBuilder();
+
+        String concat = "";
+
+        for (final ColumnMetadata columnMetadata : dataTransfer.getRowMetadata().getColumnsMetadata()) {
+            columns.append(concat).append(columnMetadata.getName());
+            refs.append(concat).append(':').append(columnMetadata.getName());
+            concat = ",";
+        }
+
+        String sql = String.format("INSERT INTO %s(%s) VALUES (%s)", bean.getTable(), columns, refs);
+        LOGGER.info("SQL: {}", sql);
+        return sql;
+    }
+
+    private int execute() throws SQLException {
+
+        int insertedRows;
+
+        if (bean.getBatchSize() > 0) {
+            insertedRows = addBatch();
+        } else {
+            insertedRows = getPreparedStatement().executeUpdate();
+        }
+
+        taskResult.addProcessedRows(insertedRows);
+
+        return insertedRows;
+    }
+
+    private int executeBatch() throws SQLException {
+
+        int insertedRows = 0;
+        try {
+            final int[] batchResult = getPreparedStatement().executeBatch();
+
+            for (final int result : batchResult) {
+                if (result > 0) {
+                    insertedRows += result;
+                } else if (result == Statement.SUCCESS_NO_INFO) {
+                    insertedRows++;
+                }
+            }
+
+        } catch (final BatchUpdateException e) {
+            LOGGER.warn("Batch operation failed: {} (SQLSTATE: {}, Error code: {}, Executed statements: {})",
+                        e.getMessage(), e.getSQLState(), e.getErrorCode(), e.getUpdateCounts().length);
+            throw e;
+        } finally {
+            getConnection().commit();
+        }
+
+        return insertedRows;
+    }
+
+    private List<ColumnMetadata> getColumns(final NamedPreparedStatement preparedStatement) {
+
+        if (Objects.isNull(columnsMetadata2Process)) {
+            columnsMetadata2Process = new ArrayList<>(dataTransfer.getRowMetadata().getColumnCount());
+
+            for (final ColumnMetadata columnMetadata : dataTransfer.getRowMetadata().getColumnsMetadata()) {
+                if (preparedStatement.hasNamedParameter(columnMetadata.getName())) {
+                    columnsMetadata2Process.add(columnMetadata);
+                } else {
+                    LOGGER.warn("Column {} not used", columnMetadata.getName());
+                }
+            }
+        }
+
+        return columnsMetadata2Process;
+    }
+
+    private synchronized ProxyConnection getConnection() throws SQLException {
+        if (connection == null || connection.isClosed()) {
+            Connection proxyConnection = new JNDIDataSource(
+                    ConfigurationUtil.interpolate(bean.getDatasource(), configuration)).getConnection();
+            if (bean.getBatchSize() > 0) {
+                proxyConnection.setAutoCommit(false);
+            }
+            connection = ProxyConnectionFactory.build(proxyConnection);
+        }
+        return connection;
     }
 }

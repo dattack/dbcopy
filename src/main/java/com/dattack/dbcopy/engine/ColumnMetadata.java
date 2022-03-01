@@ -180,15 +180,15 @@ public class ColumnMetadata {
 
     @Override
     public String toString() {
-        return "ColumnMetadata{" + //
-                "name='" + getName() + '\'' + //
-                ", index=" + getIndex() + //
-                ", type=" + getType() + //
-                ", precision=" + getPrecision() + //
-                ", scale=" + getScale() + //
-                ", nullable=" + isNullable() + //
-                ", function=" + function + //
-                '}';
+        return "ColumnMetadata{" //
+                + "name='" + getName() + '\'' //
+                + ", index=" + getIndex() //
+                + ", type=" + getType() //
+                + ", precision=" + getPrecision() //
+                + ", scale=" + getScale() //
+                + ", nullable=" + isNullable() //
+                + ", function=" + function //
+                + '}';
     }
 
     public String getName() {

@@ -54,8 +54,8 @@ public class DbcopyJobBean implements Serializable {
     private int threads = DEFAULT_THREADS;
 
     @XmlElements({ //
-            @XmlElement(name = "integer-range", type = IntegerRangeBean.class), //
-            @XmlElement(name = "literal-list", type = LiteralListBean.class) //
+                   @XmlElement(name = "integer-range", type = IntegerRangeBean.class), //
+                   @XmlElement(name = "literal-list", type = LiteralListBean.class) //
     })
     private List<AbstractVariableBean> variableList;
 

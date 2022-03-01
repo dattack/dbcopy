@@ -79,7 +79,7 @@ import static java.lang.String.format;
         LOGGER.info("Running job '{}' at thread '{}'", dbcopyJobBean.getId(), Thread.currentThread().getName());
 
         try (ExecutionController controller = new ExecutionController(dbcopyJobBean.getId(),
-                dbcopyJobBean.getThreads())) {
+                                                                      dbcopyJobBean.getThreads())) {
 
             final List<Future<?>> futureList = new ArrayList<>();
 
@@ -101,7 +101,8 @@ import static java.lang.String.format;
             show(jobResult);
         }
 
-        LOGGER.info("Job finished (job-name: '{}', thread: '{}')", dbcopyJobBean.getId(), Thread.currentThread().getName());
+        LOGGER.info("Job finished (job-name: '{}', thread: '{}')", dbcopyJobBean.getId(),
+                    Thread.currentThread().getName());
 
         return null;
     }
@@ -114,7 +115,8 @@ import static java.lang.String.format;
         return externalConfiguration;
     }
 
-    private VariableVisitor getVariableVisitor(final List<Future<?>> futureList, final DbCopyJobResult jobResult, final ExecutionController executionController) {
+    private VariableVisitor getVariableVisitor(final List<Future<?>> futureList, final DbCopyJobResult jobResult,
+        final ExecutionController executionController) {
 
         return new VariableVisitor() {
 
@@ -138,12 +140,13 @@ import static java.lang.String.format;
 
                     final BaseConfiguration baseConfiguration = createBaseConfiguration();
                     baseConfiguration.setProperty(bean.getId() + ".values", values);
+                    baseConfiguration.setProperty(bean.getId(), values);
 
                     final CompositeConfiguration configuration = createCompositeConfiguration();
                     configuration.addConfiguration(baseConfiguration);
 
                     final DbCopyTask dbcopyTask = new DbCopyTask(getDbcopyJobBean(), configuration, //NOPMD
-                            jobResult.createTaskResult(taskName.toString()));
+                                                                 jobResult.createTaskResult(taskName.toString()));
                     futureList.add(executionController.submit(dbcopyTask));
                     taskName.setLength(0);
                 }
@@ -166,7 +169,7 @@ import static java.lang.String.format;
                     final String taskName = String.format("%s_%d_%d", getDbcopyJobBean().getId(), i, highValue);
 
                     final DbCopyTask dbcopyTask = new DbCopyTask(getDbcopyJobBean(), configuration, //NOPMD
-                            jobResult.createTaskResult(taskName));
+                                                                 jobResult.createTaskResult(taskName));
                     futureList.add(executionController.submit(dbcopyTask));
                 }
             }
@@ -178,7 +181,8 @@ import static java.lang.String.format;
                 final CompositeConfiguration configuration = createCompositeConfiguration();
                 configuration.addConfiguration(createBaseConfiguration());
 
-                final DbCopyTask dbcopyTask = new DbCopyTask(getDbcopyJobBean(), configuration, jobResult.createTaskResult(taskName));
+                final DbCopyTask dbcopyTask =
+                    new DbCopyTask(getDbcopyJobBean(), configuration, jobResult.createTaskResult(taskName));
                 futureList.add(executionController.submit(dbcopyTask));
             }
 
@@ -201,22 +205,22 @@ import static java.lang.String.format;
     private void show(final DbCopyJobResult jobResult) {
 
         final StringBuilder buffer = new StringBuilder(400);
-        buffer.append("\nJob ID: ").append(jobResult.getJobBean().getId())
-                .append("\nSelect statement: ").append(jobResult.getJobBean().getSelectBean().getSql())
-                .append("\nNumber of tasks: ").append(jobResult.getTotalTaskCounter())
-                .append("\nNumber of finished tasks: ").append(jobResult.getFinishedTaskCounter());
+        buffer.append("\nJob ID: ").append(jobResult.getJobBean().getId()) //
+            .append("\nSelect statement: ").append(jobResult.getJobBean().getSelectBean().getSql()) //
+            .append("\nNumber of tasks: ").append(jobResult.getTotalTaskCounter()) //
+            .append("\nNumber of finished tasks: ").append(jobResult.getFinishedTaskCounter());
 
         final SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ", Locale.getDefault());
 
         for (final DbCopyTaskResult taskResult : jobResult.getTaskResultList()) {
-            buffer.append("\n\tTask name: ").append(taskResult.getTaskName())
-                    .append("\n\t\tStart time: ").append(sdf.format(new Date(taskResult.getStartTime())))
-                    .append("\n\t\tEnd time: ").append(sdf.format(new Date(taskResult.getEndTime())))
-                    .append("\n\t\tExecution time: ").append(String.format("%,d", taskResult.getExecutionTime()))
-                    .append(" ms.\n\t\tRetrieved rows: ").append(format("%,d", taskResult.getTotalRetrievedRows())) //
-                    .append("\n\t\tProcessed rows: ").append(format("%,d", taskResult.getTotalProcessedRows())) //
-                    .append("\n\t\tRetrieved rows/s: ").append(format("%,f", taskResult.getRetrievedRowsPerSecond())) //
-                    .append("\n\t\tProcessed rows/s: ").append(format("%,f", taskResult.getProcessedRowsPerSecond()));
+            buffer.append("\n\tTask name: ").append(taskResult.getTaskName()) //
+                .append("\n\t\tStart time: ").append(sdf.format(new Date(taskResult.getStartTime()))) //
+                .append("\n\t\tEnd time: ").append(sdf.format(new Date(taskResult.getEndTime()))) //
+                .append("\n\t\tExecution time: ").append(String.format("%,d", taskResult.getExecutionTime())) //
+                .append(" ms.\n\t\tRetrieved rows: ").append(format("%,d", taskResult.getTotalRetrievedRows())) //
+                .append("\n\t\tProcessed rows: ").append(format("%,d", taskResult.getTotalProcessedRows())) //
+                .append("\n\t\tRetrieved rows/s: ").append(format("%,f", taskResult.getRetrievedRowsPerSecond())) //
+                .append("\n\t\tProcessed rows/s: ").append(format("%,f", taskResult.getProcessedRowsPerSecond()));
 
             if (taskResult.getException() != null) {
                 buffer.append("\n\t\tException: ").append(taskResult.getException().getMessage());
@@ -224,7 +228,7 @@ import static java.lang.String.format;
 
             if (taskResult.getTotalRetrievedRows() != taskResult.getTotalProcessedRows()) {
                 buffer.append("\n\n\t\tJOB ENDED WITH ERRORS: SOME ROWS WERE NOT PROCESSED." //
-                        + "\n\t\tPLEASE CHECK THE LOG FILE FOR MORE DETAILS");
+                                  + "\n\t\tPLEASE CHECK THE LOG FILE FOR MORE DETAILS");
             }
         }
 

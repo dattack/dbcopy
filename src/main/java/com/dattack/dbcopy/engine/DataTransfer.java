@@ -117,7 +117,7 @@ public class DataTransfer {
             LOGGER.trace("Semaphore acquired by thread '{}'", Thread.currentThread().getName());
             final int previousPriority = Thread.currentThread().getPriority();
             Thread.currentThread().setPriority(Thread.MAX_PRIORITY);
-            int limit = fetchSize - transferQueue.size();
+            int limit = fetchSize - queueSize.get();
             do {
                 AbstractDataType<?>[] publishedRow = publishNextRow();
 

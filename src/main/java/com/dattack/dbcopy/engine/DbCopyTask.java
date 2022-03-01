@@ -20,11 +20,12 @@ import com.dattack.dbcopy.engine.export.ExportOperationFactory;
 import com.dattack.dbcopy.engine.export.ExportOperationFactoryProducer;
 import com.dattack.jtoolbox.commons.configuration.ConfigurationUtil;
 import com.dattack.jtoolbox.jdbc.JNDIDataSource;
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import com.dattack.jtoolbox.jdbc.internal.ProxyStatement;
 import org.apache.commons.configuration.AbstractConfiguration;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -57,7 +58,7 @@ class DbCopyTask implements Callable<DbCopyTaskResult> {
     private final transient DbCopyTaskResult taskResult;
 
     public DbCopyTask(final DbcopyJobBean dbcopyJobBean, final AbstractConfiguration configuration,
-                      final DbCopyTaskResult taskResult) {
+            final DbCopyTaskResult taskResult) {
         this.dbcopyJobBean = dbcopyJobBean;
         this.configuration = configuration;
         this.taskResult = taskResult;
@@ -75,14 +76,13 @@ class DbCopyTask implements Callable<DbCopyTaskResult> {
              ResultSet resultSet = selectStmt.executeQuery(compileSql()) //
         ) {
 
-            final DataTransfer dataTransfer =
-                    new DataTransfer(resultSet, taskResult, //
-                            dbcopyJobBean.getSelectBean().getFetchSize());
+            final DataTransfer dataTransfer = new DataTransfer(resultSet, taskResult, //
+                                                               dbcopyJobBean.getSelectBean().getFetchSize());
 
             final List<Future<?>> futureList = new ArrayList<>();
-            
-            try(ExecutionController insertController = createInsertController(); //
-                ExecutionController exportController = createExportController()) {
+
+            try (ExecutionController insertController = createInsertController(); //
+                 ExecutionController exportController = createExportController()) {
 
                 futureList.addAll(createInsertFutures(dataTransfer, insertController));
                 futureList.addAll(createExportFutures(dataTransfer, exportController));
@@ -105,7 +105,7 @@ class DbCopyTask implements Callable<DbCopyTaskResult> {
         ExecutionController controller = null;
         if (dbcopyJobBean.getInsertBean() != null) {
             controller = new ExecutionController(taskResult.getTaskName() + "-Insert",
-                    dbcopyJobBean.getInsertBean().getParallel());
+                                                 dbcopyJobBean.getInsertBean().getParallel());
         }
         return controller;
     }
@@ -115,7 +115,7 @@ class DbCopyTask implements Callable<DbCopyTaskResult> {
         ExecutionController controller = null;
         if (dbcopyJobBean.getExportBean() != null) {
             controller = new ExecutionController(taskResult.getTaskName() + "-Export",
-                    dbcopyJobBean.getExportBean().getParallel());
+                                                 dbcopyJobBean.getExportBean().getParallel());
         }
         return controller;
     }
@@ -125,12 +125,19 @@ class DbCopyTask implements Callable<DbCopyTaskResult> {
                 ConfigurationUtil.interpolate(dbcopyJobBean.getSelectBean().getDatasource(), configuration));
     }
 
-    @SuppressFBWarnings("OBL_UNSATISFIED_OBLIGATION_EXCEPTION_EDGE")
     private Statement createStatement(final Connection connection) throws SQLException {
         final Statement stmt = connection.createStatement();
         if (dbcopyJobBean.getSelectBean().getFetchSize() > 0) {
             stmt.setFetchSize(dbcopyJobBean.getSelectBean().getFetchSize());
         }
+
+        if (stmt.isWrapperFor(ProxyStatement.class)) {
+            ProxyStatement<?> proxyStatement = stmt.unwrap(ProxyStatement.class);
+            proxyStatement.setLobPrefetchSize(16_000);
+            LOGGER.info("{}.LobPrefetchSize: {}", proxyStatement.getClass().getName(),
+                        proxyStatement.getLobPrefetchSize());
+        }
+
         return stmt;
     }
 
@@ -154,7 +161,7 @@ class DbCopyTask implements Callable<DbCopyTaskResult> {
 
             for (int i = 0; i < dbcopyJobBean.getInsertBean().getParallel(); i++) {
                 futureList.add(controller.submit(new InsertOperation(dbcopyJobBean.getInsertBean(), //NOPMD
-                        dataTransfer, configuration, taskResult)));
+                                                                     dataTransfer, configuration, taskResult)));
             }
 
             controller.shutdown();
@@ -170,8 +177,7 @@ class DbCopyTask implements Callable<DbCopyTaskResult> {
         if (controller != null) {
 
             final ExportOperationFactory factory =
-                    ExportOperationFactoryProducer.getFactory(dbcopyJobBean.getExportBean(),
-                    configuration);
+                    ExportOperationFactoryProducer.getFactory(dbcopyJobBean.getExportBean(), configuration);
 
             for (int i = 0; i < dbcopyJobBean.getExportBean().getParallel(); i++) {
                 futureList.add(controller.submit(factory.createTask(dataTransfer, taskResult)));
