@@ -68,7 +68,7 @@
         <hadoop-mapreduce-client-core.version>2.10.1</hadoop-mapreduce-client-core.version>
         <jaxb-api.version>2.3.1</jaxb-api.version>
         <jtoolbox-core.version>0.6-SNAPSHOT</jtoolbox-core.version>
-        <parquet-avro.version>1.12.0</parquet-avro.version>
+        <parquet-avro.version>1.12.1</parquet-avro.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <slf4j.version>1.7.36</slf4j.version>
         <standalone-jndi.version>0.5-SNAPSHOT</standalone-jndi.version>
