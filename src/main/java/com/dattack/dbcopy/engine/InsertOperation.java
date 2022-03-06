@@ -321,7 +321,7 @@ class InsertOperation implements Callable<Integer> {
             insertedRows = executeBatch();
             stopWatch.stop("remote");
             if (LOGGER.isInfoEnabled()) {
-                LOGGER.info("{}-{}: {} rows (total: {}) inserted in {}", taskResult.getTaskName(),
+                LOGGER.info("{}: {} rows (total: {}) inserted in {}",
                             Thread.currentThread().getName(), String.format("%,d", insertedRows),
                             String.format("%,d", rowNumber), String.format("%s", stopWatch));
             }
