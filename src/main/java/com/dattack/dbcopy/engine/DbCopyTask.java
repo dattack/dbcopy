@@ -33,14 +33,19 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Timestamp;
+import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import javax.sql.DataSource;
 
 /**
@@ -53,12 +58,15 @@ class DbCopyTask implements Callable<DbCopyTaskResult> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DbCopyTask.class);
 
+    private static final String LOG_TABLE = System.getProperty("dbcopy_log_table");
+
     private final transient AbstractConfiguration configuration;
     private final transient DbcopyJobBean dbcopyJobBean;
     private final transient DbCopyTaskResult taskResult;
 
     public DbCopyTask(final DbcopyJobBean dbcopyJobBean, final AbstractConfiguration configuration,
-            final DbCopyTaskResult taskResult) {
+        final DbCopyTaskResult taskResult) {
+        
         this.dbcopyJobBean = dbcopyJobBean;
         this.configuration = configuration;
         this.taskResult = taskResult;
@@ -68,6 +76,7 @@ class DbCopyTask implements Callable<DbCopyTaskResult> {
     public DbCopyTaskResult call() {
 
         taskResult.start();
+        createLogDb();
 
         LOGGER.info("DBCopy task started {} (Thread: {})", taskResult.getTaskName(), Thread.currentThread().getName());
 
@@ -97,7 +106,84 @@ class DbCopyTask implements Callable<DbCopyTaskResult> {
         }
 
         taskResult.end();
+        updateLogDb();
         return taskResult;
+    }
+
+    private void createLogDb() {
+
+        if (dbcopyJobBean.getInsertBean() != null && StringUtils.isNotBlank(LOG_TABLE)) {
+            String sql = "INSERT INTO " + LOG_TABLE + " (task_name, execution_id, object_name, start_time)" //
+                + " VALUES (?, ?, ?, ?)";
+
+            try (Connection connection = new JNDIDataSource(
+                ConfigurationUtil.interpolate(dbcopyJobBean.getInsertBean().getDatasource(),
+                                              configuration)).getConnection();
+                 PreparedStatement ps = connection.prepareStatement(sql)) {
+
+                int i = 1;
+                ps.setString(i++, StringUtils.substring(taskResult.getTaskName(), 0, 100));
+                ps.setString(i++, StringUtils.substring(taskResult.getExecutionId(), 0, 40));
+                ps.setString(i++, StringUtils.substring(getObjectName(), 0, 100));
+                ps.setTimestamp(i, new Timestamp(taskResult.getStartTime()));
+                ps.executeUpdate();
+
+            } catch (SQLException e) {
+                LOGGER.warn("Database log failed {}: {}", taskResult.getTaskName(), e.getMessage());
+            }
+        }
+    }
+
+    private void updateLogDb() {
+
+        if (dbcopyJobBean.getInsertBean() != null && StringUtils.isNotBlank(LOG_TABLE)) {
+            String sql = "UPDATE " + LOG_TABLE + " SET end_time=?, retrieved_rows=?, processed_rows=?, err_msg=?" //
+                + " WHERE task_name = ? AND execution_id = ?";
+
+            try (Connection connection = new JNDIDataSource(
+                ConfigurationUtil.interpolate(dbcopyJobBean.getInsertBean().getDatasource(),
+                                              configuration)).getConnection();
+                 PreparedStatement ps = connection.prepareStatement(sql)) {
+
+                int i = 1;
+                ps.setTimestamp(i++, new Timestamp(taskResult.getEndTime()));
+                ps.setLong(i++, taskResult.getTotalRetrievedRows());
+                ps.setLong(i++, taskResult.getTotalProcessedRows());
+                if (taskResult.getException() == null) {
+                    ps.setNull(i++, Types.VARCHAR);
+                } else {
+                    ps.setString(i++, StringUtils.substring(taskResult.getException().getMessage(), 0, 200));
+                }
+
+                ps.setString(i++, StringUtils.substring(taskResult.getTaskName(), 0, 100));
+                ps.setString(i, StringUtils.substring(taskResult.getExecutionId(), 0, 40));
+
+                ps.executeUpdate();
+
+            } catch (SQLException e) {
+                LOGGER.warn("Database log failed {}: {}", taskResult.getTaskName(), e.getMessage());
+            }
+        }
+    }
+
+    private String getObjectName() {
+
+        String objectName = null;
+        if (dbcopyJobBean.getInsertBean() != null) {
+
+            if (StringUtils.isNotBlank(dbcopyJobBean.getInsertBean().getTable())) {
+                objectName = dbcopyJobBean.getInsertBean().getTable();
+            } else {
+                // MERGE INTO table_owner.table_name alias USING ...
+                // INSERT INTO table_owner.table_name(...)
+                Pattern pattern = Pattern.compile("^\\s*(MERGE|INSERT)\\s+INTO\\s+((\\w|\\.)+)(\\(|\\s).+");
+                Matcher m = pattern.matcher(dbcopyJobBean.getInsertBean().getSql());
+                if (m.find()) {
+                    objectName = m.group(2);
+                }
+            }
+        }
+        return objectName;
     }
 
     private ExecutionController createInsertController() {
@@ -122,7 +208,7 @@ class DbCopyTask implements Callable<DbCopyTaskResult> {
 
     private DataSource getDataSource() {
         return new JNDIDataSource(
-                ConfigurationUtil.interpolate(dbcopyJobBean.getSelectBean().getDatasource(), configuration));
+            ConfigurationUtil.interpolate(dbcopyJobBean.getSelectBean().getDatasource(), configuration));
     }
 
     private Statement createStatement(final Connection connection) throws SQLException {
@@ -177,12 +263,11 @@ class DbCopyTask implements Callable<DbCopyTaskResult> {
         if (controller != null) {
 
             final ExportOperationFactory factory =
-                    ExportOperationFactoryProducer.getFactory(dbcopyJobBean.getExportBean(), configuration);
+                ExportOperationFactoryProducer.getFactory(dbcopyJobBean.getExportBean(), configuration);
 
             for (int i = 0; i < dbcopyJobBean.getExportBean().getParallel(); i++) {
                 futureList.add(controller.submit(factory.createTask(dataTransfer, taskResult)));
             }
-
             controller.shutdown();
         }
 

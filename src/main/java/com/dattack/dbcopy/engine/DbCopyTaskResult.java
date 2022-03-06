@@ -18,6 +18,7 @@ package com.dattack.dbcopy.engine;
 import com.dattack.jtoolbox.patterns.Command;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -35,6 +36,7 @@ public final class DbCopyTaskResult implements DbCopyTaskResultMBean {
     private transient long endTime;
     private transient Exception exception;
     private transient long startTime;
+    private transient String executionId;
 
     public DbCopyTaskResult(final String taskName) {
         this.taskName = taskName;
@@ -134,6 +136,11 @@ public final class DbCopyTaskResult implements DbCopyTaskResultMBean {
 
     public void start() {
         this.startTime = System.currentTimeMillis();
+        this.executionId = UUID.randomUUID().toString();
+    }
+
+    public String getExecutionId() {
+        return executionId;
     }
 
     @Override

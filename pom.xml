@@ -153,7 +153,9 @@
                 <configuration>
                     <repositoryLayout>flat</repositoryLayout>
                     <repositoryName>lib</repositoryName>
-                    <extraJvmArguments>-Dcom.sun.management.jmxremote
+                    <extraJvmArguments>
+                        -Ddbcopy_log_table=
+                        -Dcom.sun.management.jmxremote
                         -Dcom.sun.management.jmxremote.port=9010
                         -Dcom.sun.management.jmxremote.host=127.0.0.1
                         -Dcom.sun.management.jmxremote.local.only=true
