@@ -177,7 +177,7 @@ import static java.lang.String.format;
             @Override
             public void visit(final NullVariableBean bean) {
 
-                final String taskName = getDbcopyJobBean().getId() + "_Task";
+                final String taskName = getDbcopyJobBean().getId();
                 final CompositeConfiguration configuration = createCompositeConfiguration();
                 configuration.addConfiguration(createBaseConfiguration());
 
