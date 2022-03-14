@@ -28,4 +28,6 @@ public interface VariableVisitor {
     void visit(IntegerRangeBean bean);
 
     void visit(NullVariableBean bean);
+
+    void visit(PartitionRangeListBean bean);
 }

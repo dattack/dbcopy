@@ -20,6 +20,8 @@ import com.dattack.dbcopy.beans.DbcopyJobBean;
 import com.dattack.dbcopy.beans.IntegerRangeBean;
 import com.dattack.dbcopy.beans.LiteralListBean;
 import com.dattack.dbcopy.beans.NullVariableBean;
+import com.dattack.dbcopy.beans.PartitionRangeBean;
+import com.dattack.dbcopy.beans.PartitionRangeListBean;
 import com.dattack.dbcopy.beans.VariableVisitor;
 import com.dattack.jtoolbox.commons.configuration.ConfigurationUtil;
 import org.apache.commons.configuration.AbstractConfiguration;
@@ -79,8 +81,8 @@ import static java.lang.String.format;
         LOGGER.info("Running job '{}' at thread '{}'", dbcopyJobBean.getId(), Thread.currentThread().getName());
 
         try (ExecutionController controller = new ExecutionController(dbcopyJobBean.getId(),
-                                                                      dbcopyJobBean.getThreads())) {
-
+                                                                      dbcopyJobBean.getThreads()))
+        {
             final List<Future<?>> futureList = new ArrayList<>();
 
             final DbCopyJobResult jobResult = new DbCopyJobResult(dbcopyJobBean);
@@ -116,8 +118,8 @@ import static java.lang.String.format;
     }
 
     private VariableVisitor getVariableVisitor(final List<Future<?>> futureList, final DbCopyJobResult jobResult,
-        final ExecutionController executionController) {
-
+        final ExecutionController executionController)
+    {
         return new VariableVisitor() {
 
             @Override
@@ -140,6 +142,8 @@ import static java.lang.String.format;
 
                     final BaseConfiguration baseConfiguration = createBaseConfiguration();
                     baseConfiguration.setProperty(bean.getId() + ".values", values);
+
+                    // set alias properties
                     baseConfiguration.setProperty(bean.getId(), values);
 
                     final CompositeConfiguration configuration = createCompositeConfiguration();
@@ -163,6 +167,10 @@ import static java.lang.String.format;
                     baseConfiguration.setProperty(bean.getId() + ".low", i);
                     baseConfiguration.setProperty(bean.getId() + ".high", highValue);
 
+                    // set alias properties
+                    baseConfiguration.setProperty(bean.getId() + ".lowValue", i);
+                    baseConfiguration.setProperty(bean.getId() + ".highValue", highValue);
+
                     final CompositeConfiguration configuration = createCompositeConfiguration();
                     configuration.addConfiguration(baseConfiguration);
 
@@ -184,6 +192,49 @@ import static java.lang.String.format;
                 final DbCopyTask dbcopyTask =
                     new DbCopyTask(getDbcopyJobBean(), configuration, jobResult.createTaskResult(taskName));
                 futureList.add(executionController.submit(dbcopyTask));
+            }
+
+            @Override
+            public void visit(final PartitionRangeListBean bean) {
+
+                for (PartitionRangeBean partition : bean.getPartitionBeanList()) {
+
+                    final BaseConfiguration baseConfiguration = new BaseConfiguration();
+                    baseConfiguration.setProperty(bean.getId() + ".name", partition.getName());
+                    baseConfiguration.setProperty(bean.getId() + ".seq", partition.getSequence());
+                    //baseConfiguration.setProperty(bean.getId() + ".lowValue", partition.getLowObject());
+                    baseConfiguration.setProperty(bean.getId() + ".lowInclusive", partition.getLowInclusive());
+                    //baseConfiguration.setProperty(bean.getId() + ".highValue", partition.getHighValue());
+                    baseConfiguration.setProperty(bean.getId() + ".highInclusive", partition.getHighInclusive());
+
+                    append(baseConfiguration, bean.getId() + ".lowValue", partition.getLowObject());
+                    append(baseConfiguration, bean.getId() + ".highValue", partition.getHighObject());
+
+                    // set alias properties
+                    append(baseConfiguration, bean.getId() + ".low", partition.getLowObject());
+                    append(baseConfiguration, bean.getId() + ".high", partition.getHighObject());
+
+                    final CompositeConfiguration configuration = createCompositeConfiguration();
+                    configuration.addConfiguration(baseConfiguration);
+
+                    final String taskName = String.format("%s#%s", getDbcopyJobBean().getId(), partition.getName());
+
+                    final DbCopyTask dbcopyTask = new DbCopyTask(getDbcopyJobBean(), configuration, //NOPMD
+                                                                 jobResult.createTaskResult(taskName));
+                    futureList.add(executionController.submit(dbcopyTask));
+                }
+            }
+
+            private void append(BaseConfiguration configuration, String varName, Object values) {
+                // TODO: review and use custom interpolator
+                if (values instanceof List<?>) {
+                    List<?> list = (List<?>) values;
+                    for (int i = 0; i < list.size(); i++) {
+                        configuration.setProperty(String.format("%s[%d]", varName, i), list.get(i));
+                    }
+                } else {
+                    configuration.setProperty(varName, values);
+                }
             }
 
             private BaseConfiguration createBaseConfiguration() {

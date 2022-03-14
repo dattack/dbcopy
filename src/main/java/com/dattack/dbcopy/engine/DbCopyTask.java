@@ -65,8 +65,8 @@ class DbCopyTask implements Callable<DbCopyTaskResult> {
     private final transient DbCopyTaskResult taskResult;
 
     public DbCopyTask(final DbcopyJobBean dbcopyJobBean, final AbstractConfiguration configuration,
-        final DbCopyTaskResult taskResult) {
-        
+        final DbCopyTaskResult taskResult)
+    {
         this.dbcopyJobBean = dbcopyJobBean;
         this.configuration = configuration;
         this.taskResult = taskResult;
@@ -82,16 +82,16 @@ class DbCopyTask implements Callable<DbCopyTaskResult> {
 
         try (Connection selectConn = getDataSource().getConnection(); //
              Statement selectStmt = createStatement(selectConn); //
-             ResultSet resultSet = selectStmt.executeQuery(compileSql()) //
-        ) {
-
+             ResultSet resultSet = selectStmt.executeQuery(compileSql()))
+        {
             final DataTransfer dataTransfer = new DataTransfer(resultSet, taskResult, //
                                                                dbcopyJobBean.getSelectBean().getFetchSize());
 
             final List<Future<?>> futureList = new ArrayList<>();
 
             try (ExecutionController insertController = createInsertController(); //
-                 ExecutionController exportController = createExportController()) {
+                 ExecutionController exportController = createExportController())
+            {
 
                 futureList.addAll(createInsertFutures(dataTransfer, insertController));
                 futureList.addAll(createExportFutures(dataTransfer, exportController));
@@ -119,15 +119,14 @@ class DbCopyTask implements Callable<DbCopyTaskResult> {
             try (Connection connection = new JNDIDataSource(
                 ConfigurationUtil.interpolate(dbcopyJobBean.getInsertBean().getDatasource(),
                                               configuration)).getConnection();
-                 PreparedStatement ps = connection.prepareStatement(sql)) {
-
+                 PreparedStatement ps = connection.prepareStatement(sql))
+            {
                 int i = 1;
                 ps.setString(i++, StringUtils.substring(taskResult.getTaskName(), 0, 100));
                 ps.setString(i++, StringUtils.substring(taskResult.getExecutionId(), 0, 40));
                 ps.setString(i++, StringUtils.substring(getObjectName(), 0, 100));
                 ps.setTimestamp(i, new Timestamp(taskResult.getStartTime()));
                 ps.executeUpdate();
-
             } catch (SQLException e) {
                 LOGGER.warn("Database log failed {}: {}", taskResult.getTaskName(), e.getMessage());
             }
@@ -143,7 +142,8 @@ class DbCopyTask implements Callable<DbCopyTaskResult> {
             try (Connection connection = new JNDIDataSource(
                 ConfigurationUtil.interpolate(dbcopyJobBean.getInsertBean().getDatasource(),
                                               configuration)).getConnection();
-                 PreparedStatement ps = connection.prepareStatement(sql)) {
+                 PreparedStatement ps = connection.prepareStatement(sql))
+            {
 
                 int i = 1;
                 ps.setTimestamp(i++, new Timestamp(taskResult.getEndTime()));
