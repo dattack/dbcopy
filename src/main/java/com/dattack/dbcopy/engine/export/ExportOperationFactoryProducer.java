@@ -34,7 +34,8 @@ public final class ExportOperationFactoryProducer { //NOPMD
     }
 
     public static ExportOperationFactory getFactory(final ExportOperationBean bean,
-                                                    final AbstractConfiguration configuration) {
+        final AbstractConfiguration configuration)
+    {
         ExportOperationFactory factory;
         switch (bean.getType()) {
             case PARQUET:

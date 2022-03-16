@@ -60,6 +60,7 @@ import org.apache.parquet.hadoop.util.HadoopOutputFile;
 import org.apache.parquet.io.OutputFile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -97,72 +98,11 @@ public class ParquetExportOperationFactory implements ExportOperationFactory {
             });
 
             return new ParquetExportOperation(bean, dataTransfer, taskResult, outputWriter,
-                    getSchema(dataTransfer.getRowMetadata()));
+                                              getSchema(dataTransfer.getRowMetadata()));
 
         } catch (Exception e) {
             throw new NestableRuntimeException(e);
         }
-    }
-
-    private CompressionCodecName getCompression() {
-
-        CompressionCodecName compression;
-        switch (bean.getCompression()) {
-            case LZO:
-                compression = CompressionCodecName.LZO;
-                break;
-            case GZIP:
-                compression = CompressionCodecName.GZIP;
-                break;
-            case SNAPPY:
-                compression = CompressionCodecName.SNAPPY;
-                break;
-            case UNCOMPRESSED:
-            default:
-                compression = CompressionCodecName.UNCOMPRESSED;
-        }
-        return compression;
-    }
-
-    private Schema getSchema(final RowMetadata rowMetadata) throws FunctionException {
-
-        if (Objects.isNull(schema)) {
-            final List<Schema.Field> fieldList = new ArrayList<>();
-
-            final Visitor visitor = new Visitor();
-            for (final ColumnMetadata columnMetadata : rowMetadata.getColumnsMetadata()) {
-                columnMetadata.getFunction().accept(visitor);
-                final Schema columnSchema = visitor.getSchema();
-                fieldList.add(new Schema.Field(columnMetadata.getName(), columnSchema, null, null));
-            }
-
-            schema = Schema.createRecord("row", "row doc", "com.dattack.ns", false);
-            schema.setFields(fieldList);
-
-            LOGGER.debug("Avro-schema: " + schema);
-        }
-        return schema;
-    }
-
-    private synchronized ParquetWriter<Object> getWriter(final DataTransfer dataTransfer) //
-            throws IOException, FunctionException {
-
-        if (Objects.isNull(writer)) {
-
-            final String filename = ConfigurationUtil.interpolate(bean.getPath(), configuration);
-            final Path hdfsPath = new Path(Objects.requireNonNull(filename, "Unable to write parquet file due "
-                    + "to filename is null"));
-
-            final Configuration conf = new Configuration();
-            final OutputFile outputFile = HadoopOutputFile.fromPath(hdfsPath, conf);
-            writer = AvroParquetWriter.builder(outputFile)
-                    .withSchema(getSchema(dataTransfer.getRowMetadata())) //
-                    .withCompressionCodec(getCompression()) //
-                    .withPageSize(bean.getPageSize()) //
-                    .withWriteMode(ParquetFileWriter.Mode.OVERWRITE) //
-                    .build();
-        }
-        return writer;
     }
 
     /**
@@ -213,7 +153,7 @@ public class ParquetExportOperationFactory implements ExportOperationFactory {
         @Override
         public void visit(final DateFunction function) throws FunctionException {
             schema = SchemaBuilder.nullable().type(LogicalTypes.date() //
-                    .addToSchema(Schema.create(Schema.Type.INT)));
+                                                       .addToSchema(Schema.create(Schema.Type.INT)));
         }
 
         @Override
@@ -264,18 +204,78 @@ public class ParquetExportOperationFactory implements ExportOperationFactory {
         @Override
         public void visit(final TimeFunction function) throws FunctionException {
             schema = SchemaBuilder.nullable().type(LogicalTypes.timeMillis() //
-                    .addToSchema(Schema.create(Schema.Type.LONG)));
+                                                       .addToSchema(Schema.create(Schema.Type.LONG)));
         }
 
         @Override
         public void visit(final TimestampFunction function) throws FunctionException {
             schema = SchemaBuilder.nullable().type(LogicalTypes.timestampMillis() //
-                    .addToSchema(Schema.create(Schema.Type.LONG)));
+                                                       .addToSchema(Schema.create(Schema.Type.LONG)));
         }
 
         @Override
         public void visit(final XmlFunction function) throws FunctionException {
             schema = SchemaBuilder.nullable().stringType();
         }
+    }
+
+    private CompressionCodecName getCompression() {
+
+        CompressionCodecName compression;
+        switch (bean.getCompression()) {
+            case LZO:
+                compression = CompressionCodecName.LZO;
+                break;
+            case GZIP:
+                compression = CompressionCodecName.GZIP;
+                break;
+            case SNAPPY:
+                compression = CompressionCodecName.SNAPPY;
+                break;
+            case UNCOMPRESSED:
+            default:
+                compression = CompressionCodecName.UNCOMPRESSED;
+        }
+        return compression;
+    }
+
+    private Schema getSchema(final RowMetadata rowMetadata) throws FunctionException {
+
+        if (Objects.isNull(schema)) {
+            final List<Schema.Field> fieldList = new ArrayList<>();
+
+            final Visitor visitor = new Visitor();
+            for (final ColumnMetadata columnMetadata : rowMetadata.getColumnsMetadata()) {
+                columnMetadata.getFunction().accept(visitor);
+                final Schema columnSchema = visitor.getSchema();
+                fieldList.add(new Schema.Field(columnMetadata.getName(), columnSchema, null, null));
+            }
+
+            schema = Schema.createRecord("row", "row doc", "com.dattack.ns", false);
+            schema.setFields(fieldList);
+
+            LOGGER.debug("Avro-schema: " + schema);
+        }
+        return schema;
+    }
+
+    private synchronized ParquetWriter<Object> getWriter(final DataTransfer dataTransfer) //
+        throws IOException, FunctionException
+    {
+        if (Objects.isNull(writer)) {
+
+            final String filename = ConfigurationUtil.interpolate(bean.getPath(), configuration);
+            final Path hdfsPath =
+                new Path(Objects.requireNonNull(filename, "Unable to write parquet file due " + "to filename is null"));
+
+            final Configuration conf = new Configuration();
+            final OutputFile outputFile = HadoopOutputFile.fromPath(hdfsPath, conf);
+            writer = AvroParquetWriter.builder(outputFile).withSchema(getSchema(dataTransfer.getRowMetadata())) //
+                .withCompressionCodec(getCompression()) //
+                .withPageSize(bean.getPageSize()) //
+                .withWriteMode(ParquetFileWriter.Mode.OVERWRITE) //
+                .build();
+        }
+        return writer;
     }
 }

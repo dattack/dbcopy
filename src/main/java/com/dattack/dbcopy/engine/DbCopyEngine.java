@@ -41,17 +41,17 @@ public final class DbCopyEngine {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DbCopyEngine.class);
 
-    public void execute(final String[] filenames, final Set<String> jobNames, final AbstractConfiguration configuration)
-            throws DattackParserException {
-
+    public void execute(final String[] filenames, final Set<String> jobNames,
+        final AbstractConfiguration configuration) throws DattackParserException
+    {
         for (final String filename : filenames) {
             execute(new File(filename), jobNames, configuration); //NOPMD
         }
     }
 
     private void execute(final DbcopyBean dbcopyBean, final Set<String> jobNames,
-                         final AbstractConfiguration configuration) {
-
+        final AbstractConfiguration configuration)
+    {
         try (ExecutionController controller = new ExecutionController("root", dbcopyBean.getParallel())) {
 
             final List<Future<?>> futureList = new ArrayList<>();
@@ -77,8 +77,9 @@ public final class DbCopyEngine {
         }
     }
 
-    private void execute(final File file, final Set<String> jobNames, final AbstractConfiguration configuration)
-            throws DattackParserException {
+    private void execute(final File file, final Set<String> jobNames,
+        final AbstractConfiguration configuration) throws DattackParserException
+    {
 
         if (file.isDirectory()) {
 

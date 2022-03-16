@@ -88,7 +88,8 @@ class InsertOperation implements Callable<Integer> {
     private transient int rowNumber;
 
     public InsertOperation(final InsertOperationBean bean, final DataTransfer dataTransfer,
-            final AbstractConfiguration configuration, final DbCopyTaskResult taskResult) {
+        final AbstractConfiguration configuration, final DbCopyTaskResult taskResult)
+    {
         this.bean = bean;
         this.dataTransfer = dataTransfer;
         this.configuration = configuration;
@@ -172,7 +173,8 @@ class InsertOperation implements Callable<Integer> {
 
             final Blob targetBlob = getPreparedStatement().getConnection().createBlob();
             try (OutputStream output = targetBlob.setBinaryStream(1);
-                 InputStream input = type.getValue().getBinaryStream()) {
+                 InputStream input = type.getValue().getBinaryStream())
+            {
 
                 final byte[] buffer = new byte[1024]; // TODO: configurable size
                 int len;
@@ -307,7 +309,7 @@ class InsertOperation implements Callable<Integer> {
 
             LOGGER.trace(sql);
             preparedStatement =
-                    getConnection().prepareNamedStatement(ConfigurationUtil.interpolate(sql, configuration));
+                getConnection().prepareNamedStatement(ConfigurationUtil.interpolate(sql, configuration));
         }
         return preparedStatement;
     }
@@ -321,9 +323,9 @@ class InsertOperation implements Callable<Integer> {
             insertedRows = executeBatch();
             stopWatch.stop("remote");
             if (LOGGER.isInfoEnabled()) {
-                LOGGER.info("{}: {} rows (total: {}) inserted in {}",
-                            Thread.currentThread().getName(), String.format("%,d", insertedRows),
-                            String.format("%,d", rowNumber), String.format("%s", stopWatch));
+                LOGGER.info("{}: {} rows (total: {}) inserted in {}", Thread.currentThread().getName(),
+                            String.format("%,d", insertedRows), String.format("%,d", rowNumber),
+                            String.format("%s", stopWatch));
             }
             stopWatch.reset();
         }
@@ -406,8 +408,8 @@ class InsertOperation implements Callable<Integer> {
 
     private synchronized ProxyConnection getConnection() throws SQLException {
         if (connection == null || connection.isClosed()) {
-            Connection proxyConnection = new JNDIDataSource(
-                    ConfigurationUtil.interpolate(bean.getDatasource(), configuration)).getConnection();
+            Connection proxyConnection =
+                new JNDIDataSource(ConfigurationUtil.interpolate(bean.getDatasource(), configuration)).getConnection();
             if (bean.getBatchSize() > 0) {
                 proxyConnection.setAutoCommit(false);
             }

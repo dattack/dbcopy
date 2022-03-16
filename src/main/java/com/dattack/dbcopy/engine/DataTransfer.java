@@ -19,6 +19,7 @@ import com.dattack.dbcopy.engine.datatype.AbstractDataType;
 import com.dattack.dbcopy.engine.functions.FunctionException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Objects;
@@ -46,8 +47,9 @@ public class DataTransfer {
     private final AtomicInteger queueSize;
     private boolean exhausted = false;
 
-    /* default */ DataTransfer(final ResultSet resultSet, final DbCopyTaskResult taskResult, final int fetchSize)
-            throws SQLException {
+    /* default */ DataTransfer(final ResultSet resultSet, final DbCopyTaskResult taskResult,
+        final int fetchSize) throws SQLException
+    {
         this.resultSet = resultSet;
         this.taskResult = taskResult;
         this.fetchSize = fetchSize > 0 ? fetchSize : DEFAULT_FETCH_SIZE;
@@ -56,25 +58,6 @@ public class DataTransfer {
         this.rowMetadata = createRowMetadata();
         this.queueSize = new AtomicInteger();
         MBeanHelper.registerMBean("TransferQueue", taskResult.getTaskName(), new TransferQueueWrapper(transferQueue));
-    }
-
-    private RowMetadata createRowMetadata() throws SQLException {
-
-        final RowMetadata.RowMetadataBuilder rowMetadataBuilder = RowMetadata.custom();
-
-        for (int columnIndex = 1; columnIndex <= resultSet.getMetaData().getColumnCount(); columnIndex++) {
-            final ColumnMetadata columnMetadata = ColumnMetadata.custom() //NOPMD
-                    .withName(resultSet.getMetaData().getColumnName(columnIndex)) //
-                    .withIndex(columnIndex) //
-                    .withType(resultSet.getMetaData().getColumnType(columnIndex)) //
-                    .withPrecision(resultSet.getMetaData().getPrecision(columnIndex)) //
-                    .withScale(resultSet.getMetaData().getScale(columnIndex)) //
-                    .withNullable(resultSet.getMetaData().isNullable(columnIndex)) //
-                    .build();
-
-            rowMetadataBuilder.add(columnMetadata);
-        }
-        return rowMetadataBuilder.build();
     }
 
     public RowMetadata getRowMetadata() {
@@ -111,6 +94,25 @@ public class DataTransfer {
         return row;
     }
 
+    private RowMetadata createRowMetadata() throws SQLException {
+
+        final RowMetadata.RowMetadataBuilder rowMetadataBuilder = RowMetadata.custom();
+
+        for (int columnIndex = 1; columnIndex <= resultSet.getMetaData().getColumnCount(); columnIndex++) {
+            final ColumnMetadata columnMetadata = ColumnMetadata.custom() //NOPMD
+                .withName(resultSet.getMetaData().getColumnName(columnIndex)) //
+                .withIndex(columnIndex) //
+                .withType(resultSet.getMetaData().getColumnType(columnIndex)) //
+                .withPrecision(resultSet.getMetaData().getPrecision(columnIndex)) //
+                .withScale(resultSet.getMetaData().getScale(columnIndex)) //
+                .withNullable(resultSet.getMetaData().isNullable(columnIndex)) //
+                .build();
+
+            rowMetadataBuilder.add(columnMetadata);
+        }
+        return rowMetadataBuilder.build();
+    }
+
     private int transferNextChunk(boolean wait) throws InterruptedException, SQLException, FunctionException {
         int counter = -1;
         if (semaphore.tryAcquire()) {
@@ -139,8 +141,8 @@ public class DataTransfer {
 
             } while (counter++ < limit);
             semaphore.release();
-            LOGGER.trace("Semaphore released by thread '{}'. Fetched rows {}",
-                    Thread.currentThread().getName(), counter);
+            LOGGER.trace("Semaphore released by thread '{}'. Fetched rows {}", Thread.currentThread().getName(),
+                         counter);
             synchronized (this) {
                 notifyAll();
             }

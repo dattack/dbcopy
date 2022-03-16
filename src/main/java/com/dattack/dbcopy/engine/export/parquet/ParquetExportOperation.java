@@ -72,9 +72,8 @@ class ParquetExportOperation implements ExportOperation {
     private final transient ParquetWriter<Object> writer;
 
     /* default */ ParquetExportOperation(final ExportOperationBean bean, final DataTransfer dataTransfer,
-                                         final DbCopyTaskResult taskResult,
-                                         final ParquetWriter<Object> writer,
-                                         final Schema schema) {
+        final DbCopyTaskResult taskResult, final ParquetWriter<Object> writer, final Schema schema)
+    {
         this.bean = bean;
         this.dataTransfer = dataTransfer;
         this.taskResult = taskResult;
@@ -113,27 +112,6 @@ class ParquetExportOperation implements ExportOperation {
         }
 
         return totalExportedRows;
-    }
-
-    private void write(final AbstractDataType<?>[] dataList) throws Exception {
-
-        visitorThreadLocal.get().setGenericRecord(new GenericData.Record(schema));
-
-        for (final ColumnMetadata columnMetadata : dataTransfer.getRowMetadata().getColumnsMetadata()) {
-
-            visitorThreadLocal.get().setColumnMetadata(columnMetadata);
-
-            final AbstractDataType<?> value = dataList[columnMetadata.getIndex() - 1];
-            if (Objects.isNull(value)) {
-                visitorThreadLocal.get().getGenericRecord().put(visitorThreadLocal.get().getIndex(), null);
-            } else {
-                value.accept(visitorThreadLocal.get());
-            }
-        }
-
-        synchronized (writer) {
-            writer.write(visitorThreadLocal.get().getGenericRecord());
-        }
     }
 
     /**
@@ -300,6 +278,27 @@ class ParquetExportOperation implements ExportOperation {
 
         private void putNull() {
             getGenericRecord().put(getIndex(), null);
+        }
+    }
+
+    private void write(final AbstractDataType<?>[] dataList) throws Exception {
+
+        visitorThreadLocal.get().setGenericRecord(new GenericData.Record(schema));
+
+        for (final ColumnMetadata columnMetadata : dataTransfer.getRowMetadata().getColumnsMetadata()) {
+
+            visitorThreadLocal.get().setColumnMetadata(columnMetadata);
+
+            final AbstractDataType<?> value = dataList[columnMetadata.getIndex() - 1];
+            if (Objects.isNull(value)) {
+                visitorThreadLocal.get().getGenericRecord().put(visitorThreadLocal.get().getIndex(), null);
+            } else {
+                value.accept(visitorThreadLocal.get());
+            }
+        }
+
+        synchronized (writer) {
+            writer.write(visitorThreadLocal.get().getGenericRecord());
         }
     }
 }

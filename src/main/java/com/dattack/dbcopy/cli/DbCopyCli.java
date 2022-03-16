@@ -31,6 +31,7 @@ import org.apache.commons.configuration.AbstractConfiguration;
 import org.apache.commons.configuration.CompositeConfiguration;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
+
 import java.io.File;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -63,35 +64,35 @@ public final class DbCopyCli {
         final Options options = new Options();
 
         options.addOption(Option.builder(FILE_OPTION) //
-                .required(true) //
-                .longOpt(LONG_FILE_OPTION) //
-                .hasArg(true) //
-                .argName("DBCOPY_FILE") //
-                .desc("the path to the file containing the DBCopy configuration") //
-                .build());
+                              .required(true) //
+                              .longOpt(LONG_FILE_OPTION) //
+                              .hasArg(true) //
+                              .argName("DBCOPY_FILE") //
+                              .desc("the path to the file containing the DBCopy configuration") //
+                              .build());
 
         options.addOption(Option.builder(JOB_NAME_OPTION) //
-                .required(false) //
-                .longOpt(LONG_JOB_NAME_OPTION) //
-                .hasArg(true) //
-                .argName("JOB_NAME") //
-                .desc("the name of the job to execute") //
-                .build());
+                              .required(false) //
+                              .longOpt(LONG_JOB_NAME_OPTION) //
+                              .hasArg(true) //
+                              .argName("JOB_NAME") //
+                              .desc("the name of the job to execute") //
+                              .build());
 
         options.addOption(Option.builder(PROPERTIES_OPTION) //
-                .required(false) //
-                .longOpt(LONG_PROPERTIES_OPTION) //
-                .hasArg(true) //
-                .argName("PROPERTIES_FILE") //
-                .desc("the path to the file containing execution configuration properties") //
-                .build());
+                              .required(false) //
+                              .longOpt(LONG_PROPERTIES_OPTION) //
+                              .hasArg(true) //
+                              .argName("PROPERTIES_FILE") //
+                              .desc("the path to the file containing execution configuration properties") //
+                              .build());
 
         options.addOption(Option.builder(LIST_OPTION) //
-                .required(false) //
-                .longOpt(LONG_LIST_OPTION) //
-                .hasArg(false) //
-                .desc("list the name of the jobs contained in the configuration file") //
-                .build());
+                              .required(false) //
+                              .longOpt(LONG_LIST_OPTION) //
+                              .hasArg(false) //
+                              .desc("list the name of the jobs contained in the configuration file") //
+                              .build());
 
         return options;
     }
@@ -146,8 +147,9 @@ public final class DbCopyCli {
         }
     }
 
-    private static AbstractConfiguration getConfiguration(final String[] propertiesFiles)
-            throws ConfigurationException {
+    private static AbstractConfiguration getConfiguration(
+        final String[] propertiesFiles) throws ConfigurationException
+    {
         final CompositeConfiguration configuration = new CompositeConfiguration();
         if (Objects.nonNull(propertiesFiles)) {
             for (final String fileName : propertiesFiles) {

@@ -57,11 +57,12 @@ public final class DbcopyParser { //NOPMD
      * @param file the XML file to parse
      * @return the DbcopyBean containing the configuration
      * @throws DattackParserException if an error occurs when parsing the file
+     * @throws NullPointerException when file is null
      */
     public static DbcopyBean parse(final File file) throws DattackParserException {
 
         if (Objects.isNull(file)) {
-            throw new IllegalArgumentException("The 'dbcopy' configuration file can't be null. " //
+            throw new NullPointerException("The 'dbcopy' configuration file can't be null. " //
                     + "Check your configuration");
         }
 
