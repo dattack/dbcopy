@@ -90,7 +90,7 @@ import static com.dattack.junit.AssertionsExt.assertEquals;
 
         LOGGER.trace("testSimplePartitionedTable - Table configuration: {}", table);
         String sql = CodeHelper.generateSelectSqlUsingRangePartitions(table, VAR);
-        assertEquals("SELECT * FROM MY_SCHEMA.TEST WHERE COLUMN1 = ${var.lowValue}", sql,
+        assertEquals("SELECT * FROM MY_SCHEMA.TEST WHERE COLUMN1 = ${var.low}", sql,
                      "Generated SQL code is not valid");
     }
 
@@ -100,8 +100,8 @@ import static com.dattack.junit.AssertionsExt.assertEquals;
 
         LOGGER.trace("testIncludeExcludePartitionedTable - Table configuration: {}", table);
         String sql = CodeHelper.generateSelectSqlUsingRangePartitions(table, VAR);
-        assertEquals("SELECT * FROM MY_SCHEMA.TEST WHERE COLUMN1 >= ${var.lowValue}" //
-                         + " AND COLUMN1 < ${var.highValue}", sql, "Generated SQL code is not valid");
+        assertEquals("SELECT * FROM MY_SCHEMA.TEST WHERE COLUMN1 >= ${var.low}" //
+                         + " AND COLUMN1 < ${var.high}", sql, "Generated SQL code is not valid");
     }
 
     @Test
@@ -110,8 +110,8 @@ import static com.dattack.junit.AssertionsExt.assertEquals;
 
         LOGGER.trace("testIncludeExcludePartitionedTable - Table configuration: {}", table);
         String sql = CodeHelper.generateSelectSqlUsingRangePartitions(table, VAR);
-        assertEquals("SELECT * FROM MY_SCHEMA.TEST WHERE COLUMN1 > ${var.lowValue}" //
-                         + " AND COLUMN1 <= ${var.highValue}", sql, "Generated SQL code is not valid");
+        assertEquals("SELECT * FROM MY_SCHEMA.TEST WHERE COLUMN1 > ${var.low}" //
+                         + " AND COLUMN1 <= ${var.high}", sql, "Generated SQL code is not valid");
     }
 
     @Test
@@ -120,8 +120,8 @@ import static com.dattack.junit.AssertionsExt.assertEquals;
 
         LOGGER.trace("testIncludeExcludePartitionedTable - Table configuration: {}", table);
         String sql = CodeHelper.generateSelectSqlUsingRangePartitions(table, VAR);
-        assertEquals("SELECT * FROM MY_SCHEMA.TEST WHERE COLUMN1 > ${var.lowValue}" //
-                         + " AND COLUMN1 < ${var.highValue}", sql, "Generated SQL code is not valid");
+        assertEquals("SELECT * FROM MY_SCHEMA.TEST WHERE COLUMN1 > ${var.low}" //
+                         + " AND COLUMN1 < ${var.high}", sql, "Generated SQL code is not valid");
     }
 
     @Test
@@ -130,8 +130,8 @@ import static com.dattack.junit.AssertionsExt.assertEquals;
 
         LOGGER.trace("testRange10PartitionedTable - Table configuration: {}", table);
         String sql = CodeHelper.generateSelectSqlUsingRangePartitions(table, VAR);
-        assertEquals("SELECT * FROM MY_SCHEMA.TEST WHERE COLUMN1 >= ${var.lowValue}" //
-                         + " AND COLUMN1 <= ${var.highValue}", sql, "Generated SQL code is not valid");
+        assertEquals("SELECT * FROM MY_SCHEMA.TEST WHERE COLUMN1 >= ${var.low}" //
+                         + " AND COLUMN1 <= ${var.high}", sql, "Generated SQL code is not valid");
     }
 
     @Test
@@ -140,8 +140,8 @@ import static com.dattack.junit.AssertionsExt.assertEquals;
 
         LOGGER.trace("testRange10PartitionedTable - Table configuration: {}", table);
         String sql = CodeHelper.generateSelectSqlUsingRangePartitions(table, VAR);
-        assertEquals("SELECT * FROM MY_SCHEMA.TEST WHERE COLUMN1 = ${var.lowValue[0]}" //
-                         + " AND COLUMN2 = ${var.lowValue[1]}", sql, "Generated SQL code is not valid");
+        assertEquals("SELECT * FROM MY_SCHEMA.TEST WHERE COLUMN1 = ${var.low[0]}" //
+                         + " AND COLUMN2 = ${var.low[1]}", sql, "Generated SQL code is not valid");
     }
 
     @Test
@@ -151,8 +151,8 @@ import static com.dattack.junit.AssertionsExt.assertEquals;
         LOGGER.trace("testRange10PartitionedTable - Table configuration: {}", table);
         String sql = CodeHelper.generateSelectSqlUsingRangePartitions(table, VAR);
         assertEquals("SELECT * FROM MY_SCHEMA.TEST" //
-                         + " WHERE COLUMN1 >= ${var.lowValue[0]} AND COLUMN1 <= ${var.highValue[0]}" //
-                         + " AND COLUMN2 >= ${var.lowValue[1]} AND COLUMN2 <= ${var.highValue[1]}", sql,
+                         + " WHERE COLUMN1 >= ${var.low[0]} AND COLUMN1 <= ${var.high[0]}" //
+                         + " AND COLUMN2 >= ${var.low[1]} AND COLUMN2 <= ${var.high[1]}", sql,
                      "Generated SQL code is not valid");
     }
 
@@ -163,8 +163,8 @@ import static com.dattack.junit.AssertionsExt.assertEquals;
         LOGGER.trace("testTwoPartitionFieldsSize1Exclude - Table configuration: {}", table);
         String sql = CodeHelper.generateSelectSqlUsingRangePartitions(table, VAR);
         assertEquals("SELECT * FROM MY_SCHEMA.TEST" //
-                         + " WHERE COLUMN1 > ${var.lowValue[0]} AND COLUMN1 < ${var.highValue[0]}" //
-                         + " AND COLUMN2 > ${var.lowValue[1]} AND COLUMN2 < ${var.highValue[1]}", sql,
+                         + " WHERE COLUMN1 > ${var.low[0]} AND COLUMN1 < ${var.high[0]}" //
+                         + " AND COLUMN2 > ${var.low[1]} AND COLUMN2 < ${var.high[1]}", sql,
                      "Generated SQL code is not valid");
     }
 
@@ -177,17 +177,17 @@ import static com.dattack.junit.AssertionsExt.assertEquals;
         LOGGER.trace("testTwoPartitionFieldsMixed - Table configuration: {}", table);
         String sql = CodeHelper.generateSelectSqlUsingRangePartitions(table, VAR);
         assertEquals("SELECT * FROM MY_SCHEMA.TEST" //
-                         + " WHERE (('${var.lowInclusive}'='INCLUSIVE' AND COLUMN1 >= ${var.lowValue[0]})" //
-                         + " OR ('${var.lowInclusive}'='EXCLUSIVE' AND COLUMN1 > ${var.lowValue[0]}))" //
+                         + " WHERE (('${var.low-inclusive}'='INCLUSIVE' AND COLUMN1 >= ${var.low[0]})" //
+                         + " OR ('${var.low-inclusive}'='EXCLUSIVE' AND COLUMN1 > ${var.low[0]}))" //
                          + " AND" //
-                         + " (('${var.highInclusive}'='INCLUSIVE' AND COLUMN1 <= ${var.highValue[0]})" //
-                         + " OR ('${var.highInclusive}'='EXCLUSIVE' AND COLUMN1 < ${var.highValue[0]}))" //
+                         + " (('${var.high-inclusive}'='INCLUSIVE' AND COLUMN1 <= ${var.high[0]})" //
+                         + " OR ('${var.high-inclusive}'='EXCLUSIVE' AND COLUMN1 < ${var.high[0]}))" //
                          + " AND"  //
-                         + " (('${var.lowInclusive}'='INCLUSIVE' AND COLUMN2 >= ${var.lowValue[1]})" //
-                         + " OR ('${var.lowInclusive}'='EXCLUSIVE' AND COLUMN2 > ${var.lowValue[1]}))" //
+                         + " (('${var.low-inclusive}'='INCLUSIVE' AND COLUMN2 >= ${var.low[1]})" //
+                         + " OR ('${var.low-inclusive}'='EXCLUSIVE' AND COLUMN2 > ${var.low[1]}))" //
                          + " AND" //
-                         + " (('${var.highInclusive}'='INCLUSIVE' AND COLUMN2 <= ${var.highValue[1]})" //
-                         + " OR ('${var.highInclusive}'='EXCLUSIVE' AND COLUMN2 < ${var.highValue[1]}))", sql,
+                         + " (('${var.high-inclusive}'='INCLUSIVE' AND COLUMN2 <= ${var.high[1]})" //
+                         + " OR ('${var.high-inclusive}'='EXCLUSIVE' AND COLUMN2 < ${var.high[1]}))", sql,
                      "Generated SQL code is not valid");
     }
 }
