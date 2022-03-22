@@ -170,6 +170,8 @@ import static java.lang.String.format;
                     // set alias properties
                     baseConfiguration.setProperty(bean.getId() + ".lowValue", i);
                     baseConfiguration.setProperty(bean.getId() + ".highValue", highValue);
+                    baseConfiguration.setProperty(bean.getId() + ".low-value", i);
+                    baseConfiguration.setProperty(bean.getId() + ".high-value", highValue);
 
                     final CompositeConfiguration configuration = createCompositeConfiguration();
                     configuration.addConfiguration(baseConfiguration);
