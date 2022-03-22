@@ -15,32 +15,81 @@
  */
 package com.dattack.dbcopy.engine;
 
-import java.lang.management.ManagementFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.lang.management.ManagementFactory;
 import javax.management.InstanceAlreadyExistsException;
+import javax.management.InstanceNotFoundException;
 import javax.management.MBeanRegistrationException;
 import javax.management.MBeanServer;
 import javax.management.MalformedObjectNameException;
 import javax.management.NotCompliantMBeanException;
+import javax.management.ObjectInstance;
 import javax.management.ObjectName;
 
 /**
+ * Helper class for MBean management.
+ *
  * @author cvarela
  * @since 0.1
  */
-public class MBeanHelper {
+@SuppressWarnings("checkstyle:AbbreviationAsWordInName")
+public final class MBeanHelper {
 
-    public static void registerMBean(final String name, final Object object) {
-        try {
-            final MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
-            mbs.registerMBean(object, new ObjectName(name));
-        } catch (InstanceAlreadyExistsException | MBeanRegistrationException | NotCompliantMBeanException
-                | MalformedObjectNameException e) {
-            e.printStackTrace();
-        }
-    }
+    private static final Logger LOGGER = LoggerFactory.getLogger(MBeanHelper.class);
 
     private MBeanHelper() {
         // static class
+    }
+
+    public static ObjectName createObjectName(final String type, final String name) {
+        ObjectName objectName = null;
+        try {
+            objectName = new ObjectName("com.dattack.dbcopy:type=" + type + ",name=" + name);
+        } catch (MalformedObjectNameException e) {
+            LOGGER.warn(e.getMessage(), e);
+        }
+        return objectName;
+    }
+
+    public static ObjectInstance registerMBean(final String type, final String name, final Object object) {
+        return registerMBean(createObjectName(type, name), object);
+    }
+
+    /**
+     * Registers a pre-existing object as an MBean with the MBean server.
+     *
+     * @param name   the object name of the MBean.
+     * @param object the MBean to be registered as an MBean.
+     * @return an ObjectInstance, containing the ObjectName and the Java class name of the newly registered MBean.
+     * @see MBeanServer#registerMBean(Object, ObjectName)
+     */
+    public static ObjectInstance registerMBean(final ObjectName name, final Object object) {
+
+        if (name == null || object == null) {
+            LOGGER.warn("Unable to register MBean (name: {}, class: {})", name, //
+                        object == null ? "null" : object.getClass());
+            return null;
+        }
+
+        LOGGER.info("Registering MBean (name: {}, class: {})", name, object.getClass());
+        ObjectInstance objectInstance = null;
+        try {
+            final MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
+            objectInstance = mbs.registerMBean(object, name);
+        } catch (InstanceAlreadyExistsException | MBeanRegistrationException | NotCompliantMBeanException e) {
+            LOGGER.warn(e.getMessage(), e);
+        }
+        return objectInstance;
+    }
+
+    public static void unregisterMBean(final ObjectName name) {
+        try {
+            final MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
+            mbs.unregisterMBean(name);
+        } catch (MBeanRegistrationException | InstanceNotFoundException e) {
+            LOGGER.warn(e.getMessage(), e);
+        }
     }
 }

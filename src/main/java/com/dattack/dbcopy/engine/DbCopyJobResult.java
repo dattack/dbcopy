@@ -15,12 +15,13 @@
  */
 package com.dattack.dbcopy.engine;
 
+import com.dattack.dbcopy.beans.DbcopyJobBean;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.dattack.dbcopy.beans.DbcopyJobBean;
-
 /**
+ * MBean implementation to access the result of the execution of a job.
+ *
  * @author cvarela
  * @since 0.1
  */
@@ -32,14 +33,12 @@ public class DbCopyJobResult implements DbCopyJobResultMBean {
     public DbCopyJobResult(final DbcopyJobBean jobBean) {
         this.jobBean = jobBean;
         this.taskResultList = new ArrayList<>();
+        MBeanHelper.registerMBean("JobResult", jobBean.getId(), this);
     }
 
     public DbCopyTaskResult createTaskResult(final String taskName) {
-
-        final String fullTaskName = String.format("%s@%s", jobBean.getId(), taskName);
-        final DbCopyTaskResult taskResult = new DbCopyTaskResult(fullTaskName);
+        final DbCopyTaskResult taskResult = new DbCopyTaskResult(taskName);
         this.taskResultList.add(taskResult);
-        MBeanHelper.registerMBean("com.dattack.dbcopy:type=TaskResult,name=" + fullTaskName, taskResult);
         return taskResult;
     }
 
@@ -76,12 +75,26 @@ public class DbCopyJobResult implements DbCopyJobResultMBean {
         return counter;
     }
 
-    public DbcopyJobBean getJobBean() {
-        return jobBean;
+    @Override
+    public float getProcessedRowsPerSecond() {
+        float rate = 0F;
+        for (final DbCopyTaskResult item : taskResultList) {
+            if (item.getStartTime() > 0 && item.getEndTime() <= 0) {
+                rate += item.getProcessedRowsPerSecond();
+            }
+        }
+        return rate;
     }
 
-    public List<DbCopyTaskResult> getTaskResultList() {
-        return taskResultList;
+    @Override
+    public float getRetrievedRowsPerSecond() {
+        float rate = 0F;
+        for (final DbCopyTaskResult item : taskResultList) {
+            if (item.getStartTime() > 0 && item.getEndTime() <= 0) {
+                rate += item.getRetrievedRowsPerSecond();
+            }
+        }
+        return rate;
     }
 
     @Override
@@ -93,39 +106,25 @@ public class DbCopyJobResult implements DbCopyJobResultMBean {
     public long getTotalRetrievedRows() {
         long total = 0;
         for (final DbCopyTaskResult item : taskResultList) {
-            total += item.getRetrievedRows();
+            total += item.getTotalRetrievedRows();
         }
         return total;
     }
 
     @Override
-    public long getTotalInsertedRows() {
+    public long getTotalProcessedRows() {
         long total = 0;
         for (final DbCopyTaskResult item : taskResultList) {
-            total += item.getInsertedRows();
+            total += item.getTotalProcessedRows();
         }
         return total;
     }
 
-    @Override
-    public float getRateRowsInsertedPerSecond() {
-        float rate = 0F;
-        for (final DbCopyTaskResult item : taskResultList) {
-            if (item.getStartTime() > 0 && item.getEndTime() <= 0) {
-                rate += item.getRateRowsInsertedPerSecond();
-            }
-        }
-        return rate;
+    public DbcopyJobBean getJobBean() {
+        return jobBean;
     }
 
-    @Override
-    public float getRateRowsRetrievedPerSecond() {
-        float rate = 0F;
-        for (final DbCopyTaskResult item : taskResultList) {
-            if (item.getStartTime() > 0 && item.getEndTime() <= 0) {
-                rate += item.getRateRowsRetrievedPerSecond();
-            }
-        }
-        return rate;
+    public List<DbCopyTaskResult> getTaskResultList() {
+        return taskResultList;
     }
 }

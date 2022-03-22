@@ -23,20 +23,41 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import javax.management.ObjectInstance;
+
 /**
+ * MBean implementation to manage a thread pool.
+ *
  * @author cvarela
  * @since 0.1
  */
-public class ExecutionController implements ExecutionControllerMBean {
+public class ExecutionController implements ExecutionControllerMBean, AutoCloseable {
 
-    private final AtomicInteger counter = new AtomicInteger();
-    private final String name;
-    private final ThreadPoolExecutor threadPoolExecutor;
+    private static final String THREAD_POOL_TYPE = "ThreadPool";
+
+    private final transient AtomicInteger threadCounter = new AtomicInteger();
+    private final transient ThreadPoolExecutor threadPoolExecutor;
+    private final transient ObjectInstance objectInstance;
+
+    public ExecutionController(final String name, final int poolSize) {
+        this(name, poolSize, poolSize);
+    }
 
     public ExecutionController(final String name, final int corePoolSize, final int maximumPoolSize) {
-        this.name = name;
         this.threadPoolExecutor = new ThreadPoolExecutor(corePoolSize, maximumPoolSize, 1L, TimeUnit.MINUTES,
-                new LinkedBlockingQueue<Runnable>(), getThreadFactory());
+                new LinkedBlockingQueue<>(), getThreadFactory(name));
+        objectInstance = MBeanHelper.registerMBean(THREAD_POOL_TYPE, name, this);
+    }
+
+    @Override
+    public void close() {
+        if (objectInstance != null) {
+            MBeanHelper.unregisterMBean(objectInstance.getObjectName());
+        }
+    }
+
+    private ThreadFactory getThreadFactory(String name) {
+        return target -> new Thread(target, String.format("%s-%d", name, threadCounter.getAndIncrement()));
     }
 
     @Override
@@ -47,17 +68,6 @@ public class ExecutionController implements ExecutionControllerMBean {
     @Override
     public int getMaximumPoolSize() {
         return threadPoolExecutor.getMaximumPoolSize();
-    }
-
-    private ThreadFactory getThreadFactory() {
-
-        return new ThreadFactory() {
-
-            @Override
-            public Thread newThread(final Runnable target) {
-                return new Thread(target, String.format("%s-%d", name, counter.getAndIncrement()));
-            }
-        };
     }
 
     @Override

@@ -18,15 +18,20 @@ package com.dattack.dbcopy.beans;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
-
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
+import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 
 /**
+ * Bean representing a dbcopy configuration file.
+ *
  * @author cvarela
  * @since 0.1
  */
 @XmlRootElement(name = "dbcopy")
+@XmlAccessorType(XmlAccessType.FIELD)
 public class DbcopyBean implements Serializable {
 
     private static final long serialVersionUID = 8398044544048577943L;
@@ -34,14 +39,22 @@ public class DbcopyBean implements Serializable {
     @XmlElement(name = "job", required = true, type = DbcopyJobBean.class)
     private final List<DbcopyJobBean> jobList;
 
+    @XmlAttribute(name = "parallel")
+    private int parallel = 1;
+
     public DbcopyBean() {
         this.jobList = new ArrayList<>();
     }
 
-    /**
-     * @return the job list
-     */
     public List<DbcopyJobBean> getJobList() {
         return jobList;
+    }
+
+    public int getParallel() {
+        return parallel;
+    }
+
+    public void setParallel(final int parallel) {
+        this.parallel = parallel;
     }
 }

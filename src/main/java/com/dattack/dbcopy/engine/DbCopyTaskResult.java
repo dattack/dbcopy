@@ -15,36 +15,51 @@
  */
 package com.dattack.dbcopy.engine;
 
-import java.sql.SQLException;
+import com.dattack.jtoolbox.patterns.Command;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
+ * MBean implementation to access the result of the execution of a task.
+ *
  * @author cvarela
  * @since 0.1
  */
 public final class DbCopyTaskResult implements DbCopyTaskResultMBean {
 
-    private final String taskName;
-    private long startTime;
-    private long endTime;
-    private long retrievedRows;
-    private long insertedRows;
-    private SQLException exception;
+    private final transient List<Command<?>> onEndCommandList;
+    private final transient AtomicLong processedRows;
+    private final transient AtomicLong retrievedRows;
+    private final transient String taskName;
+    private transient long endTime;
+    private transient Exception exception;
+    private transient long startTime;
+    private transient String executionId;
 
     public DbCopyTaskResult(final String taskName) {
         this.taskName = taskName;
-        this.retrievedRows = 0;
-        this.insertedRows = 0;
+        this.retrievedRows = new AtomicLong(0);
+        this.processedRows = new AtomicLong(0);
         this.startTime = 0;
         this.endTime = 0;
-        this.exception = null;
+        //this.exception = null;
+        this.onEndCommandList = new ArrayList<>();
+        MBeanHelper.registerMBean("TaskResult", taskName, this);
     }
 
-    public void addInsertedRows(final int value) {
-        this.insertedRows += value;
+    public void addOnEndCommand(final Command<?> command) {
+        onEndCommandList.add(command);
+    }
+
+    public void addProcessedRows(final int value) {
+        this.processedRows.addAndGet(value);
     }
 
     public void end() {
         this.endTime = System.currentTimeMillis();
+        onEndCommandList.forEach(Command::execute);
     }
 
     @Override
@@ -53,51 +68,34 @@ public final class DbCopyTaskResult implements DbCopyTaskResultMBean {
     }
 
     @Override
-    public SQLException getException() {
+    public Exception getException() {
         return exception;
     }
 
-    public long getExecutionTime() {
-        if (startTime <= 0) {
-            return 0;
-        }
-
-        if (endTime <= 0) {
-            return System.currentTimeMillis() - startTime;
-        }
-        return endTime - startTime;
+    public void setException(final Exception exception) {
+        this.exception = exception;
     }
 
     @Override
-    public long getInsertedRows() {
-        return insertedRows;
-    }
+    public float getProcessedRowsPerSecond() {
 
-    @Override
-    public float getRateRowsInsertedPerSecond() {
-
+        float result = 0;
         final long executionTime = getExecutionTime();
-        if (executionTime <= 0) {
-            return 0;
+        if (executionTime > 0) {
+            result = getTotalProcessedRows() * 1000F / executionTime;
         }
-
-        return getInsertedRows() * 1000F / executionTime;
+        return result;
     }
 
     @Override
-    public float getRateRowsRetrievedPerSecond() {
+    public float getRetrievedRowsPerSecond() {
 
+        float result = 0;
         final long executionTime = getExecutionTime();
-        if (executionTime <= 0) {
-            return 0;
+        if (executionTime > 0) {
+            result = getTotalRetrievedRows() * 1000F / executionTime;
         }
-
-        return getRetrievedRows() * 1000F / executionTime;
-    }
-
-    @Override
-    public long getRetrievedRows() {
-        return retrievedRows;
+        return result;
     }
 
     @Override
@@ -110,16 +108,39 @@ public final class DbCopyTaskResult implements DbCopyTaskResultMBean {
         return taskName;
     }
 
-    public void incrementRetrievedRows() {
-        this.retrievedRows += 1;
+    @Override
+    public long getTotalProcessedRows() {
+        return processedRows.longValue();
     }
 
-    public void setException(final SQLException exception) {
-        this.exception = exception;
+    @Override
+    public long getTotalRetrievedRows() {
+        return retrievedRows.longValue();
+    }
+
+    public long getExecutionTime() {
+        long result = 0;
+        if (startTime > 0) {
+            if (endTime <= 0) {
+                result = System.currentTimeMillis() - startTime;
+            } else {
+                result = endTime - startTime;
+            }
+        }
+        return result;
+    }
+
+    public void incrementRetrievedRows() {
+        this.retrievedRows.incrementAndGet();
     }
 
     public void start() {
         this.startTime = System.currentTimeMillis();
+        this.executionId = UUID.randomUUID().toString();
+    }
+
+    public String getExecutionId() {
+        return executionId;
     }
 
     @Override
@@ -127,7 +148,7 @@ public final class DbCopyTaskResult implements DbCopyTaskResultMBean {
 
         final StringBuilder str = new StringBuilder().append("DbCopyTaskResult [taskName=").append(taskName)
                 .append(", retrievedRows=").append(retrievedRows) //
-                .append(", insertedRows=").append(insertedRows);
+                .append(", processedRows=").append(processedRows);
 
         if (exception != null) {
             str.append(", exception=").append(exception);

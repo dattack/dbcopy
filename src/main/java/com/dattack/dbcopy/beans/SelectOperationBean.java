@@ -15,22 +15,30 @@
  */
 package com.dattack.dbcopy.beans;
 
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
 
 /**
+ * Bean representing a query operation executed to retrieve a ResultSet.
+ *
  * @author cvarela
  * @since 0.1
  */
+@XmlAccessorType(XmlAccessType.FIELD)
 public class SelectOperationBean extends AbstractDbOperationBean {
 
+    private static final int DEFAULT_FETCH_SIZE = 0;
     private static final long serialVersionUID = -8426358006541063367L;
 
-    private static final int DEFAULT_FETCH_SIZE = 0;
-
-    @XmlAttribute(name = "fetch-size", required = false)
+    @XmlAttribute(name = "fetch-size")
     private int fetchSize = DEFAULT_FETCH_SIZE;
 
     public int getFetchSize() {
         return fetchSize > DEFAULT_FETCH_SIZE ? fetchSize : DEFAULT_FETCH_SIZE;
+    }
+
+    public void setFetchSize(final int fetchSize) {
+        this.fetchSize = fetchSize;
     }
 }

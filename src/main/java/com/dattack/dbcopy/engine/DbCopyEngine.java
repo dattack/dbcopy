@@ -15,26 +15,71 @@
  */
 package com.dattack.dbcopy.engine;
 
-import java.io.File;
-import java.util.Set;
-
-import org.apache.commons.configuration.AbstractConfiguration;
-import org.apache.commons.configuration.ConfigurationException;
-
 import com.dattack.dbcopy.beans.DbcopyBean;
 import com.dattack.dbcopy.beans.DbcopyJobBean;
 import com.dattack.dbcopy.beans.DbcopyParser;
 import com.dattack.jtoolbox.exceptions.DattackParserException;
 import com.dattack.jtoolbox.io.FilesystemUtils;
+import org.apache.commons.configuration.AbstractConfiguration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 
 /**
+ * Responsible for the execution of one or more jobs.
+ *
  * @author cvarela
  * @since 0.1
  */
 public final class DbCopyEngine {
 
-    private void execute(final File file, final Set<String> jobNames, final AbstractConfiguration configuration)
-            throws ConfigurationException, DattackParserException {
+    private static final Logger LOGGER = LoggerFactory.getLogger(DbCopyEngine.class);
+
+    public void execute(final String[] filenames, final Set<String> jobNames,
+        final AbstractConfiguration configuration) throws DattackParserException
+    {
+        for (final String filename : filenames) {
+            execute(new File(filename), jobNames, configuration); //NOPMD
+        }
+    }
+
+    private void execute(final DbcopyBean dbcopyBean, final Set<String> jobNames,
+        final AbstractConfiguration configuration)
+    {
+        try (ExecutionController controller = new ExecutionController("root", dbcopyBean.getParallel())) {
+
+            final List<Future<?>> futureList = new ArrayList<>();
+            for (final DbcopyJobBean jobBean : dbcopyBean.getJobList()) {
+
+                if (jobNames != null && !jobNames.isEmpty() && !jobNames.contains(jobBean.getId())) {
+                    continue;
+                }
+
+                final DbCopyJob job = new DbCopyJob(jobBean, configuration); //NOPMD
+                futureList.add(controller.submit(job));
+            }
+
+            controller.shutdown();
+
+            for (final Future<?> future : futureList) {
+                try {
+                    LOGGER.info("Future result: {}", future.get());
+                } catch (final InterruptedException | ExecutionException e) {
+                    LOGGER.warn("Error getting computed result from Future object", e);
+                }
+            }
+        }
+    }
+
+    private void execute(final File file, final Set<String> jobNames,
+        final AbstractConfiguration configuration) throws DattackParserException
+    {
 
         if (file.isDirectory()) {
 
@@ -48,24 +93,7 @@ public final class DbCopyEngine {
         } else {
 
             final DbcopyBean dbcopyBean = DbcopyParser.parse(file);
-
-            for (final DbcopyJobBean jobBean : dbcopyBean.getJobList()) {
-
-                if (jobNames != null && !jobNames.isEmpty() && !jobNames.contains(jobBean.getId())) {
-                    continue;
-                }
-
-                final DbCopyJob job = new DbCopyJob(jobBean, configuration);
-                job.execute();
-            }
-        }
-    }
-
-    public void execute(final String[] filenames, final Set<String> jobNames, final AbstractConfiguration configuration)
-            throws ConfigurationException, DattackParserException {
-
-        for (final String filename : filenames) {
-            execute(new File(filename), jobNames, configuration);
+            execute(dbcopyBean, jobNames, configuration);
         }
     }
 }

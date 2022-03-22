@@ -15,27 +15,28 @@
  */
 package com.dattack.dbcopy.engine;
 
-import java.sql.SQLException;
-
 /**
+ * MBean to access the result of the execution of a task.
+ *
  * @author cvarela
  * @since 0.1
  */
+@SuppressWarnings("checkstyle:AbbreviationAsWordInName")
 public interface DbCopyTaskResultMBean {
 
     long getEndTime();
 
-    SQLException getException();
+    Exception getException();
 
-    long getInsertedRows();
+    float getProcessedRowsPerSecond();
 
-    float getRateRowsInsertedPerSecond();
-
-    float getRateRowsRetrievedPerSecond();
-
-    long getRetrievedRows();
+    float getRetrievedRowsPerSecond();
 
     long getStartTime();
 
     String getTaskName();
+
+    long getTotalProcessedRows();
+
+    long getTotalRetrievedRows();
 }

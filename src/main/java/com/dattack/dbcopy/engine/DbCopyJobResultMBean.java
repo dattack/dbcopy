@@ -16,9 +16,12 @@
 package com.dattack.dbcopy.engine;
 
 /**
+ * MBean to access the result of the execution of a job.
+ *
  * @author cvarela
  * @since 0.1
  */
+@SuppressWarnings("checkstyle:AbbreviationAsWordInName")
 public interface DbCopyJobResultMBean {
 
     int getActiveTaskCounter();
@@ -27,13 +30,13 @@ public interface DbCopyJobResultMBean {
 
     int getInactiveTaskCounter();
 
-    float getRateRowsInsertedPerSecond();
+    float getProcessedRowsPerSecond();
 
-    float getRateRowsRetrievedPerSecond();
+    float getRetrievedRowsPerSecond();
 
-    int getTotalTaskCounter();
+    long getTotalProcessedRows();
 
     long getTotalRetrievedRows();
 
-    long getTotalInsertedRows();
+    int getTotalTaskCounter();
 }

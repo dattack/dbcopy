@@ -2,12 +2,12 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <artifactId>parent</artifactId>
         <groupId>com.dattack</groupId>
-        <version>2-SNAPSHOT</version>
+        <artifactId>parent</artifactId>
+        <version>7</version>
     </parent>
     <artifactId>dbcopy</artifactId>
-    <version>0.1-SNAPSHOT</version>
+    <version>0.3</version>
     <packaging>jar</packaging>
     <name>dbcopy</name>
     <description>dbCopy is a database copy and conversion tool that moves or copies data from one database to another.</description>
@@ -44,12 +44,12 @@
         <url>http://github.com/dattack/dbcopy</url>
     </scm>
     <issueManagement>
-        <system>GitHub Issue Management</system>
+        <system>GitHub</system>
         <url>https://github.com/dattack/dbcopy/issues</url>
     </issueManagement>
     <ciManagement>
         <system>Travis CI</system>
-        <url>https://travis-ci.org/dattack/dbcopy</url>
+        <url>https://travis-ci.com/dattack/dbcopy</url>
     </ciManagement>
     <distributionManagement>
         <site>
@@ -59,16 +59,20 @@
     </distributionManagement>
     <properties>
         <appassembler-maven-plugin.version>1.10</appassembler-maven-plugin.version>
-        <commons-cli.version>1.3.1</commons-cli.version>
+        <avro.version>1.11.0</avro.version>
+        <commons-cli.version>1.4</commons-cli.version>
         <compiler.source.version>1.7</compiler.source.version>
         <compiler.target.version>1.7</compiler.target.version>
-        <data-formats.version>0.1</data-formats.version>
-        <h2.version>1.4.195</h2.version>
-        <junit.version>4.12</junit.version>
+        <data-formats.version>0.4</data-formats.version>
+        <hadoop-common.version>2.10.1</hadoop-common.version>
+        <hadoop-mapreduce-client-core.version>2.10.1</hadoop-mapreduce-client-core.version>
+        <jaxb-api.version>2.3.1</jaxb-api.version>
+        <jtoolbox-core.version>0.6</jtoolbox-core.version>
+        <parquet-avro.version>1.12.1</parquet-avro.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <slf4j.version>1.7.25</slf4j.version>
-        <standalone-jndi.version>0.2-SNAPSHOT</standalone-jndi.version>
-        <data-formats.version>0.2-SNAPSHOT</data-formats.version>
+        <slf4j.version>1.7.36</slf4j.version>
+        <standalone-jndi.version>0.5</standalone-jndi.version>
+        <junit-extensions.version>0.1</junit-extensions.version>
     </properties>
     <dependencies>
         <dependency>
@@ -77,9 +81,9 @@
             <version>${data-formats.version}</version>
         </dependency>
         <dependency>
-            <groupId>javax.xml.bind</groupId>
-            <artifactId>jaxb-api</artifactId>
-            <version>2.2.3</version>
+            <groupId>com.dattack</groupId>
+            <artifactId>jtoolbox-core</artifactId>
+            <version>${jtoolbox-core.version}</version>
         </dependency>
         <dependency>
             <groupId>com.dattack</groupId>
@@ -91,7 +95,26 @@
             <artifactId>commons-cli</artifactId>
             <version>${commons-cli.version}</version>
         </dependency>
-
+        <dependency>
+            <groupId>javax.xml.bind</groupId>
+            <artifactId>jaxb-api</artifactId>
+            <version>${jaxb-api.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.avro</groupId>
+            <artifactId>avro</artifactId>
+            <version>${avro.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-common</artifactId>
+            <version>${hadoop-common.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.parquet</groupId>
+            <artifactId>parquet-avro</artifactId>
+            <version>${parquet-avro.version}</version>
+        </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>jcl-over-slf4j</artifactId>
@@ -108,16 +131,14 @@
             <version>${slf4j.version}</version>
         </dependency>
         <dependency>
-            <groupId>com.h2database</groupId>
-            <artifactId>h2</artifactId>
-            <version>${h2.version}</version>
-            <!--<scope>test</scope>-->
+            <groupId>commons-configuration</groupId>
+            <artifactId>commons-configuration</artifactId>
+            <version>[1.10,)</version>
         </dependency>
-        <!-- For test only -->
         <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>${junit.version}</version>
+            <groupId>com.dattack</groupId>
+            <artifactId>junit-extensions</artifactId>
+            <version>${junit-extensions.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -140,14 +161,22 @@
                     <repositoryLayout>flat</repositoryLayout>
                     <repositoryName>lib</repositoryName>
                     <extraJvmArguments>
+                        -Ddbcopy_log_table=
                         -Dcom.sun.management.jmxremote
                         -Dcom.sun.management.jmxremote.port=9010
                         -Dcom.sun.management.jmxremote.host=127.0.0.1
                         -Dcom.sun.management.jmxremote.local.only=true
                         -Dcom.sun.management.jmxremote.authenticate=false
-                        -Dcom.sun.management.jmxremote.ssl=false
-                    </extraJvmArguments>
+                        -Dcom.sun.management.jmxremote.ssl=false</extraJvmArguments>
                     <programs>
+                        <program>
+                            <mainClass>com.dattack.dbcopy.cli.AutomatorCli</mainClass>
+                            <id>automator</id>
+                            <platforms>
+                                <platform>unix</platform>
+                                <platform>windows</platform>
+                            </platforms>
+                        </program>
                         <program>
                             <mainClass>com.dattack.dbcopy.cli.DbCopyCli</mainClass>
                             <id>dbcopy</id>

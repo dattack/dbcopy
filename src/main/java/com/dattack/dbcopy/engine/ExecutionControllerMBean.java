@@ -19,20 +19,23 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 
 /**
+ * MBean to manage a thread pool.
+ *
  * @author cvarela
  * @since 0.1
  */
+@SuppressWarnings("checkstyle:AbbreviationAsWordInName")
 public interface ExecutionControllerMBean {
 
-    public int getCorePoolSize();
+    int getCorePoolSize();
 
-    public int getMaximumPoolSize();
+    void setCorePoolSize(final int size);
 
-    public void setCorePoolSize(final int size);
+    int getMaximumPoolSize();
 
-    public void setMaximumPoolSize(final int size);
+    void setMaximumPoolSize(final int size);
 
-    public void shutdown();
+    void shutdown();
 
-    public <T> Future<T> submit(final Callable<T> task);
+    <T> Future<T> submit(final Callable<T> task);
 }

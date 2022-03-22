@@ -17,6 +17,30 @@ For bugs and discussions please use the [Github Issues](https://github.com/datta
 If you have other questions, please contact by [email](mailto:dev@dattack.com) or
 [@dattackteam](https://twitter.com/dattackteam) 
 
+## Configuration
+
+SQL statements for the creation of the table for storing the log of executions in the database in which the 
+INSERT statements will be executed:
+
+```sql
+DROP TABLE dbcopy_log;
+
+CREATE TABLE dbcopy_log (
+   task_name      VARCHAR2(100)            NOT NULL,
+   execution_id   VARCHAR2(40)             NOT NULL,
+   log_time       TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+   object_name    VARCHAR2(100)            NOT NULL,
+   start_time     TIMESTAMP WITH TIME ZONE NOT NULL,  
+   end_time       TIMESTAMP WITH TIME ZONE,
+   retrieved_rows NUMBER(19,0)             DEFAULT 0,
+   processed_rows NUMBER(19,0)             DEFAULT 0,
+   err_msg        VARCHAR2(200)            DEFAULT NULL
+);
+
+ALTER TABLE dbcopy_log ADD PRIMARY KEY(task_name, execution_id);
+
+COMMIT;
+```
 Copyright and license
 =========
 
