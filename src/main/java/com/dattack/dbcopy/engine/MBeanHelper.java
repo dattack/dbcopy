@@ -57,11 +57,19 @@ public final class MBeanHelper {
         return registerMBean(createObjectName(type, name), object);
     }
 
+    /**
+     * Registers a pre-existing object as an MBean with the MBean server.
+     *
+     * @param name   the object name of the MBean.
+     * @param object the MBean to be registered as an MBean.
+     * @return an ObjectInstance, containing the ObjectName and the Java class name of the newly registered MBean.
+     * @see MBeanServer#registerMBean(Object, ObjectName)
+     */
     public static ObjectInstance registerMBean(final ObjectName name, final Object object) {
 
         if (name == null || object == null) {
             LOGGER.warn("Unable to register MBean (name: {}, class: {})", name, //
-                    object == null ? "null" : object.getClass());
+                        object == null ? "null" : object.getClass());
             return null;
         }
 
