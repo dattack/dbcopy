@@ -37,16 +37,16 @@ public class PartitionRangeBean {
     @XmlAttribute(name = "seq")
     private int sequence;
 
-    @XmlAttribute(name = "lowValue")
+    @XmlAttribute(name = "low-value")
     private String lowValue;
 
-    @XmlAttribute(name = "lowInclusive")
+    @XmlAttribute(name = "low-inclusive")
     private String lowInclusive;
 
-    @XmlAttribute(name = "highValue")
+    @XmlAttribute(name = "high-value")
     private String highValue;
 
-    @XmlAttribute(name = "highInclusive")
+    @XmlAttribute(name = "high-inclusive")
     private String highInclusive;
 
     public String getHighInclusive() {

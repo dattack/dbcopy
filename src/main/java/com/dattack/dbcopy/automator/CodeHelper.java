@@ -57,10 +57,10 @@ public class CodeHelper {
                 xml.writeCharacters(NTAB2).writeEmptyElement("partition") //
                     .writeAttribute("name", rangePartition.getPartitionName()) //
                     .writeAttribute("seq", rangePartition.getPosition()) //
-                    .writeAttribute("lowValue", rangePartition.getLowValue()) //
-                    .writeAttribute("lowInclusive", rangePartition.getLowInclusiveMode().name()) //
-                    .writeAttribute("highValue", rangePartition.getHighValue()) //
-                    .writeAttribute("highInclusive", rangePartition.getHighInclusiveMode().name()).writeComment(
+                    .writeAttribute("low-value", rangePartition.getLowValue()) //
+                    .writeAttribute("low-inclusive", rangePartition.getLowInclusiveMode().name()) //
+                    .writeAttribute("high-value", rangePartition.getHighValue()) //
+                    .writeAttribute("high-inclusive", rangePartition.getHighInclusiveMode().name()).writeComment(
                         String.format("num-rows: %,d", rangePartition.getNumRows()));
             }
             xml.writeEndElement(); // partition-range
@@ -136,7 +136,7 @@ public class CodeHelper {
         if (rangeSize1 && lowInclusive.equals(RangePartition.InclusiveMode.INCLUSIVE) && highInclusive.equals(
             RangePartition.InclusiveMode.INCLUSIVE))
         {
-            result = columnName + " = ${" + partitionVarName + ".lowValue" + arrayIndex + "}";
+            result = columnName + " = ${" + partitionVarName + ".low" + arrayIndex + "}";
         } else {
             result += getPredicate(lowInclusive, columnName, partitionVarName, arrayIndex, true);
             result += " AND ";
@@ -174,12 +174,12 @@ public class CodeHelper {
     {
         // Example:
         // (
-        //     (${partition.lowInclusive} = true AND column >= ${partition.lowValue[0]})
+        //     (${partition.low-inclusive} = true AND column >= ${partition.low[0]})
         //     OR
-        //     (${partition.lowInclusive} = false AND column > ${partition.lowValue[0]})
+        //     (${partition.low-inclusive} = false AND column > ${partition.low[0]})
         // )
 
-        String partLowInclusiveRef = String.format("%s.%s", partitionVarName, low ? "lowInclusive" : "highInclusive");
+        String partLowInclusiveRef = String.format("%s.%s", partitionVarName, low ? "low-inclusive" : "high-inclusive");
         String partValueRef = getPartitionValueRef(partitionVarName, arrayIndex, low);
         String operator = low ? ">" : "<";
 
@@ -188,12 +188,7 @@ public class CodeHelper {
                              partLowInclusiveRef, columnName, operator, partValueRef);
     }
 
-    public static String getPartitionLiteralList(List<RangePartition> rangePartitionList) {
-        // TODO: rewrite this method when 'getSelectSql' can filter by partition
-        return "";
-    }
-
     private static String getPartitionValueRef(String partitionVarName, String arrayIndex, boolean low) {
-        return String.format("%s.%s%s", partitionVarName, low ? "lowValue" : "highValue", arrayIndex);
+        return String.format("%s.%s%s", partitionVarName, low ? "low" : "high", arrayIndex);
     }
 }

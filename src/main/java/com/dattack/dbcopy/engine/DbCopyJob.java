@@ -202,13 +202,14 @@ import static java.lang.String.format;
                     final BaseConfiguration baseConfiguration = new BaseConfiguration();
                     baseConfiguration.setProperty(bean.getId() + ".name", partition.getName());
                     baseConfiguration.setProperty(bean.getId() + ".seq", partition.getSequence());
-                    //baseConfiguration.setProperty(bean.getId() + ".lowValue", partition.getLowObject());
-                    baseConfiguration.setProperty(bean.getId() + ".lowInclusive", partition.getLowInclusive());
-                    //baseConfiguration.setProperty(bean.getId() + ".highValue", partition.getHighValue());
-                    baseConfiguration.setProperty(bean.getId() + ".highInclusive", partition.getHighInclusive());
+                    baseConfiguration.setProperty(bean.getId() + ".low-inclusive", partition.getLowInclusive());
+                    baseConfiguration.setProperty(bean.getId() + ".high-inclusive", partition.getHighInclusive());
 
                     append(baseConfiguration, bean.getId() + ".lowValue", partition.getLowObject());
                     append(baseConfiguration, bean.getId() + ".highValue", partition.getHighObject());
+
+                    append(baseConfiguration, bean.getId() + ".low-value", partition.getLowObject());
+                    append(baseConfiguration, bean.getId() + ".high-value", partition.getHighObject());
 
                     // set alias properties
                     append(baseConfiguration, bean.getId() + ".low", partition.getLowObject());
