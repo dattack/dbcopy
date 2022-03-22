@@ -7,7 +7,7 @@
         <version>7</version>
     </parent>
     <artifactId>dbcopy</artifactId>
-    <version>0.3-SNAPSHOT</version>
+    <version>0.3</version>
     <packaging>jar</packaging>
     <name>dbcopy</name>
     <description>dbCopy is a database copy and conversion tool that moves or copies data from one database to another.</description>
