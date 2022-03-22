@@ -74,7 +74,7 @@ public class CodeHelper {
             .sorted(Comparator.comparing(RangePartition::getPosition)) //
             .map(RangePartition::getPartitionName) //
             .collect(Collectors.joining(","));
-        xml.writeStartElement("literal-list") //
+        xml.writeStartElement("list") //
             .writeAttribute("id", partitionVar) //
             .writeAttribute("values", values) //
             .writeAttribute("block-size", 1);
