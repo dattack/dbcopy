@@ -44,7 +44,7 @@ public class DbcopyJobBean implements Serializable {
     @XmlAttribute(name = "id", required = true)
     private String id;
 
-    @XmlElement(name = "insert", type = InsertOperationBean.class, required = true)
+    @XmlElement(name = "insert", type = InsertOperationBean.class)
     private InsertOperationBean insertBean;
 
     @XmlElement(name = "select", type = SelectOperationBean.class, required = true)
