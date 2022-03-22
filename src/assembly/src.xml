@@ -39,7 +39,12 @@
             <includes>
                 <include>*.jar</include>
             </includes>
-            <fileMode>440</fileMode>
+            <excludes>
+                <exclude>*javadoc.jar</exclude>
+                <exclude>*sources.jar</exclude>
+                <exclude>*tests.jar</exclude>
+            </excludes>
+            <fileMode>644</fileMode>
         </fileSet>
         <fileSet>
             <directory>${project.basedir}/src/assembly/lib/ext</directory>
