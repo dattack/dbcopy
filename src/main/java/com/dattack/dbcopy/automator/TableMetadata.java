@@ -149,7 +149,6 @@ public class TableMetadata {
         }
 
         public TableMetadataBuilder withLastAnalyzed(Timestamp lastAnalyzed) {
-            Instant instant = null;
             if (lastAnalyzed != null) {
                 withLastAnalyzed(lastAnalyzed.toInstant());
             }
