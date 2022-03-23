@@ -15,7 +15,7 @@
  */
 package com.dattack.dbcopy.automator;
 
-import com.sun.tools.javac.util.StringUtils;
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
 import java.time.Instant;
@@ -186,7 +186,7 @@ public class TableMetadata {
         }
 
         private String norm(String columnName) {
-            return StringUtils.toUpperCase(columnName);
+            return StringUtils.upperCase(columnName);
         }
     }
 
