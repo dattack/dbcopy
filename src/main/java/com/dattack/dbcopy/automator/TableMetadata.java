@@ -18,6 +18,7 @@ package com.dattack.dbcopy.automator;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
+import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -144,6 +145,14 @@ public class TableMetadata {
 
         public TableMetadataBuilder withColumn(String columnName, int ordinalPosition) {
             this.columnMap.put(norm(columnName), ordinalPosition);
+            return this;
+        }
+
+        public TableMetadataBuilder withLastAnalyzed(Timestamp lastAnalyzed) {
+            Instant instant = null;
+            if (lastAnalyzed != null) {
+                withLastAnalyzed(lastAnalyzed.toInstant());
+            }
             return this;
         }
 
