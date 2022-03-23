@@ -84,8 +84,8 @@ public class JobBuilder {
             } else {
                 LOGGER.warn("The source table '{}' not exists on target database ({})", sourceTable,
                             target.getJndiName());
-                xml.writeComment(String.format("%n%n<!--%n Warning: the source table '%s' not " //
-                                                   + "exists on target database (%s)%n-->%n%n", sourceTable,
+                xml.writeComment(String.format("%n%n%n Warning: the source table '%s' not " //
+                                                   + "exists on target database (%s)%n%n%n", sourceTable,
                                                target.getJndiName()));
             }
         }
