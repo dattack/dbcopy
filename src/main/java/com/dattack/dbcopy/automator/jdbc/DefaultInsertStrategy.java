@@ -33,10 +33,10 @@ import static com.dattack.dbcopy.automator.CodeHelper.reformat;
 public class DefaultInsertStrategy implements InsertStrategy {
 
     private static final String UNKNOWN_COLUMN =
-        "null    /*   * * * * *   WARNING: the column %s does not exists in the source table   * * * * *   */";
+        "null    /* * * * * * WARNING: column %s does not exist in the source table * * * * * */";
 
     private static final String UNKNOWN_FUNCTION =
-        "%s    /*   * * * * *   WARNING: the expression %s is an unknown function   * * * * *   */";
+        "%s    /* * * * * * WARNING: expression %s is an unknown function * * * * * */";
 
     @Override
     public String execute(ObjectName tableName, TableMapping mapping) {
