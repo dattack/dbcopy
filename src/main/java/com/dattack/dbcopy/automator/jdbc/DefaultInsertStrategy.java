@@ -15,14 +15,13 @@
  */
 package com.dattack.dbcopy.automator.jdbc;
 
+import com.dattack.dbcopy.automator.ColumnMapping;
 import com.dattack.dbcopy.automator.InsertStrategy;
 import com.dattack.dbcopy.automator.TableMapping;
 import com.dattack.dbcopy.automator.ObjectName;
-import org.apache.commons.lang3.StringUtils;
 
 import java.util.Map;
 import java.util.Objects;
-import java.util.Properties;
 import java.util.stream.Collectors;
 
 import static com.dattack.dbcopy.automator.CodeHelper.NTAB2;
@@ -48,20 +47,23 @@ public class DefaultInsertStrategy implements InsertStrategy {
 
     protected String getSourceFieldList(TableMapping mapping) {
         return mapping.getColumnMappingList().stream() //
-            .map(s -> { //
-                if (s.getSourceColumn() == null) {
-
-                    return getGlobalMapping(mapping.getGlobalMapping(), s.getTargetColumn().getName(),
-                                            String.format(UNKNOWN_COLUMN, s.getTargetColumn().getName()));
-                } else if (s.getSourceColumn().getOrdinalPosition() >= 0) {
-                    return getVariable(s.getSourceColumn().getName());
-                } else {
-                    return getGlobalMapping(mapping.getGlobalMapping(), s.getSourceColumn().getName(),
-                        String.format(UNKNOWN_FUNCTION, s.getSourceColumn().getName(), s.getSourceColumn().getName()));
-                }
-            }) //
+            .map(s -> getMapping(mapping, s)) //
             .collect(Collectors.joining(",\n")) //
             ;
+    }
+
+    protected String getMapping(TableMapping mapping, ColumnMapping s) {
+        if (s.getSourceColumn() == null) {
+
+            return getGlobalMapping(mapping.getGlobalMapping(), s.getTargetColumn().getName(),
+                                    String.format(UNKNOWN_COLUMN, s.getTargetColumn().getName()));
+        } else if (s.getSourceColumn().getOrdinalPosition() >= 0) {
+            return getVariable(s.getSourceColumn().getName());
+        } else {
+            return getGlobalMapping(mapping.getGlobalMapping(), s.getSourceColumn().getName(),
+                                    String.format(UNKNOWN_FUNCTION, s.getSourceColumn().getName(),
+                                                  s.getSourceColumn().getName()));
+        }
     }
 
     protected String getTargetFieldList(TableMapping mapping) {
