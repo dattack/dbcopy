@@ -15,9 +15,10 @@
  */
 package com.dattack.dbcopy.automator;
 
-import com.sun.tools.javac.util.StringUtils;
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
+import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -147,6 +148,13 @@ public class TableMetadata {
             return this;
         }
 
+        public TableMetadataBuilder withLastAnalyzed(Timestamp lastAnalyzed) {
+            if (lastAnalyzed != null) {
+                withLastAnalyzed(lastAnalyzed.toInstant());
+            }
+            return this;
+        }
+
         public TableMetadataBuilder withLastAnalyzed(Instant lastAnalyzed) {
             this.lastAnalyzed = lastAnalyzed;
             return this;
@@ -186,7 +194,7 @@ public class TableMetadata {
         }
 
         private String norm(String columnName) {
-            return StringUtils.toUpperCase(columnName);
+            return StringUtils.upperCase(columnName);
         }
     }
 

@@ -57,7 +57,7 @@ public class OracleMergeStrategy extends DefaultInsertStrategy {
     private String getFieldMapping(TableMapping tableMapping, boolean isKey, String delimiter) {
         return tableMapping.getColumnMappingList().stream()
                 .filter(s -> s.getTargetColumn().isPrimaryKey() == isKey)
-                .map(s -> s.getTargetColumn().getName() + " = " + getVariable(s.getSourceColumn().getName()))
+                .map(s -> s.getTargetColumn().getName() + " = " + getMapping(tableMapping, s))
                 .collect(Collectors.joining(delimiter));
     }
 }

@@ -63,7 +63,7 @@ public class CodeHelper {
                     .writeAttribute("high-inclusive", rangePartition.getHighInclusiveMode().name()).writeComment(
                         String.format("num-rows: %,d", rangePartition.getNumRows()));
             }
-            xml.writeEndElement(); // partition-range
+            xml.writeCharacters(NTAB1).writeEndElement(); // partition-range
         } catch (FluentXmlWriterException e) {
             LOGGER.warn(e.getMessage());
         }
@@ -102,7 +102,7 @@ public class CodeHelper {
             Comparator.comparing(ColumnMetadata::getPartitionSeq)).collect(Collectors.toList());
 
         StringBuilder sql = new StringBuilder("SELECT * FROM " + tableMetadata.getTableRef());
-        if (!partitionKeys.isEmpty()) {
+        if (!partitionKeys.isEmpty() && tableMetadata.getPartitionList().size() > 1) {
             boolean rangeSize1 = tableMetadata.isAllPartitionsHasSize1();
             RangePartition.InclusiveMode lowInclusiveMode = tableMetadata.getLowInclusiveMode();
             RangePartition.InclusiveMode highInclusiveMode = tableMetadata.getHighInclusiveMode();

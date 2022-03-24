@@ -82,10 +82,10 @@ public class JobBuilder {
                                       new DatabaseResource(targetTable, target), //
                                       initialLoad, replicationConfig);
             } else {
-                LOGGER.warn("The source table '{}' not exists on target database ({})", sourceTable,
+                LOGGER.warn("source table '{}' does not exist in the target database ({})", sourceTable,
                             target.getJndiName());
-                xml.writeComment(String.format("%n%n<!--%n Warning: the source table '%s' not " //
-                                                   + "exists on target database (%s)%n-->%n%n", sourceTable,
+                xml.writeComment(String.format("%n%n%n Warning: source table '%s' does not exist in the target " //
+                                                   + "database (%s)%n%n%n", sourceTable,
                                                target.getJndiName()));
             }
         }
@@ -123,7 +123,7 @@ public class JobBuilder {
     }
 
     private void writeTablePartitions(FluentXmlWriter xml, DatabaseResource source, TableMapping tableMapping) {
-        if (!tableMapping.getSourceTable().getPartitionList().isEmpty()) {
+        if (tableMapping.getSourceTable().getPartitionList().size() > 1) {
             LOGGER.debug("{} - Adding partitions configuration", source.getObjectRef());
             xml.writeCharacters(NTAB1);
             source.getProvider().writeXmlPartitions(xml, tableMapping.getSourceTable());

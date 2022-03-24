@@ -43,7 +43,8 @@ public class TableMapping {
         this.sourceTable = sourceTable;
         this.targetTable = targetTable;
         this.columnMappingList = new ArrayList<>(columnMappingList);
-        this.globalMapping = new Properties(globalMapping);
+        this.globalMapping = new Properties();
+        this.globalMapping.putAll(globalMapping);
     }
 
     public List<ColumnMapping> getColumnMappingList() {

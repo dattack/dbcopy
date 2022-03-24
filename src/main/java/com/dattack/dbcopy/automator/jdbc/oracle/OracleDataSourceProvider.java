@@ -81,7 +81,7 @@ public class OracleDataSourceProvider extends DataSourceProvider {
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     builder.withNumRows(rs.getInt("NUM_ROWS")) //
-                        .withLastAnalyzed(rs.getTimestamp("LAST_ANALYZED").toInstant());
+                        .withLastAnalyzed(rs.getTimestamp("LAST_ANALYZED"));
                 }
             }
         }

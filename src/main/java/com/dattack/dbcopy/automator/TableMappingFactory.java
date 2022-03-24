@@ -51,6 +51,7 @@ public class TableMappingFactory {
         } catch (IOException e) {
             LOGGER.warn("Unable to load from configuration file {}: {}", DEFAULT_MAPPING_FILE, e.getMessage());
         }
+        LOGGER.info("Global mappings: {}", properties);
         return properties;
     }
 
@@ -73,9 +74,14 @@ public class TableMappingFactory {
             getSourceColumnMetadata(sourceTable, replicationConfig, targetColumnMetadata);
 
         if (sourceColumnMetadata == null) {
-            LOGGER.error("Column without mapping (target column: {})", targetColumnMetadata);
-            //sourceColumnMetadata = new ColumnMetadata(sourceTable.getTableRef(), "MISSING_COLUMN", -1);
+            String mapping = globalProperties.getProperty(targetColumnMetadata.getName());
+            if (mapping == null) {
+                LOGGER.error("Column without mapping (target column: {})", targetColumnMetadata.getName());
+            } else {
+                sourceColumnMetadata = new ColumnMetadata(targetColumnMetadata.getName());
+            }
         }
+
         return new ColumnMapping(sourceColumnMetadata, targetColumnMetadata);
     }
 

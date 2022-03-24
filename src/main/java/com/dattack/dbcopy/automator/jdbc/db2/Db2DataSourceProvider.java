@@ -90,7 +90,7 @@ public class Db2DataSourceProvider extends DataSourceProvider {
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     builder.withNumRows(rs.getInt("card")) //
-                        .withLastAnalyzed(rs.getTimestamp("stats_time").toInstant());
+                        .withLastAnalyzed(rs.getTimestamp("stats_time"));
                 }
             }
         }
