@@ -43,6 +43,7 @@ import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.stream.Collectors;
 
 import static java.lang.String.format;
 
@@ -140,11 +141,12 @@ import static java.lang.String.format;
                         values.add(value);
                     }
 
+                    String valuesAsText = String.join(",", values);
                     final BaseConfiguration baseConfiguration = createBaseConfiguration();
-                    baseConfiguration.setProperty(bean.getId() + ".values", values);
+                    baseConfiguration.setProperty(bean.getId() + ".values", valuesAsText);
 
                     // set alias properties
-                    baseConfiguration.setProperty(bean.getId(), values);
+                    baseConfiguration.setProperty(bean.getId(), valuesAsText);
 
                     final CompositeConfiguration configuration = createCompositeConfiguration();
                     configuration.addConfiguration(baseConfiguration);
