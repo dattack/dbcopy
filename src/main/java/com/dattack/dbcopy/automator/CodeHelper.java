@@ -102,7 +102,7 @@ public class CodeHelper {
             Comparator.comparing(ColumnMetadata::getPartitionSeq)).collect(Collectors.toList());
 
         StringBuilder sql = new StringBuilder("SELECT * FROM " + tableMetadata.getTableRef());
-        if (!partitionKeys.isEmpty()) {
+        if (!partitionKeys.isEmpty() && tableMetadata.getPartitionList().size() > 1) {
             boolean rangeSize1 = tableMetadata.isAllPartitionsHasSize1();
             RangePartition.InclusiveMode lowInclusiveMode = tableMetadata.getLowInclusiveMode();
             RangePartition.InclusiveMode highInclusiveMode = tableMetadata.getHighInclusiveMode();

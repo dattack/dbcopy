@@ -123,7 +123,7 @@ public class JobBuilder {
     }
 
     private void writeTablePartitions(FluentXmlWriter xml, DatabaseResource source, TableMapping tableMapping) {
-        if (!tableMapping.getSourceTable().getPartitionList().isEmpty()) {
+        if (tableMapping.getSourceTable().getPartitionList().size() > 1) {
             LOGGER.debug("{} - Adding partitions configuration", source.getObjectRef());
             xml.writeCharacters(NTAB1);
             source.getProvider().writeXmlPartitions(xml, tableMapping.getSourceTable());
