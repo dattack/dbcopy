@@ -63,7 +63,7 @@ public class CodeHelper {
                     .writeAttribute("high-inclusive", rangePartition.getHighInclusiveMode().name()).writeComment(
                         String.format("num-rows: %,d", rangePartition.getNumRows()));
             }
-            xml.writeEndElement(); // partition-range
+            xml.writeCharacters(NTAB1).writeEndElement(); // partition-range
         } catch (FluentXmlWriterException e) {
             LOGGER.warn(e.getMessage());
         }
